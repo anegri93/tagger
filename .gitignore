@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+.tagger.pid
+.tagger.log
+.vscode
+.idea
+data/comercios-bancard-raw.tsv
+data/comercios-bancard-staged.tsv
+data/mango-p2p.tsv

@@ -1,0 +1,214 @@
+{
+  "info": {
+    "name": "tagger",
+    "description": "Servicio categorización gastos. Cascada regex→Bancard→comercio→MCC→IA.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "11111111-1111-1111-1111-111111111111"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key", "type": "string" },
+      { "key": "value", "value": "{{apiKey}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "apiKey", "value": "replace-with-strong-random-key-min-16-chars" },
+    { "key": "movimientoId", "value": "" },
+    { "key": "categoriaId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "categorias",
+      "item": [
+        {
+          "name": "GET /categorias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.items && res.items.length > 0) {",
+                  "  pm.collectionVariables.set('categoriaId', res.items[0].id);",
+                  "  console.log('categoriaId =', res.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "categorizar",
+      "item": [
+        {
+          "name": "POST /categorizar-movimiento (regex hit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.movimiento_id) {",
+                  "  pm.collectionVariables.set('movimientoId', res.movimiento_id);",
+                  "  console.log('movimientoId =', res.movimiento_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"COMPRA BIGGIE EXPRESS SUC. CENTRO\",\n  \"monto\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            }
+          }
+        },
+        {
+          "name": "POST /categorizar-movimiento (solo MCC)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mcc\": \"5411\",\n  \"monto\": 12000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            }
+          }
+        },
+        {
+          "name": "POST /categorizar-movimiento (combustible)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"COPETROL ESTACION RUTA 2\",\n  \"nombre_bancard\": \"COPETROL\",\n  \"mcc\": \"5541\",\n  \"monto\": 250000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            }
+          }
+        },
+        {
+          "name": "POST /categorizar-movimiento (desconocido → IA async)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"XYZ COMERCIO RANDOM\",\n  \"monto\": 30000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            }
+          }
+        },
+        {
+          "name": "POST /categorizar-movimiento (input inválido → 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"monto\": 100\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "movimientos",
+      "item": [
+        {
+          "name": "GET /movimientos/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movimientos/{{movimientoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["movimientos", "{{movimientoId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /movimientos/:id/correccion",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\",\n  \"usuario\": \"aldo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/correccion",
+              "host": ["{{baseUrl}}"],
+              "path": ["movimientos", "{{movimientoId}}", "correccion"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "auth-fail (sin api-key → 401)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] }
+      }
+    }
+  ]
+}

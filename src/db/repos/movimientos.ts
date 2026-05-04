@@ -1,0 +1,76 @@
+import { eq } from 'drizzle-orm';
+import type { Db } from '../client.js';
+import { movimientos } from '../schema/index.js';
+import type { MovimientoRepository, MovimientoNuevo } from '../../pipeline/persistir.js';
+import type { MovimientoUpdater } from '../../pipeline/ia-fallback.js';
+import type { MovimientoReader, MovimientoGetData } from '../../api/routes/movimiento-get.js';
+import type { Evidencia, FuenteCategoria } from '../schema/movimientos.js';
+
+export function crearMovimientoRepository(db: Db): MovimientoRepository {
+  return {
+    async insertar(data: MovimientoNuevo) {
+      const rows = await db
+        .insert(movimientos)
+        .values({
+          descripcion: data.descripcion,
+          nombreComercio: data.nombreComercio,
+          nombreBancard: data.nombreBancard,
+          mcc: data.mcc,
+          monto: data.monto,
+          categoriaPredichaId: data.categoriaPredichaId,
+          fuenteCategoria: data.fuenteCategoria,
+          confianza: data.confianza,
+          requiereRevision: data.requiereRevision,
+          rawInput: data.rawInput,
+          evidencia: data.evidencia as Evidencia | null,
+        })
+        .returning({ id: movimientos.id });
+      const id = rows[0]?.id;
+      if (!id) throw new Error('insert movimiento sin id');
+      return { id };
+    },
+  };
+}
+
+export function crearMovimientoUpdater(db: Db): MovimientoUpdater {
+  return {
+    async actualizarPrediccion(movimientoId, data) {
+      await db
+        .update(movimientos)
+        .set({
+          categoriaPredichaId: data.categoriaId,
+          fuenteCategoria: data.fuente as FuenteCategoria,
+          confianza: data.confianza.toFixed(2),
+          evidencia: data.evidencia as Evidencia,
+          updatedAt: new Date(),
+        })
+        .where(eq(movimientos.id, movimientoId));
+    },
+  };
+}
+
+export function crearMovimientoReader(db: Db): MovimientoReader {
+  return {
+    async porId(id): Promise<MovimientoGetData | null> {
+      const rows = await db.select().from(movimientos).where(eq(movimientos.id, id)).limit(1);
+      const r = rows[0];
+      if (!r) return null;
+      return {
+        id: r.id,
+        descripcion: r.descripcion,
+        nombreComercio: r.nombreComercio,
+        nombreBancard: r.nombreBancard,
+        mcc: r.mcc,
+        monto: r.monto,
+        categoriaPredichaId: r.categoriaPredichaId,
+        categoriaConfirmadaId: r.categoriaConfirmadaId,
+        fuenteCategoria: r.fuenteCategoria,
+        confianza: r.confianza,
+        requiereRevision: r.requiereRevision,
+        evidencia: r.evidencia,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      };
+    },
+  };
+}

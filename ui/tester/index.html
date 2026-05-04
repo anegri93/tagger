@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>tagger — tester</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>tagger · tester</h1>
+      <div class="config">
+        <label>
+          API URL
+          <input id="cfg-url" type="text" placeholder="http://localhost:3000" />
+        </label>
+        <label>
+          API Key
+          <input id="cfg-key" type="password" placeholder="x-api-key" />
+        </label>
+        <button id="cfg-save">Guardar</button>
+        <span id="cfg-status" class="status"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>Categorizar movimiento</h2>
+        <form id="form-categorizar">
+          <div class="row">
+            <label>
+              Descripción
+              <input name="descripcion" type="text" placeholder="COMPRA BIGGIE EXPRESS" />
+            </label>
+            <label>
+              Monto (Gs)
+              <input name="monto" type="number" step="any" placeholder="50000" />
+            </label>
+          </div>
+          <div class="row">
+            <label>
+              Nombre comercio
+              <input name="nombre_comercio" type="text" placeholder="BIGGIE" />
+            </label>
+            <label>
+              Nombre Bancard
+              <input name="nombre_bancard" type="text" placeholder="BIGGIE EXPRESS S.A." />
+            </label>
+            <label>
+              MCC
+              <input name="mcc" type="text" placeholder="5411" />
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">Categorizar</button>
+            <button type="button" id="btn-clear">Limpiar</button>
+            <span class="examples">
+              Ejemplos:
+              <button type="button" data-ej="biggie">BIGGIE</button>
+              <button type="button" data-ej="copetrol">COPETROL</button>
+              <button type="button" data-ej="mcc">MCC 5411</button>
+              <button type="button" data-ej="desconocido">desconocido</button>
+            </span>
+          </div>
+        </form>
+        <div id="resultado-actual"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Historial sesión</h2>
+          <button id="btn-refresh">↻ refrescar todos</button>
+          <button id="btn-clear-history" class="danger">Limpiar historial</button>
+        </div>
+        <div id="historial"></div>
+      </section>
+    </main>
+
+    <div id="modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Corregir categoría</h3>
+        <p id="modal-mov-info"></p>
+        <label>
+          Nueva categoría
+          <select id="modal-categoria"></select>
+        </label>
+        <label>
+          Motivo (opcional)
+          <textarea id="modal-motivo" rows="2"></textarea>
+        </label>
+        <label>
+          Usuario (opcional)
+          <input id="modal-usuario" type="text" />
+        </label>
+        <div class="actions">
+          <button id="modal-cancel">Cancelar</button>
+          <button id="modal-submit" class="primary">Aplicar corrección</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

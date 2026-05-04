@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tagger
+      POSTGRES_PASSWORD: tagger
+      POSTGRES_DB: tagger
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tagger -d tagger']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      DATABASE_URL: postgres://tagger:tagger@postgres:5432/tagger
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma2:2b}
+      API_KEY: ${API_KEY:?API_KEY required}
+      CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '${PORT:-3000}:3000'
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ['ai']
+    restart: unless-stopped
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  pgdata:
+  ollama_models:

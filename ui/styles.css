@@ -1,0 +1,165 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --done: #2ea043;
+  --pending: #6e7681;
+  --inprog: #d29922;
+  --blocked: #f85149;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+header {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+header h1 { margin: 0 0 4px; font-size: 24px; }
+#desc { color: var(--muted); margin: 0 0 16px; }
+.progress-wrap {
+  position: relative;
+  height: 24px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+#progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2ea043, #58a6ff);
+  width: 0%;
+  transition: width .3s;
+}
+#progress-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.filters label { font-size: 13px; color: var(--muted); }
+.filters select, .filters button {
+  background: #0d1117;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+main { padding: 24px 32px; }
+.phase {
+  margin-bottom: 32px;
+}
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.phase-header h2 { margin: 0; font-size: 18px; }
+.phase-header .validated {
+  font-size: 11px;
+  color: var(--done);
+  border: 1px solid var(--done);
+  background: rgba(46, 160, 67, 0.15);
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-left: 8px;
+  font-weight: 500;
+  vertical-align: middle;
+}
+.phase-header .stats { color: var(--muted); font-size: 13px; }
+.task {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+.task-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.task-head .status {
+  width: 12px; height: 12px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.status.pending { background: var(--pending); }
+.status.in_progress { background: var(--inprog); }
+.status.done { background: var(--done); }
+.status.blocked { background: var(--blocked); }
+.task-head .id {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--accent);
+  background: #0d1117;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.task-head .title { flex: 1; font-weight: 500; }
+.task-head .deps { color: var(--muted); font-size: 11px; }
+.task-body {
+  margin-top: 12px;
+  padding-left: 24px;
+  display: none;
+}
+.task.open .task-body { display: block; }
+.task-body h4 { margin: 8px 0 4px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.task-body ul { margin: 4px 0; padding-left: 20px; font-size: 13px; }
+.task-body code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background: #0d1117;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.gates { display: flex; gap: 8px; margin-top: 8px; }
+.gate {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  transition: all .2s;
+}
+.gate-pending { color: var(--muted); }
+.gate-running {
+  color: var(--inprog);
+  border-color: var(--inprog);
+  background: rgba(210, 153, 34, 0.12);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.gate-pass {
+  color: var(--done);
+  border-color: var(--done);
+  background: rgba(46, 160, 67, 0.15);
+}
+.gate-fail {
+  color: var(--blocked);
+  border-color: var(--blocked);
+  background: rgba(248, 81, 73, 0.15);
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
