@@ -48,6 +48,7 @@ async function loadStats(db: Db, batchId: string): Promise<TestBatchStats> {
   if (total === 0) {
     return {
       batch_id: batchId,
+      modo: 'sin_datos',
       total: 0,
       primer_movimiento_at: null,
       ultimo_movimiento_at: null,
@@ -254,8 +255,23 @@ async function loadStats(db: Db, batchId: string): Promise<TestBatchStats> {
     catalogo_categoria: r.cat_categoria,
   }));
 
+  const modoRes = await db.execute(sql`
+    SELECT
+      count(*) FILTER (WHERE evidencia->>'bypass_catalogo' = 'true')::int AS bypass,
+      count(*) FILTER (WHERE evidencia->>'bypass_catalogo' IS NULL OR evidencia->>'bypass_catalogo' != 'true')::int AS normal
+    FROM movimientos WHERE batch_id = ${batchId}
+  `);
+  const m = modoRes.rows[0] as { bypass: number; normal: number };
+  const bypassCount = Number(m.bypass ?? 0);
+  const normalCount = Number(m.normal ?? 0);
+  let modo: TestBatchStats['modo'];
+  if (bypassCount === 0) modo = 'con_catalogo';
+  else if (normalCount === 0) modo = 'cascada_pura';
+  else modo = 'mixto';
+
   return {
     batch_id: batchId,
+    modo,
     total,
     primer_movimiento_at: toIso(base.primer),
     ultimo_movimiento_at: toIso(base.ultimo),

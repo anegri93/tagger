@@ -2414,6 +2414,151 @@ window.__TASKS__ = {
       "validated_at": "2026-05-04T20:03:48.007Z"
     },
     {
+      "id": "P17",
+      "name": "Validación real cascada: bypass catálogo + agreement honesto",
+      "tasks": [
+        {
+          "id": "T1701",
+          "title": "Flag bypass_catalogo en API /categorizar-movimiento",
+          "detail": [
+            "src/api/schemas/categorizar.ts: agregar bypass_catalogo? boolean optional",
+            "src/api/routes/categorizar.ts: pasar flag a ejecutarCascada",
+            "src/pipeline/categorizar.ts: si bypass_catalogo=true, saltar capa catálogo",
+            "Tests schema + e2e",
+            "Persistir movimiento con evidencia.bypass_catalogo=true pa trazabilidad"
+          ],
+          "files": [
+            "src/api/schemas/categorizar.ts",
+            "src/api/routes/categorizar.ts",
+            "src/pipeline/categorizar.ts",
+            "src/db/schema/movimientos.ts",
+            "src/api/schemas/categorizar.test.ts"
+          ],
+          "depends_on": [],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-04T20:15:03.415Z",
+          "completed_at": "2026-05-04T20:15:44.630Z"
+        },
+        {
+          "id": "T1702",
+          "title": "Worker masivo soporta bypass + endpoint start",
+          "detail": [
+            "src/test-batch/runner.ts: BatchOpts.bypassCatalogo? boolean",
+            "Worker pasa flag a ejecutarCascada",
+            "src/api/schemas/test-batch.ts: agregar bypass_catalogo en start request",
+            "Endpoint start propaga al runner",
+            "Tests runner + endpoint"
+          ],
+          "files": [
+            "src/test-batch/runner.ts",
+            "src/test-batch/runner.test.ts",
+            "src/api/schemas/test-batch.ts",
+            "src/api/routes/test-batch-control.ts",
+            "src/api/routes/test-batch-control.test.ts",
+            "src/pipeline/categorizar.ts"
+          ],
+          "depends_on": [
+            "T1701"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-04T20:15:48.189Z",
+          "completed_at": "2026-05-04T20:16:35.368Z"
+        },
+        {
+          "id": "T1703",
+          "title": "Stats: agreement honesto en bypass batches",
+          "detail": [
+            "Detectar si batch corrió con bypass (chequear evidencia.bypass_catalogo en muestra)",
+            "Mostrar tag visible en endpoint response (modo='cascada_pura' vs 'con_catalogo')",
+            "Agreement query igual (sigue comparando vs catálogo)",
+            "UI: badge en runner status indicando modo bypass",
+            "Tests"
+          ],
+          "files": [
+            "src/api/routes/test-batch-stats.ts",
+            "src/db/repos/test-batch-stats.ts",
+            "ui/test-monitor/app.js",
+            "ui/test-monitor/styles.css"
+          ],
+          "depends_on": [
+            "T1702"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-04T20:16:40.154Z",
+          "completed_at": "2026-05-04T20:17:26.141Z"
+        },
+        {
+          "id": "T1704",
+          "title": "UI control: checkbox bypass en form Run",
+          "detail": [
+            "ui/test-monitor/index.html: checkbox bypass_catalogo",
+            "app.js: incluir flag en payload start",
+            "Visualmente diferenciar batches con bypass (color/icon en runner status)",
+            "Tooltip explicando trade-off"
+          ],
+          "files": [
+            "ui/test-monitor/index.html",
+            "ui/test-monitor/app.js",
+            "ui/test-monitor/styles.css"
+          ],
+          "depends_on": [
+            "T1703"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-04T20:17:30.427Z",
+          "completed_at": "2026-05-04T20:17:58.232Z"
+        },
+        {
+          "id": "T1705",
+          "title": "Ejecutar baseline-v4 con bypass + análisis honesto",
+          "detail": [
+            "TRUNCATE movimientos pa baseline limpio",
+            "Run dash UI con batch_id 'baseline-v4' bypass=true",
+            "Comparar agreement v3 (100% trampa) vs v4 (cascada pura real)",
+            "Identificar dónde cascada pierde sin catálogo: ¿qué fuente cambia? ¿qué categorías?",
+            "Documentar docs/test-baseline-v4.md con análisis honesto",
+            "Si agreement <90% → identificar palancas pa mejorar cascada (más reglas regex, ampliar mcc, etc)"
+          ],
+          "files": [
+            "docs/test-baseline-v4.md"
+          ],
+          "depends_on": [
+            "T1704"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-04T20:18:04.851Z",
+          "completed_at": "2026-05-04T20:21:56.657Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-04T20:21:59.447Z"
+    },
+    {
       "id": "PNH",
       "name": "Nice to have (post-MVP)",
       "tasks": [

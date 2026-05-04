@@ -1,0 +1,390 @@
+{
+  "total": 108982,
+  "fuente": {
+    "regex": {
+      "count": 67997,
+      "pct": 62.4
+    },
+    "mcc": {
+      "count": 40099,
+      "pct": 36.8
+    },
+    "nombre": {
+      "count": 642,
+      "pct": 0.6
+    },
+    "NULL": {
+      "count": 237,
+      "pct": 0.2
+    },
+    "bancard": {
+      "count": 7,
+      "pct": 0
+    }
+  },
+  "cobertura": {
+    "sync_ok": 108745,
+    "sync_ok_pct": 99.8,
+    "pendiente_o_ia": 237,
+    "revision": 18946
+  },
+  "latencia": {
+    "min": 0,
+    "p50": 0,
+    "p95": 45,
+    "p99": 49,
+    "max": 85,
+    "avg": 15
+  },
+  "top_categorias": [
+    {
+      "slug": "transferencia",
+      "c": 59617
+    },
+    {
+      "slug": "otros",
+      "c": 16275
+    },
+    {
+      "slug": "supermercado",
+      "c": 7684
+    },
+    {
+      "slug": "restaurante",
+      "c": 6599
+    },
+    {
+      "slug": "servicios",
+      "c": 3680
+    },
+    {
+      "slug": "hogar",
+      "c": 3122
+    },
+    {
+      "slug": "farmacia",
+      "c": 2752
+    },
+    {
+      "slug": "alimentacion",
+      "c": 2317
+    },
+    {
+      "slug": "combustible",
+      "c": 1862
+    },
+    {
+      "slug": "ropa",
+      "c": 1273
+    }
+  ],
+  "agreement": {
+    "match": 106746,
+    "mismatch": 1999,
+    "sin_catalogo": 0,
+    "sin_prediccion": 237,
+    "agreement_pct": 98.16
+  },
+  "top_mismatches": [
+    {
+      "nombre_bancard": "21.16 ACAI HELADERIA",
+      "bancard_id": "21.16 ACAI HELADERIA",
+      "codigo_comercio": "289797",
+      "rt_fuente": "regex",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "2K HELADERIA",
+      "bancard_id": "2K HELADERIA",
+      "codigo_comercio": "1204559",
+      "rt_fuente": "regex",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "2V COMERCIAL",
+      "bancard_id": "2V COMERCIAL",
+      "codigo_comercio": "317339",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "1109709",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "restaurante",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "1123804",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "294676",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "restaurante",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "472985",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "822234",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "combustible",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "4 HERMANOS",
+      "bancard_id": "4 HERMANOS",
+      "codigo_comercio": "1789720",
+      "rt_fuente": "nombre",
+      "rt_categoria": "otros",
+      "cat_fuente": "mcc",
+      "cat_categoria": "supermercado",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "4D COMERCIAL",
+      "bancard_id": "4D COMERCIAL",
+      "codigo_comercio": "853366",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "ropa",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "8 DE DICIEMBRE",
+      "bancard_id": "8 DE DICIEMBRE",
+      "codigo_comercio": "306766",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "8 DE DICIEMBRE",
+      "bancard_id": "8 DE DICIEMBRE",
+      "codigo_comercio": "611342",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A TU ESTILO",
+      "bancard_id": "A TU ESTILO",
+      "codigo_comercio": "267363",
+      "rt_fuente": "mcc",
+      "rt_categoria": "hogar",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A TU ESTILO",
+      "bancard_id": "A TU ESTILO",
+      "codigo_comercio": "323626",
+      "rt_fuente": "mcc",
+      "rt_categoria": "hogar",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A Y N DESPENSA Y CARNI...",
+      "bancard_id": "A Y N DESPENSA Y CARNI...",
+      "codigo_comercio": "299019",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A Y R SERVICIO TECNICO",
+      "bancard_id": "A Y R SERVICIO TECNICO",
+      "codigo_comercio": "245381",
+      "rt_fuente": "mcc",
+      "rt_categoria": "tecnologia",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A.L. DESPENSA",
+      "bancard_id": "A.L. DESPENSA",
+      "codigo_comercio": "314764",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AARON FARMA",
+      "bancard_id": "AARON FARMA",
+      "codigo_comercio": "288359",
+      "rt_fuente": "regex",
+      "rt_categoria": "farmacia",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ACAI EXPRESS",
+      "bancard_id": "ACAI EXPRESS",
+      "codigo_comercio": "1654455",
+      "rt_fuente": "mcc",
+      "rt_categoria": "alimentacion",
+      "cat_fuente": "mcc",
+      "cat_categoria": "restaurante",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ACAPOS *DESPENSA ALEJO",
+      "bancard_id": "ACAPOS *DESPENSA ALEJO",
+      "codigo_comercio": "1335255",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ACAPOS*LG COMERCIAL",
+      "bancard_id": "ACAPOS*LG COMERCIAL",
+      "codigo_comercio": "1335255",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ADALIZ COMERCIAL",
+      "bancard_id": "ADALIZ COMERCIAL",
+      "codigo_comercio": "639269",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ADONAI",
+      "bancard_id": "ADONAI",
+      "codigo_comercio": "1322312",
+      "rt_fuente": "mcc",
+      "rt_categoria": "ropa",
+      "cat_fuente": "mcc",
+      "cat_categoria": "supermercado",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGRO ABASTO",
+      "bancard_id": "AGRO ABASTO",
+      "codigo_comercio": "588299",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "salud",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGRO COMERCIAL FRANCO ...",
+      "bancard_id": "AGRO COMERCIAL FRANCO ...",
+      "codigo_comercio": "622439",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGRO COMERCIAL FRUTI H...",
+      "bancard_id": "AGRO COMERCIAL FRUTI H...",
+      "codigo_comercio": "325785",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGRO COMERCIAL MARIA A...",
+      "bancard_id": "AGRO COMERCIAL MARIA A...",
+      "codigo_comercio": "286902",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGROMARKET CAMPO 9",
+      "bancard_id": "AGROMARKET CAMPO 9",
+      "codigo_comercio": "1998825",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AGROPECUARIA TODO ABASTO",
+      "bancard_id": "AGROPECUARIA TODO ABASTO",
+      "codigo_comercio": "317904",
+      "rt_fuente": "regex",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "*BODEGA M.A.",
+      "bancard_id": "*BODEGA M.A.",
+      "codigo_comercio": "1784630",
+      "rt_fuente": "nombre",
+      "rt_categoria": "otros",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    }
+  ]
+}

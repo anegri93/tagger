@@ -15,6 +15,10 @@
         <input id="batch-id" placeholder="batch_id" />
         <input id="limit" placeholder="limit" type="number" />
         <input id="concurrency" placeholder="conc" type="number" value="30" />
+        <label class="cb" title="Skip capa catálogo. Mide cascada pura (regex+nombre+mcc+ia) sin lookup directo. Agreement = test honesto.">
+          <input id="bypass-cat" type="checkbox" />
+          <span>bypass</span>
+        </label>
         <button id="btn-run">▶ Run</button>
         <button id="btn-stop">■ Stop</button>
         <button id="btn-monitor">👁 Monitor</button>

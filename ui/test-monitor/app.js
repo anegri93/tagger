@@ -87,6 +87,7 @@ async function startRun() {
   }
   const payload = { batch_id: state.batchId, concurrency: state.concurrency };
   if (state.limit) payload.limit = Number(state.limit);
+  if ($('bypass-cat').checked) payload.bypass_catalogo = true;
   try {
     setStatus('starting…', 'live');
     await api('/test-batch/start', {
@@ -209,7 +210,13 @@ function render(stats) {
   $('kpi-cobertura-detail').textContent = `sync ${stats.cobertura.sync_ok} • rev ${stats.cobertura.revision} • sin ${stats.cobertura.sin_categoria}`;
 
   $('kpi-agreement').textContent = stats.agreement.pct.toFixed(2);
-  $('kpi-agreement-detail').textContent = `match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin_cat ${stats.agreement.sin_catalogo}`;
+  const modoLabel = {
+    cascada_pura: '🧪 cascada pura (bypass)',
+    con_catalogo: '⚠️ con catálogo (tautológico)',
+    mixto: '🌀 mixto',
+    sin_datos: '—',
+  }[stats.modo] || '—';
+  $('kpi-agreement-detail').textContent = `${modoLabel} • match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin_cat ${stats.agreement.sin_catalogo}`;
 
   const l = stats.latencia;
   $('lat-min').textContent = l.min ?? '—';

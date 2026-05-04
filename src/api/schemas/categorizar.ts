@@ -17,6 +17,7 @@ export const categorizarRequestSchema = z
     monto: z.number().finite().optional(),
     origen: z.string().min(1).max(50).optional(),
     batch_id: z.string().min(1).max(100).optional(),
+    bypass_catalogo: z.boolean().optional(),
   })
   .refine(
     (v) =>

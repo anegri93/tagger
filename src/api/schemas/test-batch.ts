@@ -5,6 +5,7 @@ export const startBatchRequestSchema = z.object({
   files: z.array(z.string().min(1).max(200)).optional(),
   limit: z.number().int().positive().optional(),
   concurrency: z.number().int().min(1).max(100).optional(),
+  bypass_catalogo: z.boolean().optional(),
 });
 
 export type StartBatchRequest = z.infer<typeof startBatchRequestSchema>;

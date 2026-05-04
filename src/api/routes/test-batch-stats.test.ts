@@ -5,6 +5,7 @@ import { testBatchStatsRoute, type TestBatchStats } from './test-batch-stats.js'
 function emptyStats(batchId: string): TestBatchStats {
   return {
     batch_id: batchId,
+    modo: 'sin_datos',
     total: 0,
     primer_movimiento_at: null,
     ultimo_movimiento_at: null,

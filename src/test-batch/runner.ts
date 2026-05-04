@@ -12,6 +12,7 @@ export interface BatchOpts {
   files?: string[];
   limit?: number;
   concurrency?: number;
+  bypassCatalogo?: boolean;
 }
 
 export interface BatchInfo {
@@ -27,6 +28,7 @@ export interface BatchInfo {
   files: string[];
   limit: number | null;
   concurrency: number;
+  bypassCatalogo: boolean;
 }
 
 interface RawRow extends Record<string, string> {
@@ -86,6 +88,7 @@ export class TestBatchRunner {
       files: opts.files ?? DEFAULT_FILES,
       limit: opts.limit ?? null,
       concurrency: opts.concurrency ?? 30,
+      bypassCatalogo: opts.bypassCatalogo === true,
     };
     this.active.set(batchId, { info, abort });
     void this.run(batchId).catch((err) => {
@@ -129,7 +132,15 @@ export class TestBatchRunner {
           mcc: cleanMcc(row.MCC),
           rawInput: row,
         };
-        const pipeline = await ejecutarCascada(input, this.deps.capas);
+        const pipeline = await ejecutarCascada(input, this.deps.capas, {
+          bypassCatalogo: info.bypassCatalogo,
+        });
+        if (pipeline.resultado && info.bypassCatalogo) {
+          pipeline.resultado.evidencia = {
+            ...(pipeline.resultado.evidencia ?? {}),
+            bypass_catalogo: true,
+          };
+        }
         const latencyMs = Date.now() - t0;
         await persistirMovimiento(input, pipeline, this.deps.repo, {
           origen: 'test_masivo',

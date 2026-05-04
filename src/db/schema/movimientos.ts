@@ -22,6 +22,7 @@ export type Evidencia = {
   mcc_match?: string;
   mcc_inferido?: boolean;
   marca?: string;
+  bypass_catalogo?: boolean;
   ia_prompt?: string;
   ia_response?: string;
 };

@@ -28,10 +28,11 @@ function textoPara(input: MovimientoInput): string {
 export async function ejecutarCascada(
   input: MovimientoInput,
   capas: CapasSincrono,
+  opts: { bypassCatalogo?: boolean } = {},
 ): Promise<ResultadoPipeline> {
   const texto = textoPara(input);
 
-  if (capas.catalogo) {
+  if (capas.catalogo && !opts.bypassCatalogo) {
     const r0 = await capas.catalogo.evaluar(input.bancardId, input.codigoComercio);
     if (r0) return { resultado: r0, requiereRevision: false, requiereIa: false };
   }

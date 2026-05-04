@@ -4,7 +4,7 @@
 
 **Stack:** TypeScript, Node, Fastify, Drizzle, Postgres, Vitest, Ollama
 
-**Progreso global:** 90/104 (87%)
+**Progreso global:** 95/109 (87%)
 
 ## Reglas
 
@@ -1136,6 +1136,73 @@
 - Documentar en docs/test-baseline-v3.md cambios + delta
 
 **Archivos:** `docs/test-baseline-v3.md`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P17 — Validación real cascada: bypass catálogo + agreement honesto (5/5)
+
+### ✅ T1701 — Flag bypass_catalogo en API /categorizar-movimiento
+
+**Detalle:**
+- src/api/schemas/categorizar.ts: agregar bypass_catalogo? boolean optional
+- src/api/routes/categorizar.ts: pasar flag a ejecutarCascada
+- src/pipeline/categorizar.ts: si bypass_catalogo=true, saltar capa catálogo
+- Tests schema + e2e
+- Persistir movimiento con evidencia.bypass_catalogo=true pa trazabilidad
+
+**Archivos:** `src/api/schemas/categorizar.ts`, `src/api/routes/categorizar.ts`, `src/pipeline/categorizar.ts`, `src/db/schema/movimientos.ts`, `src/api/schemas/categorizar.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1702 — Worker masivo soporta bypass + endpoint start _deps: T1701_
+
+**Detalle:**
+- src/test-batch/runner.ts: BatchOpts.bypassCatalogo? boolean
+- Worker pasa flag a ejecutarCascada
+- src/api/schemas/test-batch.ts: agregar bypass_catalogo en start request
+- Endpoint start propaga al runner
+- Tests runner + endpoint
+
+**Archivos:** `src/test-batch/runner.ts`, `src/test-batch/runner.test.ts`, `src/api/schemas/test-batch.ts`, `src/api/routes/test-batch-control.ts`, `src/api/routes/test-batch-control.test.ts`, `src/pipeline/categorizar.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1703 — Stats: agreement honesto en bypass batches _deps: T1702_
+
+**Detalle:**
+- Detectar si batch corrió con bypass (chequear evidencia.bypass_catalogo en muestra)
+- Mostrar tag visible en endpoint response (modo='cascada_pura' vs 'con_catalogo')
+- Agreement query igual (sigue comparando vs catálogo)
+- UI: badge en runner status indicando modo bypass
+- Tests
+
+**Archivos:** `src/api/routes/test-batch-stats.ts`, `src/db/repos/test-batch-stats.ts`, `ui/test-monitor/app.js`, `ui/test-monitor/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1704 — UI control: checkbox bypass en form Run _deps: T1703_
+
+**Detalle:**
+- ui/test-monitor/index.html: checkbox bypass_catalogo
+- app.js: incluir flag en payload start
+- Visualmente diferenciar batches con bypass (color/icon en runner status)
+- Tooltip explicando trade-off
+
+**Archivos:** `ui/test-monitor/index.html`, `ui/test-monitor/app.js`, `ui/test-monitor/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1705 — Ejecutar baseline-v4 con bypass + análisis honesto _deps: T1704_
+
+**Detalle:**
+- TRUNCATE movimientos pa baseline limpio
+- Run dash UI con batch_id 'baseline-v4' bypass=true
+- Comparar agreement v3 (100% trampa) vs v4 (cascada pura real)
+- Identificar dónde cascada pierde sin catálogo: ¿qué fuente cambia? ¿qué categorías?
+- Documentar docs/test-baseline-v4.md con análisis honesto
+- Si agreement <90% → identificar palancas pa mejorar cascada (más reglas regex, ampliar mcc, etc)
+
+**Archivos:** `docs/test-baseline-v4.md`
 
 **Gates:** consistency ✅  lint ✅  test ✅
 

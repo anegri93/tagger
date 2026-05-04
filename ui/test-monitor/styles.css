@@ -30,6 +30,16 @@ body {
 .controls input#batch-id { width: 220px; }
 .controls input#limit { width: 90px; }
 .controls input#concurrency { width: 60px; }
+.controls .cb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #c9d1d9;
+  cursor: pointer;
+  font-family: ui-monospace, monospace;
+}
+.controls .cb input { margin: 0; cursor: pointer; }
 .controls button {
   background: #238636;
   color: white;

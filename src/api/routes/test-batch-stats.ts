@@ -6,6 +6,7 @@ export interface TestBatchStatsReader {
 
 export interface TestBatchStats {
   batch_id: string;
+  modo: 'cascada_pura' | 'con_catalogo' | 'mixto' | 'sin_datos';
   total: number;
   primer_movimiento_at: string | null;
   ultimo_movimiento_at: string | null;

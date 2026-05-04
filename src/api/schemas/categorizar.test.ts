@@ -54,6 +54,15 @@ describe('categorizar request schema', () => {
     expect(r.success).toBe(false);
   });
 
+  it('acepta bypass_catalogo bool', () => {
+    const r = categorizarRequestSchema.safeParse({
+      nombre_bancard: 'X',
+      bypass_catalogo: true,
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.bypass_catalogo).toBe(true);
+  });
+
   it('monto debe ser finito', () => {
     expect(
       categorizarRequestSchema.safeParse({ descripcion: 'X', monto: Infinity }).success,
