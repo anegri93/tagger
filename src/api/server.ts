@@ -1,7 +1,12 @@
 import Fastify from 'fastify';
 import sensible from '@fastify/sensible';
 import cors from '@fastify/cors';
+import staticPlugin from '@fastify/static';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { logger } from '../lib/logger.js';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export interface BuildOptions {
   trustProxy?: boolean;
@@ -20,6 +25,12 @@ export async function build(opts: BuildOptions = {}) {
     credentials: false,
     methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['content-type', 'x-api-key', 'x-request-id'],
+  });
+
+  await app.register(staticPlugin, {
+    root: resolve(ROOT, 'ui'),
+    prefix: '/ui/',
+    decorateReply: false,
   });
 
   app.get('/health', async () => ({ status: 'ok' }));

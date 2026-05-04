@@ -2,6 +2,9 @@ import type { Evidencia, FuenteCategoria, ResultadoCapa } from '../domain/types.
 import { CONFIANZA } from '../domain/confianza.js';
 import { normalize } from '../domain/normalize.js';
 
+const MIN_TEXT_CHARS = 5;
+const MIN_SCORE_PARTIAL = 0.75;
+
 export interface ComercioCandidato {
   id: string;
   nombreNormalizado: string;
@@ -27,6 +30,7 @@ export function crearCapaComercio(lookup: ComercioLookup): CapaComercio {
     async evaluar(texto) {
       const target = normalize(texto);
       if (!target) return null;
+      if (target.replace(/\s/g, '').length < MIN_TEXT_CHARS) return null;
       const cand = await lookup.candidatosPorTexto(target);
       if (cand.length === 0) return null;
 
@@ -50,6 +54,7 @@ export function crearCapaComercio(lookup: ComercioLookup): CapaComercio {
       }
 
       if (!mejor) return null;
+      if (mejor.tipo === 'nombre_parcial' && mejor.score < MIN_SCORE_PARTIAL) return null;
 
       // Si match es exacto y catálogo trae fuente/confianza pre-computada → propagar
       if (

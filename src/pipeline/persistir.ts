@@ -18,12 +18,18 @@ export interface MovimientoNuevo {
   requiereRevision: boolean;
   rawInput: Record<string, unknown> | null;
   evidencia: ResultadoCapa['evidencia'] | null;
+  origen: string;
+  batchId: string | null;
+  bancardId: string | null;
+  codigoComercio: string | null;
+  latencyMs: number | null;
 }
 
 export async function persistirMovimiento(
   input: MovimientoInput,
   pipeline: ResultadoPipeline,
   repo: MovimientoRepository,
+  meta?: { origen?: string; batchId?: string | null; latencyMs?: number | null },
 ): Promise<MovimientoCategorizado> {
   const r = pipeline.resultado;
   const requiereRevision = pipeline.requiereRevision || (r ? r.confianza < THRESHOLD_REVISION : true);
@@ -40,6 +46,11 @@ export async function persistirMovimiento(
     requiereRevision,
     rawInput: input.rawInput ?? null,
     evidencia: r?.evidencia ?? null,
+    origen: meta?.origen ?? 'api',
+    batchId: meta?.batchId ?? null,
+    bancardId: input.bancardId ?? null,
+    codigoComercio: input.codigoComercio ?? null,
+    latencyMs: meta?.latencyMs ?? null,
   });
 
   return {

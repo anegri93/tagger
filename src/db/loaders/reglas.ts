@@ -58,6 +58,10 @@ const DATA: ReglaRow[] = [
   { patron: '\\bNETFLIX\\b', categoria_slug: 'entretenimiento', prioridad: '10', descripcion: 'Netflix' },
   { patron: '\\bSPOTIFY\\b', categoria_slug: 'entretenimiento', prioridad: '10', descripcion: 'Spotify' },
   { patron: '\\bDISNEY', categoria_slug: 'entretenimiento', prioridad: '10', descripcion: 'Disney+' },
+  // Comercios genéricos (alimentación/super)
+  { patron: '\\b(COMERC|COMERCIAL|CIAL|HIPER|MINIMARKET|MERCADO\\s|ABASTO|DESPENSA|VIVERES)\\b', categoria_slug: 'supermercado', prioridad: '25', descripcion: 'Comercial/super genéricos' },
+  { patron: '\\b(FARMA|FARMACIA|DROGUERIA|BOTICA)\\b', categoria_slug: 'farmacia', prioridad: '25', descripcion: 'Farmacia genérico' },
+  { patron: '\\b(PANADERIA|HELADERIA|CONFITERIA|RESTAURANT|PIZZERIA|HAMBURG|PARRILLA|LOMITERIA)\\b', categoria_slug: 'restaurante', prioridad: '25', descripcion: 'Gastro genérico' },
   // Transferencias P2P (prioridad alta pa que dispare antes)
   { patron: '^MANGO\\b', categoria_slug: 'transferencia', prioridad: '5', descripcion: 'Mango P2P' },
   // Azar y apuestas

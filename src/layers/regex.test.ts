@@ -90,6 +90,21 @@ describe('capa regex', () => {
     expect(r?.categoriaId).toBe('cat-transfer');
   });
 
+  it('regla COMERCIAL/HIPER → supermercado', async () => {
+    const reglas: ReglaCargada[] = [
+      {
+        id: 'cm',
+        patron: '\\b(COMERC|COMERCIAL|CIAL|HIPER)\\b',
+        categoriaId: 'cat-super',
+        prioridad: 25,
+      },
+    ];
+    const capa = crearCapaRegex(loaderFijo(reglas));
+    expect((await capa.evaluar('COMERC SAN CAYETANO'))?.categoriaId).toBe('cat-super');
+    expect((await capa.evaluar('HIPER LUISITO YPANE'))?.categoriaId).toBe('cat-super');
+    expect((await capa.evaluar('CIAL VIRGEN DEL ROSARIO'))?.categoriaId).toBe('cat-super');
+  });
+
   it('regla AZAR → azar', async () => {
     const reglas: ReglaCargada[] = [
       {

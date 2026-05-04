@@ -36,8 +36,14 @@ export const categorizarRoute = (deps: CategorizarDeps): FastifyPluginAsync => a
     };
 
     try {
+      const t0 = Date.now();
       const pipeline = await ejecutarCascada(input, deps.capas);
-      const out = await persistirMovimiento(input, pipeline, deps.repo);
+      const latencyMs = Date.now() - t0;
+      const out = await persistirMovimiento(input, pipeline, deps.repo, {
+        origen: body.origen ?? 'api',
+        batchId: body.batch_id ?? null,
+        latencyMs,
+      });
       if (pipeline.requiereIa) {
         deps.iaFallback.schedule(out.movimientoId, input);
       }

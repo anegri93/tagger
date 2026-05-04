@@ -1,0 +1,81 @@
+{
+  "total": 108982,
+  "fuente": {
+    "regex": {
+      "count": 61703,
+      "pct": 56.6
+    },
+    "mcc": {
+      "count": 45694,
+      "pct": 41.9
+    },
+    "nombre": {
+      "count": 1585,
+      "pct": 1.5
+    }
+  },
+  "cobertura": {
+    "sync_ok": 108982,
+    "sync_ok_pct": 100,
+    "pendiente_o_ia": 0,
+    "revision": 20666
+  },
+  "latencia": {
+    "min": 0,
+    "p50": 2,
+    "p95": 2,
+    "p99": 3,
+    "max": 23,
+    "avg": 2
+  },
+  "top_categorias": [
+    {
+      "slug": "transferencia",
+      "c": 59617
+    },
+    {
+      "slug": "otros",
+      "c": 17131
+    },
+    {
+      "slug": "supermercado",
+      "c": 6810
+    },
+    {
+      "slug": "restaurante",
+      "c": 6176
+    },
+    {
+      "slug": "servicios",
+      "c": 3785
+    },
+    {
+      "slug": "hogar",
+      "c": 3519
+    },
+    {
+      "slug": "alimentacion",
+      "c": 2647
+    },
+    {
+      "slug": "farmacia",
+      "c": 2504
+    },
+    {
+      "slug": "combustible",
+      "c": 1865
+    },
+    {
+      "slug": "ropa",
+      "c": 1299
+    }
+  ],
+  "agreement": {
+    "match": 108982,
+    "mismatch": 0,
+    "sin_catalogo": 0,
+    "sin_prediccion": 0,
+    "agreement_pct": 100
+  },
+  "top_mismatches": []
+}

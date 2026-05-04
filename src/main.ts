@@ -5,6 +5,9 @@ import { categorizarRoute } from './api/routes/categorizar.js';
 import { movimientoGetRoute } from './api/routes/movimiento-get.js';
 import { correccionRoute } from './api/routes/correccion.js';
 import { categoriasRoute } from './api/routes/categorias.js';
+import { testBatchStatsRoute } from './api/routes/test-batch-stats.js';
+import { testBatchControlRoute } from './api/routes/test-batch-control.js';
+import { TestBatchRunner } from './test-batch/runner.js';
 import { requestLog } from './api/plugins/request-log.js';
 import { apiKeyAuth } from './api/plugins/auth.js';
 import { db, pool } from './db/client.js';
@@ -36,6 +39,7 @@ import {
   crearCategoriasLoader,
   crearCategoriaResolver,
 } from './db/repos/categorias.js';
+import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
 
 async function pingDb(): Promise<boolean> {
   try {
@@ -86,6 +90,9 @@ async function main() {
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
   await app.register(categoriasRoute(categoriasReader));
+  await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
+  const testRunner = new TestBatchRunner({ capas, repo: movRepo });
+  await app.register(testBatchControlRoute(testRunner));
 
   await app.listen({ port: env.PORT, host: '0.0.0.0' });
   logger.info({ port: env.PORT }, 'tagger API listening');

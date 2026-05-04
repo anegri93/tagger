@@ -23,6 +23,11 @@ export function crearMovimientoRepository(db: Db): MovimientoRepository {
           requiereRevision: data.requiereRevision,
           rawInput: data.rawInput,
           evidencia: data.evidencia as Evidencia | null,
+          origen: data.origen,
+          batchId: data.batchId,
+          bancardId: data.bancardId,
+          codigoComercio: data.codigoComercio,
+          latencyMs: data.latencyMs,
         })
         .returning({ id: movimientos.id });
       const id = rows[0]?.id;

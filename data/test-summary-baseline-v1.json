@@ -1,0 +1,386 @@
+{
+  "total": 108982,
+  "fuente": {
+    "regex": {
+      "count": 61703,
+      "pct": 56.6
+    },
+    "mcc": {
+      "count": 45540,
+      "pct": 41.8
+    },
+    "nombre": {
+      "count": 1733,
+      "pct": 1.6
+    },
+    "bancard": {
+      "count": 6,
+      "pct": 0
+    }
+  },
+  "cobertura": {
+    "sync_ok": 108982,
+    "sync_ok_pct": 100,
+    "pendiente_o_ia": 0,
+    "revision": 19968
+  },
+  "latencia": {
+    "min": 0,
+    "p50": 2,
+    "p95": 41,
+    "p99": 48,
+    "max": 89,
+    "avg": 10
+  },
+  "top_categorias": [
+    {
+      "slug": "transferencia",
+      "c": 59637
+    },
+    {
+      "slug": "otros",
+      "c": 17052
+    },
+    {
+      "slug": "supermercado",
+      "c": 6836
+    },
+    {
+      "slug": "restaurante",
+      "c": 6190
+    },
+    {
+      "slug": "servicios",
+      "c": 3789
+    },
+    {
+      "slug": "hogar",
+      "c": 3520
+    },
+    {
+      "slug": "alimentacion",
+      "c": 2651
+    },
+    {
+      "slug": "farmacia",
+      "c": 2508
+    },
+    {
+      "slug": "combustible",
+      "c": 1867
+    },
+    {
+      "slug": "ropa",
+      "c": 1303
+    }
+  ],
+  "agreement": {
+    "match": 108837,
+    "mismatch": 145,
+    "sin_catalogo": 0,
+    "sin_prediccion": 0,
+    "agreement_pct": 99.87
+  },
+  "top_mismatches": [
+    {
+      "nombre_bancard": "A PUNTO",
+      "bancard_id": "A PUNTO",
+      "codigo_comercio": "287031",
+      "rt_fuente": "nombre",
+      "rt_categoria": "alimentacion",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "A TU ESTILO",
+      "bancard_id": "A TU ESTILO",
+      "codigo_comercio": "267363",
+      "rt_fuente": "mcc",
+      "rt_categoria": "hogar",
+      "cat_fuente": "mcc",
+      "cat_categoria": "servicios",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AHORRAZO-CAPIATA",
+      "bancard_id": "AHORRAZO-CAPIATA",
+      "codigo_comercio": "268629",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ALAS",
+      "bancard_id": "ALAS",
+      "codigo_comercio": "258412",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ALEJANDRA",
+      "bancard_id": "ALEJANDRA",
+      "codigo_comercio": "6055",
+      "rt_fuente": "nombre",
+      "rt_categoria": "transferencia",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU",
+      "bancard_id": "AMANDAU",
+      "codigo_comercio": "256209",
+      "rt_fuente": "nombre",
+      "rt_categoria": "alimentacion",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU",
+      "bancard_id": "AMANDAU",
+      "codigo_comercio": "259193",
+      "rt_fuente": "mcc",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU",
+      "bancard_id": "AMANDAU",
+      "codigo_comercio": "275914",
+      "rt_fuente": "mcc",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU",
+      "bancard_id": "AMANDAU",
+      "codigo_comercio": "302406",
+      "rt_fuente": "nombre",
+      "rt_categoria": "alimentacion",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU ITAGUA 2",
+      "bancard_id": "AMANDAU ITAGUA 2",
+      "codigo_comercio": "254939",
+      "rt_fuente": "nombre",
+      "rt_categoria": "alimentacion",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU KM 20 CAPIATA",
+      "bancard_id": "AMANDAU KM 20 CAPIATA",
+      "codigo_comercio": "271881",
+      "rt_fuente": "nombre",
+      "rt_categoria": "otros",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU MARIA AUXILIADORA",
+      "bancard_id": "AMANDAU MARIA AUXILIADORA",
+      "codigo_comercio": "299826",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU SAN JOSE",
+      "bancard_id": "AMANDAU SAN JOSE",
+      "codigo_comercio": "255944",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU SAN JUAN",
+      "bancard_id": "AMANDAU SAN JUAN",
+      "codigo_comercio": "236267",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU SAN JUAN NEPOM...",
+      "bancard_id": "AMANDAU SAN JUAN NEPOM...",
+      "codigo_comercio": "282717",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AMANDAU-NEMBY RINCON",
+      "bancard_id": "AMANDAU-NEMBY RINCON",
+      "codigo_comercio": "243848",
+      "rt_fuente": "nombre",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "AUTOSRVICE SAN CAYETANO",
+      "bancard_id": "AUTOSRVICE SAN CAYETANO",
+      "codigo_comercio": "274028",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "BEBIDAS SAN CAYETANO",
+      "bancard_id": "BEBIDAS SAN CAYETANO",
+      "codigo_comercio": "2106",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "BODEGA SAN MIGUEL",
+      "bancard_id": "BODEGA SAN MIGUEL",
+      "codigo_comercio": "307920",
+      "rt_fuente": "mcc",
+      "rt_categoria": "servicios",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "BODEGA SAN MIGUEL",
+      "bancard_id": "BODEGA SAN MIGUEL",
+      "codigo_comercio": "314556",
+      "rt_fuente": "mcc",
+      "rt_categoria": "servicios",
+      "cat_fuente": "mcc",
+      "cat_categoria": "alimentacion",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CABA",
+      "bancard_id": "CABA",
+      "codigo_comercio": "260990",
+      "rt_fuente": "nombre",
+      "rt_categoria": "transferencia",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CARNICERIA LA FAMILIA",
+      "bancard_id": "CARNICERIA LA FAMILIA",
+      "codigo_comercio": "1585013",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CASA",
+      "bancard_id": "CASA",
+      "codigo_comercio": "283733",
+      "rt_fuente": "nombre",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "hogar",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CIAL.VIRGEN DEL ROSA",
+      "bancard_id": "CIAL.VIRGEN DEL ROSA",
+      "codigo_comercio": "241784",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CIT",
+      "bancard_id": "CIT",
+      "codigo_comercio": "340",
+      "rt_fuente": "nombre",
+      "rt_categoria": "transferencia",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CM",
+      "bancard_id": "CM",
+      "codigo_comercio": "248189",
+      "rt_fuente": "nombre",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "COMED",
+      "bancard_id": "COMED",
+      "codigo_comercio": "233353",
+      "rt_fuente": "nombre",
+      "rt_categoria": "restaurante",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "COMEDOR",
+      "bancard_id": "COMEDOR",
+      "codigo_comercio": "413298",
+      "rt_fuente": "mcc",
+      "rt_categoria": "servicios",
+      "cat_fuente": "mcc",
+      "cat_categoria": "restaurante",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "COMERCIAL DIVINO NIÑO",
+      "bancard_id": "COMERCIAL DIVINO NIÑO",
+      "codigo_comercio": "287456",
+      "rt_fuente": "mcc",
+      "rt_categoria": "servicios",
+      "cat_fuente": "mcc",
+      "cat_categoria": "supermercado",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "3 HERMANOS",
+      "bancard_id": "3 HERMANOS",
+      "codigo_comercio": "1123804",
+      "rt_fuente": "mcc",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    }
+  ]
+}

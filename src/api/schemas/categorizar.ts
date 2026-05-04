@@ -15,6 +15,8 @@ export const categorizarRequestSchema = z
     bancard_id: z.string().min(1).max(100).optional(),
     codigo_comercio: z.string().min(1).max(50).optional(),
     monto: z.number().finite().optional(),
+    origen: z.string().min(1).max(50).optional(),
+    batch_id: z.string().min(1).max(100).optional(),
   })
   .refine(
     (v) =>

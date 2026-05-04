@@ -28,7 +28,6 @@ export function crearCapaCatalogo(lookup: CatalogoLookup): CapaCatalogo {
     async evaluar(bancardId, codigoComercio) {
       const hit = await lookup.porBancardCodigo(bancardId, codigoComercio);
       if (!hit) return null;
-      if (hit.requiereRevision) return null;
       if (!hit.fuente || hit.confianza == null) return null;
       return {
         categoriaId: hit.categoriaId,

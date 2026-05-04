@@ -167,7 +167,7 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.categoriaId).toBe('cat-azar');
   });
 
-  it('catálogo con requiereRevision=true → ignora hit, sigue cascada', async () => {
+  it('catálogo con requiereRevision=true → propaga hit (conservador), persiste con revision', async () => {
     const capas = mkCapas({
       catalogo: {
         'X|1': {
@@ -186,7 +186,9 @@ describe('pipeline e2e (in-memory)', () => {
     const pipeline = await ejecutarCascada(input, capas);
     const out = await persistirMovimiento(input, pipeline, repo);
     expect(out.fuente).toBe('mcc');
-    expect(out.categoriaId).toBe('cat-super');
+    expect(out.categoriaId).toBe('cat-otros');
+    expect(out.confianza).toBe(0.3);
+    expect(out.requiereRevision).toBe(true);
   });
 
   it('nada matchea → requiere_revision + IA fallback actualiza row async', async () => {

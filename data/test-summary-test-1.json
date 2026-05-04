@@ -1,0 +1,156 @@
+{
+  "total": 1000,
+  "fuente": {
+    "regex": {
+      "count": 495,
+      "pct": 49.5
+    },
+    "mcc": {
+      "count": 481,
+      "pct": 48.1
+    },
+    "nombre": {
+      "count": 19,
+      "pct": 1.9
+    },
+    "bancard": {
+      "count": 5,
+      "pct": 0.5
+    }
+  },
+  "cobertura": {
+    "sync_ok": 1000,
+    "sync_ok_pct": 100,
+    "pendiente_o_ia": 0,
+    "revision": 274
+  },
+  "latencia": {
+    "min": 1,
+    "p50": 5,
+    "p95": 58,
+    "p99": 81,
+    "max": 86,
+    "avg": 17
+  },
+  "top_categorias": [
+    {
+      "slug": "supermercado",
+      "c": 602
+    },
+    {
+      "slug": "combustible",
+      "c": 270
+    },
+    {
+      "slug": "otros",
+      "c": 82
+    },
+    {
+      "slug": "azar",
+      "c": 16
+    },
+    {
+      "slug": "servicios",
+      "c": 16
+    },
+    {
+      "slug": "alimentacion",
+      "c": 4
+    },
+    {
+      "slug": "hogar",
+      "c": 3
+    },
+    {
+      "slug": "entretenimiento",
+      "c": 3
+    },
+    {
+      "slug": "restaurante",
+      "c": 2
+    },
+    {
+      "slug": "ropa",
+      "c": 1
+    }
+  ],
+  "agreement": {
+    "match": 993,
+    "mismatch": 7,
+    "sin_catalogo": 0,
+    "sin_prediccion": 0,
+    "agreement_pct": 99.3
+  },
+  "top_mismatches": [
+    {
+      "nombre_bancard": "AHORRAZO-CAPIATA",
+      "bancard_id": "AHORRAZO-CAPIATA",
+      "codigo_comercio": "268629",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "CIAL.VIRGEN DEL ROSA",
+      "bancard_id": "CIAL.VIRGEN DEL ROSA",
+      "codigo_comercio": "241784",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "COMPASA",
+      "bancard_id": "COMPASA",
+      "codigo_comercio": "291159",
+      "rt_fuente": "nombre",
+      "rt_categoria": "otros",
+      "cat_fuente": "mcc",
+      "cat_categoria": "combustible",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "EL CACIQUE-AREGUA",
+      "bancard_id": "EL CACIQUE-AREGUA",
+      "codigo_comercio": "234144",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "EL CACIQUE-ITAUGUA",
+      "bancard_id": "EL CACIQUE-ITAUGUA",
+      "codigo_comercio": "234144",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "EL CACIQUE-LUQUE",
+      "bancard_id": "EL CACIQUE-LUQUE",
+      "codigo_comercio": "234144",
+      "rt_fuente": "bancard",
+      "rt_categoria": "supermercado",
+      "cat_fuente": "mcc",
+      "cat_categoria": "otros",
+      "c": 1
+    },
+    {
+      "nombre_bancard": "ENERGY-FELIX BOGADO",
+      "bancard_id": "ENERGY-FELIX BOGADO",
+      "codigo_comercio": "233392",
+      "rt_fuente": "mcc",
+      "rt_categoria": "otros",
+      "cat_fuente": "mcc",
+      "cat_categoria": "combustible",
+      "c": 1
+    }
+  ]
+}

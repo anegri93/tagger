@@ -56,3 +56,33 @@ Pa categorizar 100k+ comercios Bancard con MCCs oficiales:
 
 El TSV de mapeo es idempotente: re-correr `export-mcc-mapping.mjs` preserva slugs ya editados.
 
+## Test interactivo via UI
+
+API sirve dashboard control en mismo origen (sin CORS file://):
+
+```bash
+bash start.sh
+# abrir http://localhost:3000/ui/test-monitor/index.html
+```
+
+UI permite:
+- **Run**: dispara worker in-process (sin loopback HTTP). Form: batch_id, limit, concurrency.
+- **Stop**: cancela worker activo.
+- **Monitor**: solo polea stats existentes (sin lanzar nuevo run).
+- **Pause poll**: detener refresh sin cancelar worker.
+
+Worker ejecuta cascada directo + persiste con `origen='test_masivo'`. Mide latencia pipeline puro (sin red/serialize HTTP).
+
+Pa test "vía HTTP real" (con red/auth/serialize) seguir usando CLI:
+
+```bash
+pnpm test:masivo --batch-id baseline-cli --concurrency 30
+```
+
+Cleanup batch viejo:
+
+```sql
+DELETE FROM movimientos WHERE batch_id = 'mi-batch';
+```
+
+

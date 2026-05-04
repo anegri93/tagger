@@ -24,7 +24,7 @@ describe('capa catalogo', () => {
     expect(r?.evidencia.comercio_id).toBe('c1');
   });
 
-  it('hit con requiereRevision → null (no usa)', async () => {
+  it('hit con requiereRevision propaga (no skip) — confianza baja activará revisión en persistir', async () => {
     const capa = crearCapaCatalogo(
       lookup({
         id: 'c1',
@@ -35,7 +35,10 @@ describe('capa catalogo', () => {
         evidencia: null,
       }),
     );
-    expect(await capa.evaluar('X', 'Y')).toBeNull();
+    const r = await capa.evaluar('X', 'Y');
+    expect(r?.fuente).toBe('mcc');
+    expect(r?.confianza).toBe(0.3);
+    expect(r?.categoriaId).toBe('cat-otros');
   });
 
   it('sin bancardId → null', async () => {

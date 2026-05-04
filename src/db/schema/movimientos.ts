@@ -8,7 +8,9 @@ import {
   timestamp,
   jsonb,
   index,
+  integer,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { categorias } from './categorias.js';
 
 export type Evidencia = {
@@ -53,12 +55,19 @@ export const movimientos = pgTable(
     requiereRevision: boolean('requiere_revision').notNull().default(false),
     rawInput: jsonb('raw_input'),
     evidencia: jsonb('evidencia').$type<Evidencia>(),
+    origen: text('origen').notNull().default('api'),
+    batchId: text('batch_id'),
+    bancardId: text('bancard_id'),
+    codigoComercio: text('codigo_comercio'),
+    latencyMs: integer('latency_ms'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('movimientos_created_at_idx').on(t.createdAt),
     index('movimientos_requiere_revision_idx').on(t.requiereRevision),
+    index('movimientos_batch_id_idx').on(t.batchId).where(sql`${t.batchId} IS NOT NULL`),
+    index('movimientos_origen_idx').on(t.origen),
   ],
 );
 

@@ -4,7 +4,7 @@
 
 **Stack:** TypeScript, Node, Fastify, Drizzle, Postgres, Vitest, Ollama
 
-**Progreso global:** 74/88 (84%)
+**Progreso global:** 90/104 (87%)
 
 ## Reglas
 
@@ -906,6 +906,236 @@
 - Asegurar mocks DB con catálogo populado
 
 **Archivos:** `src/pipeline/e2e.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P14 — Test masivo 109k vía API + análisis baseline (7/7)
+
+### ✅ T1401 — Migration: movimientos agregar origen + batch_id
+
+**Detalle:**
+- Schema: origen text not null default 'api', batch_id text nullable
+- Index parcial batch_id (where batch_id is not null) pa filtrado rápido
+- drizzle generate + migrate
+- Tests: insert con/sin batch_id
+
+**Archivos:** `src/db/schema/movimientos.ts`, `src/db/migrations/*.sql`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1402 — API acepta origen + batch_id en request _deps: T1401_
+
+**Detalle:**
+- Extender categorizar.schema.ts: origen?, batch_id? opcionales (max 100 chars)
+- Pasar a MovimientoInput → persistirMovimiento → INSERT movimientos
+- Default origen='api' si no viene
+- Tests schema: acepta vacíos, valida longitud
+- Tests route: row tiene origen+batch_id correcto
+
+**Archivos:** `src/api/schemas/categorizar.ts`, `src/api/routes/categorizar.ts`, `src/domain/types.ts`, `src/db/repos/movimientos.ts`, `src/pipeline/persistir.ts`, `src/api/schemas/categorizar.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1403 — Runner test masivo concurrente _deps: T1402_
+
+**Detalle:**
+- scripts/test-masivo.ts: lee comercios-bancard-staged.tsv + mango-p2p.tsv
+- Para cada fila POST /categorizar-movimiento con bancard_id, codigo_comercio, nombre_bancard, mcc
+- Concurrencia 30 (semáforo simple, sin libs externas)
+- Captura: status HTTP, latency_ms, response body
+- batch_id = 'test-' + ISO timestamp
+- Output streaming a data/test-results.ndjson (1 línea por request)
+- Progress log cada 5000 filas
+- Args: --limit N (sample), --concurrency N, --base-url
+
+**Archivos:** `scripts/test-masivo.ts`, `package.json`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1404 — Análisis SQL post-batch + reporte _deps: T1403_
+
+**Detalle:**
+- scripts/analyze-test-batch.mjs <batch_id>
+- Queries: count total, distribución fuente, agreement vs catálogo, top mismatches
+- Comparar movimientos.categoria_predicha_id vs catálogo (join por bancard_id+codigo)
+- Output: tabla consola + data/test-summary-<batch>.json
+- Sección mismatches: top 50 con nombre, fuente runtime, fuente catálogo, ambas categorías
+
+**Archivos:** `scripts/analyze-test-batch.mjs`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1405 — Endpoint stats: GET /test-batch/:batch_id/stats _deps: T1402_
+
+**Detalle:**
+- Nueva ruta src/api/routes/test-batch-stats.ts
+- Path param batch_id, valida no vacío
+- Auth con apiKeyAuth (igual que otras rutas)
+- Queries agregadas: total, fuente dist, latencia (p50/p95/p99/max/avg), cobertura, top categorías, agreement vs catálogo, últimos N mismatches, últimos N movimientos
+- Response JSON estructurado pa consumir desde UI
+- Cache resultado 1s pa no saturar DB con polling
+- Tests con fastify.inject
+
+**Archivos:** `src/api/routes/test-batch-stats.ts`, `src/api/routes/test-batch-stats.test.ts`, `src/main.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1406 — UI test monitor: dashboard realtime _deps: T1405_
+
+**Detalle:**
+- ui/test-monitor/index.html + app.js + styles.css (vanilla, sin frameworks)
+- Input: batch_id + API key (persiste en localStorage)
+- Polling /test-batch/:batch/stats cada 2s
+- Render KPIs: total/objetivo + barra progreso, throughput req/s, elapsed, ETA, errores
+- Histograma latencia (buckets 0-10/10-25/25-50/50-100/100-500/500+ ms)
+- Gráfico fuente categoría (barras horizontales count + %)
+- Donut cobertura sync_ok / revisión / sin_categoría
+- Buckets confianza ≥0.9 / 0.7-0.89 / 0.5-0.69 / <0.5
+- Top 10 categorías live
+- Agreement % vs catálogo + tabla últimos 20 mismatches
+- Stream últimos 30 movimientos auto-scroll
+- Botón pause/resume polling
+
+**Archivos:** `ui/test-monitor/index.html`, `ui/test-monitor/app.js`, `ui/test-monitor/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1407 — Ejecutar 109k + investigar mismatches _deps: T1406_
+
+**Detalle:**
+- Levantar API: ./restart.sh, verificar /health
+- Correr test-masivo.ts con full dataset, batch_id 'baseline-v1'
+- Esperar finalización (estimado: 109k @ 30 conc @ 50ms = ~3 min)
+- Correr analyze-test-batch.mjs baseline-v1
+- Documentar baseline en docs/test-baseline-v1.md: agreement %, latencia p50/p95/p99, fuente dist
+- Identificar top 5 patrones de mismatch (ej. capa nombre LIKE muy laxo)
+- Si mismatch >5% → crear sub-tareas fix
+
+**Archivos:** `docs/test-baseline-v1.md`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P15 — Dashboard control + UI integrada (5/5)
+
+### ✅ T1501 — Fastify static: servir ui/ desde API
+
+**Detalle:**
+- Instalar @fastify/static
+- Registrar plugin con root=ui/, prefix=/ui/
+- Verificar acceso http://localhost:3000/ui/test-monitor/index.html
+- Ajustar UI default base-url a window.location.origin si está bajo /ui/
+
+**Archivos:** `src/api/server.ts`, `src/main.ts`, `ui/test-monitor/app.js`, `package.json`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1502 — Worker controller in-process pa runs
+
+**Detalle:**
+- src/test-batch/runner.ts: clase TestBatchRunner con start(batchId, opts), stop(batchId), list()
+- Lee TSV streaming, ejecuta ejecutarCascada + persistirMovimiento directo (sin HTTP)
+- Concurrencia configurable (default 30) con semáforo simple
+- Estado: queued | running | done | cancelled | error
+- Tracking por batchId: total, processed, ok, errors, startedAt, finishedAt
+- Cancellation: AbortController, worker chequea entre filas
+- Tests unit con mocks pipeline + repo
+
+**Archivos:** `src/test-batch/runner.ts`, `src/test-batch/runner.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1503 — Endpoints control: start/stop/list _deps: T1502_
+
+**Detalle:**
+- POST /test-batch/start body {batch_id, files?, limit?, concurrency?}
+- POST /test-batch/stop body {batch_id}
+- GET /test-batch/list
+- Auth con apiKeyAuth
+- Validación zod (batch_id min 1, concurrency 1-100, limit positivo)
+- Tests con fastify.inject
+
+**Archivos:** `src/api/routes/test-batch-control.ts`, `src/api/routes/test-batch-control.test.ts`, `src/api/schemas/test-batch.ts`, `src/main.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1504 — UI controls: start/stop/list + status _deps: T1503, T1501_
+
+**Detalle:**
+- Form en topbar: batch_id, limit, concurrency, files
+- Botones: Start (POST /test-batch/start), Stop (POST /test-batch/stop)
+- Indicador estado worker: idle/running/done/cancelled/error
+- Auto-fetch stats cada 1s mientras running, cada 5s done
+- Mostrar progress (processed/total) del runner además de DB stats
+- Tabla 'Runs activos' (GET /test-batch/list refresca cada 3s)
+
+**Archivos:** `ui/test-monitor/index.html`, `ui/test-monitor/app.js`, `ui/test-monitor/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1505 — Validación end-to-end + cleanup _deps: T1504_
+
+**Detalle:**
+- Test manual: abrir /ui/test-monitor/, start batch sample 1k → verificar UI live
+- Test 109k full vía dashboard, comparar vs CLI baseline-v2
+- Verificar stop cancela worker correctamente (movimientos parciales OK)
+- Doc: README sección 'Test interactivo via UI'
+- Cleanup batches viejos opcional (DELETE WHERE batch_id IN (...))
+
+**Archivos:** `README.md`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P16 — Precisión runtime: fix falsos positivos capa nombre + propagación catálogo (4/4)
+
+### ✅ T1601 — Capa comercio: longitud mínima + score umbral
+
+**Detalle:**
+- src/layers/comercio.ts: rechazar input texto <5 chars antes de buscar (skip CIT, GAB, NGO, EDU, etc)
+- Score mínimo configurable (default 0.75) pa match parcial
+- Tests: input 'CIT' → null, 'COMERC SAN CAYETANO' vs 'SAN CAYETANO' (score 0.68) → null
+- Test: 'COPETROL' vs 'COPETROL' (score 1.0) → match exacto sigue funcionando
+- Documentar threshold en código
+
+**Archivos:** `src/layers/comercio.ts`, `src/layers/comercio.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1602 — Capa catálogo: devolver hit aunque requiereRevision=true
+
+**Detalle:**
+- src/layers/catalogo.ts: si hit existe, devolver siempre (no skip por requiereRevision)
+- Propagar requiereRevision al resultado pipeline
+- Pipeline persistir respeta requiereRevision del catálogo
+- Trade-off: runtime usa categoría conservadora del catálogo en vez de buscar falso positivo en capas inferiores
+- Tests: hit revision=true → devuelve categoría con flag, no sigue cascada
+
+**Archivos:** `src/layers/catalogo.ts`, `src/layers/catalogo.test.ts`, `src/pipeline/categorizar.ts`, `src/domain/types.ts`, `src/pipeline/persistir.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1603 — Regla regex COMERC/COMERCIAL → supermercado
+
+**Detalle:**
+- Agregar reglas en src/db/loaders/reglas.ts: \bCOMERC\b|\bCOMERCIAL\b → supermercado prioridad 25 (no compite con BIGGIE etc)
+- Verificar no rompe AZAR/MANGO existentes
+- Re-correr db:load:reglas
+- Test capa regex
+
+**Archivos:** `src/db/loaders/reglas.ts`, `src/layers/regex.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T1604 — Re-test 109k baseline-v3 + comparar mejoras _deps: T1601, T1602, T1603_
+
+**Detalle:**
+- Limpiar baseline-v1 y baseline-v2: DELETE FROM movimientos WHERE batch_id IN ('baseline-v1','baseline-v2','test-1','ui-test-1')
+- Restart API
+- Correr pnpm test:masivo --batch-id baseline-v3
+- node scripts/analyze-test-batch.mjs baseline-v3
+- Comparar agreement % vs baseline-v2 (esperar mejora 99.87% → ≥99.95%)
+- Documentar en docs/test-baseline-v3.md cambios + delta
+
+**Archivos:** `docs/test-baseline-v3.md`
 
 **Gates:** consistency ✅  lint ✅  test ✅
 

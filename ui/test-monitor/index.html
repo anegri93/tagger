@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — test monitor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>📊 tagger test monitor</h1>
+      <div class="controls">
+        <input id="base-url" placeholder="Base URL" />
+        <input id="api-key" placeholder="API key" type="password" />
+        <input id="batch-id" placeholder="batch_id" />
+        <input id="limit" placeholder="limit" type="number" />
+        <input id="concurrency" placeholder="conc" type="number" value="30" />
+        <button id="btn-run">▶ Run</button>
+        <button id="btn-stop">■ Stop</button>
+        <button id="btn-monitor">👁 Monitor</button>
+        <button id="btn-pause">⏸ Pause poll</button>
+        <span id="status">idle</span>
+      </div>
+    </header>
+
+    <section class="runner-status" id="runner-row" style="display:none">
+      <div class="rs-label">Worker:</div>
+      <div class="rs-grid">
+        <div><label>Status</label><span id="rs-status">—</span></div>
+        <div><label>Processed</label><span id="rs-processed">—</span></div>
+        <div><label>OK</label><span id="rs-ok">—</span></div>
+        <div><label>Errors</label><span id="rs-errors">—</span></div>
+        <div><label>Limit</label><span id="rs-limit">—</span></div>
+        <div><label>Conc.</label><span id="rs-conc">—</span></div>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-sub" id="kpi-progress-text">—</div>
+        <div class="bar"><div class="bar-fill" id="kpi-bar"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Throughput</div>
+        <div class="kpi-value"><span id="kpi-rps">0</span> <small>req/s</small></div>
+        <div class="kpi-sub" id="kpi-elapsed">elapsed —</div>
+        <div class="kpi-sub" id="kpi-eta">ETA —</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Cobertura sync</div>
+        <div class="kpi-value"><span id="kpi-cobertura">—</span><small>%</small></div>
+        <div class="kpi-sub"><span id="kpi-cobertura-detail">—</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Agreement vs catálogo</div>
+        <div class="kpi-value"><span id="kpi-agreement">—</span><small>%</small></div>
+        <div class="kpi-sub"><span id="kpi-agreement-detail">—</span></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Latencia (ms)</h2>
+        <div class="lat-row">
+          <div><label>min</label><span id="lat-min">—</span></div>
+          <div><label>p50</label><span id="lat-p50">—</span></div>
+          <div><label>p95</label><span id="lat-p95">—</span></div>
+          <div><label>p99</label><span id="lat-p99">—</span></div>
+          <div><label>max</label><span id="lat-max">—</span></div>
+          <div><label>avg</label><span id="lat-avg">—</span></div>
+        </div>
+        <div class="bars" id="lat-hist"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Fuente categoría</h2>
+        <div class="bars" id="fuente-bars"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Confianza</h2>
+        <div class="bars" id="confianza-bars"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Top 10 categorías</h2>
+        <table class="tbl" id="top-cats">
+          <thead><tr><th>Slug</th><th>Nombre</th><th>Count</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="panel wide">
+        <h2>Mismatches recientes (runtime ≠ catálogo)</h2>
+        <table class="tbl" id="mismatches">
+          <thead>
+            <tr>
+              <th>Nombre</th><th>BancardId</th><th>Codigo</th>
+              <th>Runtime fuente</th><th>Runtime cat</th>
+              <th>Catálogo fuente</th><th>Catálogo cat</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="panel wide">
+        <h2>Stream últimos 30 movimientos</h2>
+        <table class="tbl" id="recientes">
+          <thead>
+            <tr>
+              <th>Hora</th><th>Nombre</th><th>Fuente</th>
+              <th>Confianza</th><th>Categoría</th>
+              <th>Revisión</th><th>Latencia</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>

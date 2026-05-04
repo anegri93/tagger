@@ -33,6 +33,27 @@ describe('categorizar request schema', () => {
     if (r.success) expect(r.data.mcc).toBe('5411');
   });
 
+  it('acepta origen y batch_id opcionales', () => {
+    const r = categorizarRequestSchema.safeParse({
+      nombre_bancard: 'BIGGIE',
+      origen: 'test_masivo',
+      batch_id: 'baseline-v1',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.origen).toBe('test_masivo');
+      expect(r.data.batch_id).toBe('baseline-v1');
+    }
+  });
+
+  it('rechaza batch_id muy largo', () => {
+    const r = categorizarRequestSchema.safeParse({
+      nombre_bancard: 'X',
+      batch_id: 'x'.repeat(101),
+    });
+    expect(r.success).toBe(false);
+  });
+
   it('monto debe ser finito', () => {
     expect(
       categorizarRequestSchema.safeParse({ descripcion: 'X', monto: Infinity }).success,
