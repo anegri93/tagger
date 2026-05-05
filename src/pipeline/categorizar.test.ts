@@ -26,12 +26,19 @@ const HIT_MCC: ResultadoCapa = {
   fuente: 'mcc',
   evidencia: { mcc_match: '5411' },
 };
+const HIT_PATRONES: ResultadoCapa = {
+  categoriaId: 'c-patrones',
+  confianza: 0.9,
+  fuente: 'patrones',
+  evidencia: { regla_id: 'p1', patron: 'CIAL' },
+};
 
 function stubCapas(overrides: Partial<Record<keyof CapasSincrono, ResultadoCapa | null>> = {}): CapasSincrono {
   return {
     regex: { evaluar: vi.fn().mockResolvedValue(overrides.regex ?? null) },
     bancard: { evaluar: vi.fn().mockResolvedValue(overrides.bancard ?? null) },
     comercio: { evaluar: vi.fn().mockResolvedValue(overrides.comercio ?? null) },
+    patrones: { evaluar: vi.fn().mockResolvedValue(overrides.patrones ?? null) },
     mcc: { evaluar: vi.fn().mockResolvedValue(overrides.mcc ?? null) },
   };
 }
@@ -60,6 +67,30 @@ describe('pipeline cascada', () => {
     expect(capas.mcc.evaluar).not.toHaveBeenCalled();
   });
 
+  it('patrones acierta antes que regex/bancard/comercio/mcc', async () => {
+    const capas = stubCapas({ patrones: HIT_PATRONES });
+    const r = await ejecutarCascada({ nombreComercio: 'CIAL.VIRGEN DEL ROSA' }, capas);
+    expect(r.resultado).toEqual(HIT_PATRONES);
+    expect(capas.regex.evaluar).not.toHaveBeenCalled();
+    expect(capas.bancard.evaluar).not.toHaveBeenCalled();
+    expect(capas.comercio.evaluar).not.toHaveBeenCalled();
+    expect(capas.mcc.evaluar).not.toHaveBeenCalled();
+  });
+
+  it('patrones gana sobre regex (ambas matchean mismo texto)', async () => {
+    const capas = stubCapas({ patrones: HIT_PATRONES, regex: HIT_REGEX });
+    const r = await ejecutarCascada({ nombreComercio: 'CIAL' }, capas);
+    expect(r.resultado).toEqual(HIT_PATRONES);
+    expect(capas.regex.evaluar).not.toHaveBeenCalled();
+  });
+
+  it('patrones gana sobre mcc', async () => {
+    const capas = stubCapas({ patrones: HIT_PATRONES, mcc: HIT_MCC });
+    const r = await ejecutarCascada({ nombreComercio: 'CIAL', mcc: '5411' }, capas);
+    expect(r.resultado).toEqual(HIT_PATRONES);
+    expect(capas.mcc.evaluar).not.toHaveBeenCalled();
+  });
+
   it('todo síncrono falla, mcc acierta', async () => {
     const capas = stubCapas({ mcc: HIT_MCC });
     const r = await ejecutarCascada({ mcc: '5411' }, capas);
@@ -72,6 +103,13 @@ describe('pipeline cascada', () => {
     expect(r.resultado).toBeNull();
     expect(r.requiereRevision).toBe(true);
     expect(r.requiereIa).toBe(true);
+  });
+
+  it('bypassComercio salta capa comercio pero sigue cascada', async () => {
+    const capas = stubCapas({ comercio: HIT_COMERCIO, mcc: HIT_MCC });
+    const r = await ejecutarCascada({ nombreComercio: 'X' }, capas, { bypassComercio: true });
+    expect(capas.comercio.evaluar).not.toHaveBeenCalled();
+    expect(r.resultado).toEqual(HIT_MCC);
   });
 
   it('input vacío salta capas de texto pero llama mcc', async () => {

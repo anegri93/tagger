@@ -24,6 +24,7 @@
     "tasks:next": "node scripts/next-task.mjs",
     "tasks:start": "node scripts/start-task.mjs",
     "tasks:check": "node scripts/check-task.mjs",
+    "migrar:reglas-a-patrones": "tsx scripts/migrar-reglas-a-patrones.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

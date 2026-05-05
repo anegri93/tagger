@@ -56,11 +56,16 @@ export function crearCapaComercio(lookup: ComercioLookup): CapaComercio {
       if (!mejor) return null;
       if (mejor.tipo === 'nombre_parcial' && mejor.score < MIN_SCORE_PARTIAL) return null;
 
-      // Si match es exacto y catálogo trae fuente/confianza pre-computada → propagar
+      // Match exacto con fuentePrev confiable → propagar.
+      // Catálogo de comercios = data para afinar, no fuente verdad: solo se propagan
+      // categorías cacheadas con fuente declarativa (regex/manual/patrones/bancard).
+      // Cache débil (mcc/ia/nombre) se descarta para que la cascada siga.
+      const FUENTES_PROPAGABLES = ['regex', 'manual', 'patrones', 'bancard'] as const;
       if (
         mejor.tipo === 'nombre_exacto' &&
         mejor.c.fuentePrev &&
-        typeof mejor.c.confianzaPrev === 'number'
+        typeof mejor.c.confianzaPrev === 'number' &&
+        (FUENTES_PROPAGABLES as readonly string[]).includes(mejor.c.fuentePrev)
       ) {
         return {
           categoriaId: mejor.c.categoriaId,
@@ -72,6 +77,14 @@ export function crearCapaComercio(lookup: ComercioLookup): CapaComercio {
             match_type: 'nombre_exacto',
           },
         };
+      }
+      if (
+        mejor.tipo === 'nombre_exacto' &&
+        mejor.c.fuentePrev &&
+        !(FUENTES_PROPAGABLES as readonly string[]).includes(mejor.c.fuentePrev)
+      ) {
+        // Cache débil: descartar match, dejar seguir la cascada (mcc/ia)
+        return null;
       }
 
       return {

@@ -3149,6 +3149,805 @@ window.__TASKS__ = {
       "validated_at": "2026-05-05T12:25:32.410Z"
     },
     {
+      "id": "P21",
+      "name": "Capa patrones unificada (aditiva, sin tocar regex/marcas/comercios)",
+      "validated": true,
+      "validated_at": "2026-05-05T13:33:35.000Z",
+      "tasks": [
+        {
+          "id": "T2101",
+          "title": "Schema patrones + migración drizzle",
+          "detail": [
+            "src/db/schema/patrones.ts: tabla patrones",
+            "Columnas: id uuid PK, tipo enum('regex','literal','prefijo','contiene'), valor text, categoria_id uuid FK→categorias ON DELETE RESTRICT, prioridad int DEFAULT 100, activo bool DEFAULT true, fuente enum('manual','catalogo_bancard','auto') DEFAULT 'manual', descripcion text NULL, created_at, updated_at",
+            "UNIQUE(tipo, valor, categoria_id)",
+            "INDEX (activo, prioridad)",
+            "Exportar en src/db/schema/index.ts",
+            "pnpm drizzle-kit generate → src/db/migrations/0005_*.sql",
+            "Aplicar migración local",
+            "Tests src/db/schema/patrones.test.ts: insert, UNIQUE conflict, FK ON DELETE RESTRICT",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/db/schema/patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/db/schema/patrones.ts",
+            "src/db/schema/index.ts",
+            "src/db/schema/patrones.test.ts",
+            "src/db/migrations/0005_needy_darkhawk.sql"
+          ],
+          "depends_on": [],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:24:00.000Z",
+          "completed_at": "2026-05-05T13:25:30.000Z"
+        },
+        {
+          "id": "T2102",
+          "title": "Repo patrones CRUD",
+          "detail": [
+            "src/db/repos/patrones.ts",
+            "Métodos: listar({categoriaId?,activo?,tipo?}), listarActivosOrdenados(), crear, actualizar, eliminar, toggleActivo, contarPorCategoria",
+            "Validación zod: tipo, valor (1..500), prioridad (1..9999)",
+            "tipo='regex': new RegExp(valor) try/catch → error 422",
+            "Tests src/db/repos/patrones.test.ts: CRUD, regex inválida, UNIQUE, orden por prioridad",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/db/repos/patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/db/repos/patrones.ts",
+            "src/db/repos/patrones.test.ts"
+          ],
+          "depends_on": [
+            "T2101"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:26:00.000Z",
+          "completed_at": "2026-05-05T13:27:00.000Z"
+        },
+        {
+          "id": "T2103",
+          "title": "Loader + capa patrones",
+          "detail": [
+            "src/db/loaders/patrones.ts: lee activos ordenados",
+            "src/layers/patrones.ts: crearCapaPatrones(loader, now)",
+            "Cache TTL 60s + invalidar() (igual que regex)",
+            "evaluar(texto): normalize → iterar prio ASC, match según tipo",
+            "regex: new RegExp(valor,'i').test, try/catch invalid no rompe loop",
+            "literal: texto === normalize(valor)",
+            "prefijo: texto.startsWith(normalize(valor))",
+            "contiene: texto.includes(normalize(valor))",
+            "Retorna ResultadoCapa { categoriaId, confianza: CONFIANZA.regex, fuente:'patrones', evidencia:{patron_id,tipo,valor} }",
+            "Tests src/layers/patrones.test.ts: cada tipo, prioridad, regex inválida tolerada, cache TTL, invalidar",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/layers/patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/db/repos/patrones.ts",
+            "src/layers/patrones.ts",
+            "src/layers/patrones.test.ts",
+            "src/domain/confianza.ts",
+            "src/db/schema/movimientos.ts",
+            "src/db/migrations/0006_classy_archangel.sql"
+          ],
+          "depends_on": [
+            "T2102"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:27:30.000Z",
+          "completed_at": "2026-05-05T13:28:30.000Z"
+        },
+        {
+          "id": "T2104",
+          "title": "Integrar capa en pipeline cascada",
+          "detail": [
+            "src/pipeline/categorizar.ts: agregar `patrones` a CapasSincrono",
+            "Orden nuevo: catalogo → regex → bancard → comercio → patrones → mcc → ia",
+            "Mantener short-circuit primer match",
+            "src/main.ts: inyectar capa patrones",
+            "Tabla vacía → loader [] → cero impacto en resultados",
+            "Tests src/pipeline/categorizar.test.ts: caso patrón matchea cuando regex no, caso vacío sin regresión",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/pipeline/categorizar.ts",
+            "src/pipeline/categorizar.test.ts",
+            "src/main.ts",
+            "src/db/schema/movimientos.test.ts"
+          ],
+          "depends_on": [
+            "T2103"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:28:30.000Z",
+          "completed_at": "2026-05-05T13:30:30.000Z"
+        },
+        {
+          "id": "T2105",
+          "title": "API endpoints /patrones",
+          "detail": [
+            "src/api/routes/patrones.ts + src/api/schemas/patrones.ts",
+            "GET /patrones?categoria=&tipo=&activo=",
+            "GET /patrones/:id",
+            "POST /patrones { tipo, valor, categoria_slug, prioridad?, descripcion? }",
+            "PATCH /patrones/:id { valor?, prioridad?, activo?, descripcion? }",
+            "DELETE /patrones/:id",
+            "POST /patrones/test { tipo, valor, texto } → { match }",
+            "Resolver categoria_slug → id en POST",
+            "capa.invalidar() después de mutaciones",
+            "Registrar rutas en src/main.ts (o donde se monten)",
+            "Tests src/api/routes/patrones.test.ts: cada verbo, 404, 422 (regex inválida, valor vacío), 409 UNIQUE",
+            "Postman: agregar carpeta Patrones (opcional)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/api/routes/patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/api/routes/patrones.ts",
+            "src/api/schemas/patrones.ts",
+            "src/api/routes/patrones.test.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T2104"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:30:30.000Z",
+          "completed_at": "2026-05-05T13:31:40.000Z"
+        },
+        {
+          "id": "T2106",
+          "title": "UI pestaña Patrones en detalle categoría",
+          "detail": [
+            "ui/categorias/detalle.html: tab `Patrones` + tab-content",
+            "Form: select tipo (regex|literal|prefijo|contiene), input valor, prioridad, descripción, botón Agregar",
+            "Form probar: input texto + botón (POST /patrones/test)",
+            "Tabla: tipo | valor | prioridad | activo | descripción | acciones (toggle, eliminar)",
+            "ui/categorias/detalle.js: loadPatrones(), handlers add/test/toggle/del con window.taggerApi",
+            "Disparar loadPatrones() al click tab",
+            "Smoke manual: crear patrón tipo=contiene valor=CIAL prio=20 en Supermercado, probar texto 'CIAL.VIRGEN DEL ROSA' → match",
+            "Verificar que tabs Info/Reglas/MCCs/Marcas/Comercios siguen sin regresión",
+            "Gates: pnpm lint && pnpm typecheck && pnpm check:consistency"
+          ],
+          "files": [
+            "ui/categorias/detalle.html",
+            "ui/categorias/detalle.js"
+          ],
+          "depends_on": [
+            "T2105"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:31:40.000Z",
+          "completed_at": "2026-05-05T13:32:30.000Z"
+        },
+        {
+          "id": "T2107",
+          "title": "Validación E2E + doc final",
+          "detail": [
+            "pnpm lint (full)",
+            "pnpm typecheck (full)",
+            "pnpm vitest run (suite completa, todos verdes)",
+            "pnpm check:consistency",
+            "Verificar src/pipeline/e2e.test.ts cubre flujo con patrones",
+            "Smoke UI: Supermercado + patrón contiene=CIAL → tester 'CIAL.VIRGEN DEL ROSA' → fuente=patrones",
+            "Smoke regresión: categoría sin patrones → comportamiento idéntico",
+            "Verificar capa.invalidar() invocado en POST/PATCH/DELETE",
+            "docs/patrones.md: orden pipeline, tipos, plan futuro migración reglas/marcas/comercios"
+          ],
+          "files": [
+            "docs/patrones.md"
+          ],
+          "depends_on": [
+            "T2106"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:32:30.000Z",
+          "completed_at": "2026-05-05T13:33:30.000Z"
+        }
+      ]
+    },
+    {
+      "id": "P22",
+      "name": "Pipeline alineado a realidad prod (patrones primero, comercio no propaga cache débil)",
+      "tasks": [
+        {
+          "id": "T2201",
+          "title": "Reorden pipeline: patrones antes de regex",
+          "detail": [
+            "src/pipeline/categorizar.ts: mover capa patrones a posición 2 (después de catalogo)",
+            "Orden nuevo: catalogo → patrones → regex → bancard → comercio → mcc → ia",
+            "Razón: patrones manuales = fuente verdad declarativa, deben ganar a regex legacy",
+            "Tests src/pipeline/categorizar.test.ts: caso patrones gana sobre regex (ambas matchean mismo texto, patrón corre primero)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/pipeline/categorizar.ts",
+            "src/pipeline/categorizar.test.ts"
+          ],
+          "depends_on": [
+            "T2107"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:55:00.000Z",
+          "completed_at": "2026-05-05T13:57:30.000Z"
+        },
+        {
+          "id": "T2202",
+          "title": "Capa comercio: filtrar propagación de cache débil",
+          "detail": [
+            "src/layers/comercio.ts: bloque que propaga fuentePrev (líneas 60-75)",
+            "Whitelist: solo propagar si fuentePrev ∈ {regex, manual, patrones, bancard}",
+            "Si fuentePrev ∈ {mcc, ia, nombre} → descartar propagación, devolver null para que cascada siga",
+            "Si fuentePrev=null (entries legacy sin fuente) → mantener comportamiento actual: cae a fuente=nombre conf=0.8",
+            "Match parcial sigue intacto con CONFIANZA.nombre (lookup propio, no propaga cache)",
+            "NOTA: loader masivo sigue escribiendo comercios_catalogo. Filtro es al leer, no al escribir. No se toca el loader.",
+            "Razón: catálogo de comercios = data para afinar, no fuente verdad. No propagar mcc/otros conf 0.30 cacheada como categorización válida.",
+            "Tests src/layers/comercio.test.ts: caso fuentePrev=mcc descarta y devuelve null, caso fuentePrev=regex propaga, caso fuentePrev=null cae a fuente=nombre, caso match parcial sigue ok",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/layers/comercio.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/layers/comercio.ts",
+            "src/layers/comercio.test.ts"
+          ],
+          "depends_on": [
+            "T2201"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:57:30.000Z",
+          "completed_at": "2026-05-05T13:58:30.000Z"
+        },
+        {
+          "id": "T2203",
+          "title": "E2E + doc actualizada",
+          "detail": [
+            "pnpm vitest run (suite completa, todo verde, validar cero regresiones en tests existentes)",
+            "Smoke UI: agregar patrón contiene=JOYERIA prio=20 en categoría ROPA",
+            "POST /categorizar { nombreComercio: 'JOYERIA RUBI' } → fuente=patrones, ropa, conf=0.9",
+            "POST /categorizar { nombreComercio: 'JOYERIA RUBI' } por segunda vez (crea movimiento nuevo) → mismo resultado, confirma idempotencia de la categorización",
+            "Validar que ningún test del pipeline (categorizar.test, e2e.test) quedó rojo por el reorden",
+            "Actualizar docs/patrones.md con nuevo orden pipeline + nota sobre filtro de capa comercio",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "docs/patrones.md"
+          ],
+          "depends_on": [
+            "T2202"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T13:58:30.000Z",
+          "completed_at": "2026-05-05T13:59:30.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T13:59:35.000Z"
+    },
+    {
+      "id": "P23",
+      "name": "Migración reglas_regex → patrones (aditiva, sin desactivar capa regex)",
+      "tasks": [
+        {
+          "id": "T2301",
+          "title": "Script migración reglas_regex → patrones",
+          "detail": [
+            "scripts/migrar-reglas-a-patrones.ts",
+            "Lee reglas_regex activas",
+            "INSERT en patrones con tipo='regex', valor=patron, categoria_id, prioridad, descripcion, fuente='manual'",
+            "Idempotente: UNIQUE (tipo, valor, categoria_id) evita duplicados al re-correr",
+            "ON CONFLICT DO NOTHING",
+            "Reporta: total reglas leídas, insertadas, skip (duplicado)",
+            "Agregar script en package.json: tasks:migrar-reglas",
+            "Tests: scripts/migrar-reglas-a-patrones.test.ts unit con DB mock o fixture",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run scripts/migrar-reglas-a-patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "scripts/migrar-reglas-a-patrones.ts",
+            "scripts/migrar-reglas-a-patrones.test.ts",
+            "package.json",
+            "vitest.config.ts"
+          ],
+          "depends_on": [
+            "T2203"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:00:00.000Z",
+          "completed_at": "2026-05-05T14:02:00.000Z"
+        },
+        {
+          "id": "T2302",
+          "title": "Ejecución migración + validación count",
+          "detail": [
+            "pnpm tasks:migrar-reglas (o equivalente) en DB local",
+            "Verificar SELECT count(*) FROM reglas_regex WHERE activo=true == SELECT count(*) FROM patrones WHERE tipo='regex' AND fuente='manual'",
+            "Verificar que cada regla activa tiene su patrón espejo (mismo valor, categoria_id, prioridad)",
+            "Re-correr script: debe reportar 0 insertadas, N skip por duplicado (idempotencia)",
+            "Sin gates de código nuevo, solo validación operacional"
+          ],
+          "files": [],
+          "depends_on": [
+            "T2301"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:02:00.000Z",
+          "completed_at": "2026-05-05T14:02:30.000Z"
+        },
+        {
+          "id": "T2303",
+          "title": "Smoke: comportamiento idéntico post-migración",
+          "detail": [
+            "POST /categorizar con texto que matchea regla regex existente (ej: BIGGIE)",
+            "Validar resultado: categoria correcta. Fuente puede ser 'patrones' (porque corre primero) o 'regex' (si patrón espejo no matchea por algún motivo)",
+            "Si fuente='patrones' con misma categoría → migración OK",
+            "Probar 3-5 textos distintos cubriendo varias categorías",
+            "Documentar resultado en docs/patrones.md (sección migración)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "docs/patrones.md"
+          ],
+          "depends_on": [
+            "T2302"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:02:30.000Z",
+          "completed_at": "2026-05-05T14:03:30.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T14:03:35.000Z"
+    },
+    {
+      "id": "P24",
+      "name": "Fuente refleja tipo de patrón",
+      "tasks": [
+        {
+          "id": "T2401",
+          "title": "Extender enum fuente_categoria con literal/prefijo/contiene",
+          "detail": [
+            "src/db/schema/movimientos.ts: agregar 'literal','prefijo','contiene' al enum fuente_categoria",
+            "Mantener 'patrones' por compatibilidad con data ya escrita (deprecar uso futuro)",
+            "pnpm db:generate genera migración",
+            "pnpm db:migrate aplica",
+            "src/db/schema/movimientos.test.ts: actualizar test enum",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/db/schema/movimientos.ts",
+            "src/db/schema/movimientos.test.ts",
+            "src/db/migrations/0007_remarkable_red_shift.sql"
+          ],
+          "depends_on": [
+            "T2303"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:05:00.000Z",
+          "completed_at": "2026-05-05T14:06:30.000Z"
+        },
+        {
+          "id": "T2402",
+          "title": "Capa patrones devuelve fuente=tipo",
+          "detail": [
+            "src/layers/patrones.ts: cambiar fuente:'patrones' por fuente: p.tipo (regex/literal/prefijo/contiene)",
+            "src/domain/confianza.ts: agregar literal/prefijo/contiene a CONFIANZA + confianzaPorFuente. Misma confianza que regex (0.95) o mantener 0.9 unificado — DECISIÓN: usar 0.9 para tipos contiene/prefijo (matching menos preciso) y 0.95 para regex/literal (matching exacto)",
+            "src/layers/patrones.test.ts: actualizar 4 tests verificando fuente correspondiente al tipo",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/layers/patrones.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/layers/patrones.ts",
+            "src/layers/patrones.test.ts",
+            "src/domain/confianza.ts",
+            "src/domain/confianza.test.ts"
+          ],
+          "depends_on": [
+            "T2401"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:06:30.000Z",
+          "completed_at": "2026-05-05T14:08:00.000Z"
+        },
+        {
+          "id": "T2403",
+          "title": "Doc actualizada + suite verde global",
+          "detail": [
+            "docs/patrones.md: tabla de fuentes resultantes según tipo",
+            "pnpm vitest run (suite completa, todo verde, cero regresiones)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "docs/patrones.md"
+          ],
+          "depends_on": [
+            "T2402"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:08:00.000Z",
+          "completed_at": "2026-05-05T14:08:50.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T14:08:55.000Z"
+    },
+    {
+      "id": "P25",
+      "name": "Recategorización masiva del catálogo de comercios (con UI)",
+      "tasks": [
+        {
+          "id": "T2501",
+          "title": "Schema: columnas categoria_nueva, fuente_nueva, confianza_nueva, recategorizado_at",
+          "detail": [
+            "src/db/schema/comercios_catalogo.ts: agregar:",
+            "- categoria_nueva_id uuid? FK → categorias ON DELETE SET NULL",
+            "- fuente_nueva fuenteCategoriaEnum?",
+            "- confianza_nueva numeric(3,2)?",
+            "- recategorizado_at timestamptz?",
+            "pnpm db:generate + pnpm db:migrate",
+            "Test: src/db/schema/comercios_catalogo.test.ts (verificar columnas nuevas existen)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/db/schema/comercios_catalogo.ts",
+            "src/db/schema/comercios_catalogo.test.ts",
+            "src/db/migrations/0008_fixed_shinko_yamashiro.sql"
+          ],
+          "depends_on": [
+            "T2403"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:14:00.000Z",
+          "completed_at": "2026-05-05T14:15:50.000Z"
+        },
+        {
+          "id": "T2502",
+          "title": "Pipeline: opt bypassComercio",
+          "detail": [
+            "src/pipeline/categorizar.ts: agregar opt bypassComercio?: boolean",
+            "Si true → skip capa comercio (evita self-lookup en recategorización)",
+            "Test src/pipeline/categorizar.test.ts: bypassComercio salta capa, sigue cascada normal",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/pipeline/categorizar.ts",
+            "src/pipeline/categorizar.test.ts"
+          ],
+          "depends_on": [
+            "T2501"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:15:50.000Z",
+          "completed_at": "2026-05-05T14:16:20.000Z"
+        },
+        {
+          "id": "T2503",
+          "title": "Service recategorizar catálogo (sync)",
+          "detail": [
+            "src/services/recategorizar-catalogo.ts:",
+            "- iterar todas filas de comercios_catalogo (orden por id, batch 500)",
+            "- para cada: ejecutarCascada({descripcion: nombre}, capas, {bypassCatalogo:true, bypassComercio:true})",
+            "- skip capa IA (lento+caro): pipeline síncrono sólo, ia se ejecuta como fallback async aparte. Aquí no llamamos al iaFallback.",
+            "- escribir categoria_nueva_id, fuente_nueva, confianza_nueva, recategorizado_at",
+            "- si pipeline devuelve null → categoria_nueva_id=null, fuente_nueva=null, confianza_nueva=null",
+            "- reportar progreso { total, procesados, match, diff, sin_categoria }",
+            "- callable: recategorizarCatalogo(deps): Promise<RecatStats>",
+            "Tests src/services/recategorizar-catalogo.test.ts: stub repo + capas, valida flujo y stats",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/services/recategorizar-catalogo.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/services/recategorizar-catalogo.ts",
+            "src/services/recategorizar-catalogo.test.ts"
+          ],
+          "depends_on": [
+            "T2502"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:16:20.000Z",
+          "completed_at": "2026-05-05T14:17:10.000Z"
+        },
+        {
+          "id": "T2504",
+          "title": "API endpoints recategorización + comparación",
+          "detail": [
+            "src/api/routes/recategorizar-catalogo.ts:",
+            "- POST /catalogo/recategorizar → dispara recategorización async (background), responde 202 + run_id",
+            "- GET /catalogo/recategorizar/status → último run: estado (running|done), progreso, stats",
+            "- GET /catalogo/recategorizar/comparacion → counts: total, match, diff, sin_categoria, pivot top-N por categoria_actual×categoria_nueva, pivot por fuente_nueva",
+            "- Estado in-memory por simplicidad (single-process)",
+            "Registrar en src/main.ts",
+            "Tests src/api/routes/recategorizar-catalogo.test.ts: cada endpoint, idempotencia (no permitir 2 runs simultáneos)",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/api/routes/recategorizar-catalogo.test.ts && pnpm check:consistency"
+          ],
+          "files": [
+            "src/api/routes/recategorizar-catalogo.ts",
+            "src/api/routes/recategorizar-catalogo.test.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T2503"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:17:10.000Z",
+          "completed_at": "2026-05-05T14:18:30.000Z"
+        },
+        {
+          "id": "T2505",
+          "title": "UI: pestaña Recategorización en /categorias o /tester",
+          "detail": [
+            "Decisión ubicación: nueva sección bajo /ui (ej: /ui/recat/index.html) accesible desde nav",
+            "ui/shared/nav.js: agregar entrada 'Recat catálogo'",
+            "ui/recat/index.html + recat.js + styles.css:",
+            "- Botón 'Correr recategorización' (POST /catalogo/recategorizar)",
+            "- Indicador de progreso: poll cada 2s a /catalogo/recategorizar/status",
+            "- Cuando done → mostrar comparacion: total/match/diff/sin_categoria, tabla top diffs",
+            "- Botón 'Refrescar comparación' (re-llama GET /comparacion sin re-correr)",
+            "Smoke manual al final",
+            "Gates: pnpm lint && pnpm typecheck && pnpm check:consistency"
+          ],
+          "files": [
+            "ui/recat/index.html",
+            "ui/recat/recat.js",
+            "ui/recat/styles.css",
+            "ui/shared/nav.js"
+          ],
+          "depends_on": [
+            "T2504"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:18:30.000Z",
+          "completed_at": "2026-05-05T14:19:30.000Z"
+        },
+        {
+          "id": "T2506",
+          "title": "Doc + smoke",
+          "detail": [
+            "docs/recat-catalogo.md: explicar flujo, bypass, semántica de columnas, cómo interpretar diffs",
+            "Smoke: correr recat con catálogo actual, verificar tabla de comparación tiene sentido",
+            "Gates: pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "docs/recat-catalogo.md"
+          ],
+          "depends_on": [
+            "T2505"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:19:30.000Z",
+          "completed_at": "2026-05-05T14:20:00.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T14:20:05.000Z"
+    },
+    {
+      "id": "P26",
+      "name": "Tokens sin categorizar (sugerencias para crear patrones)",
+      "tasks": [
+        {
+          "id": "T2601",
+          "title": "Endpoint GET /catalogo/tokens-sin-categoria",
+          "detail": [
+            "src/api/routes/tokens-sin-categoria.ts",
+            "Lee comercios_catalogo donde categoria_nueva_id IS NULL AND recategorizado_at IS NOT NULL",
+            "Tokeniza nombre con normalize() + split por espacios + filtrar tokens <3 chars y stopwords cortas (S A SRL LTDA EIRL)",
+            "Agrupa por token, count, también lista IDs de comercios donde aparece (limit 5 ejemplos)",
+            "Devuelve top N (default 50) por frecuencia descendente",
+            "Tests src/api/routes/tokens-sin-categoria.test.ts",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/api/routes/tokens-sin-categoria.ts",
+            "src/api/routes/tokens-sin-categoria.test.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T2506"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:27:00.000Z",
+          "completed_at": "2026-05-05T14:28:50.000Z"
+        },
+        {
+          "id": "T2602",
+          "title": "UI: panel tokens en /ui/recat/",
+          "detail": [
+            "ui/recat/index.html: agregar sección 'Tokens sin patrón' con tabla token | freq | ejemplos | acción",
+            "ui/recat/recat.js: loadTokens(), renderTokens(), botón 'Crear patrón' por fila",
+            "Botón abre prompt simple (o redirige a /ui/categorias/detalle.html?slug=X&tipo=contiene&valor=TOKEN)",
+            "Smoke manual: ver tokens, click crear, agregar patrón, re-correr recat",
+            "Gates: pnpm lint && pnpm typecheck && pnpm check:consistency"
+          ],
+          "files": [
+            "ui/recat/index.html",
+            "ui/recat/recat.js"
+          ],
+          "depends_on": [
+            "T2601"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:28:50.000Z",
+          "completed_at": "2026-05-05T14:29:30.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T14:29:35.000Z"
+    },
+    {
+      "id": "P27",
+      "name": "Aplicador selectivo de diffs (promover categoria_nueva → categoria)",
+      "tasks": [
+        {
+          "id": "T2701",
+          "title": "Endpoint POST /catalogo/aplicar-diff",
+          "detail": [
+            "src/api/routes/aplicar-diff.ts",
+            "POST /catalogo/aplicar-diff { categoria_actual_slug, categoria_nueva_slug }",
+            "Resolver slugs → ids",
+            "UPDATE comercios_catalogo SET categoria_id = categoria_nueva_id, fuente_categoria='manual', confianza=1.0, updated_at=now() WHERE categoria_id=$actual AND categoria_nueva_id=$nueva AND recategorizado_at IS NOT NULL",
+            "Devuelve { actualizadas: count }",
+            "Validación zod, error 400 si slugs no existen, 422 si actual=nueva",
+            "Tests src/api/routes/aplicar-diff.test.ts",
+            "Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency"
+          ],
+          "files": [
+            "src/api/routes/aplicar-diff.ts",
+            "src/api/routes/aplicar-diff.test.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T2602"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:29:30.000Z",
+          "completed_at": "2026-05-05T14:30:30.000Z"
+        },
+        {
+          "id": "T2702",
+          "title": "UI: checkbox + botón aplicar en tabla diffs",
+          "detail": [
+            "ui/recat/index.html: tabla top_diffs con columna acción (botón 'Aplicar N')",
+            "ui/recat/recat.js: handler click → POST /catalogo/aplicar-diff con par actual/nueva",
+            "Confirmar antes (confirm dialog)",
+            "Tras aplicar: refrescar comparación",
+            "Smoke: aplicar 1 diff, ver count baja, fila desaparece de top diffs",
+            "Gates: pnpm lint && pnpm typecheck && pnpm check:consistency"
+          ],
+          "files": [
+            "ui/recat/index.html",
+            "ui/recat/recat.js"
+          ],
+          "depends_on": [
+            "T2701"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T14:30:30.000Z",
+          "completed_at": "2026-05-05T14:31:10.000Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T14:31:15.000Z"
+    },
+    {
       "id": "PNH",
       "name": "Nice to have (post-MVP)",
       "tasks": [

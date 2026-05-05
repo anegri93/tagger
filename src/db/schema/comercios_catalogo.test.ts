@@ -31,4 +31,11 @@ describe('comercios_catalogo schema', () => {
   it('categoriaId notNull', () => {
     expect(comerciosCatalogo.categoriaId.notNull).toBe(true);
   });
+
+  it('columnas recategorización (categoriaNuevaId, fuenteNueva, confianzaNueva, recategorizadoAt) nullable', () => {
+    expect(comerciosCatalogo.categoriaNuevaId.notNull).toBe(false);
+    expect(comerciosCatalogo.fuenteNueva.notNull).toBe(false);
+    expect(comerciosCatalogo.confianzaNueva.notNull).toBe(false);
+    expect(comerciosCatalogo.recategorizadoAt.notNull).toBe(false);
+  });
 });

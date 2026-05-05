@@ -10,6 +10,7 @@ export interface CapasSincrono {
   regex: { evaluar(texto: string): Promise<ResultadoCapa | null> };
   bancard: { evaluar(nombreBancard: string | null | undefined): Promise<ResultadoCapa | null> };
   comercio: { evaluar(texto: string | null | undefined): Promise<ResultadoCapa | null> };
+  patrones?: { evaluar(texto: string): Promise<ResultadoCapa | null> };
   mcc: { evaluar(codMcc: string | null | undefined): Promise<ResultadoCapa | null> };
 }
 
@@ -28,7 +29,7 @@ function textoPara(input: MovimientoInput): string {
 export async function ejecutarCascada(
   input: MovimientoInput,
   capas: CapasSincrono,
-  opts: { bypassCatalogo?: boolean } = {},
+  opts: { bypassCatalogo?: boolean; bypassComercio?: boolean } = {},
 ): Promise<ResultadoPipeline> {
   const texto = textoPara(input);
 
@@ -37,13 +38,16 @@ export async function ejecutarCascada(
     if (r0) return { resultado: r0, requiereRevision: false, requiereIa: false };
   }
 
+  const rp = texto && capas.patrones ? await capas.patrones.evaluar(texto) : null;
+  if (rp) return { resultado: rp, requiereRevision: false, requiereIa: false };
+
   const r1 = texto ? await capas.regex.evaluar(texto) : null;
   if (r1) return { resultado: r1, requiereRevision: false, requiereIa: false };
 
   const r2 = await capas.bancard.evaluar(input.nombreBancard);
   if (r2) return { resultado: r2, requiereRevision: false, requiereIa: false };
 
-  const r3 = texto ? await capas.comercio.evaluar(texto) : null;
+  const r3 = texto && !opts.bypassComercio ? await capas.comercio.evaluar(texto) : null;
   if (r3) return { resultado: r3, requiereRevision: false, requiereIa: false };
 
   const r4 = await capas.mcc.evaluar(input.mcc);

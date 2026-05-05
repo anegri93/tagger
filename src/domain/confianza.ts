@@ -7,6 +7,10 @@ export const CONFIANZA = Object.freeze({
   mcc: 0.75,
   ia_max: 0.7,
   manual: 1.0,
+  patrones: 0.9,
+  literal: 0.95,
+  prefijo: 0.9,
+  contiene: 0.9,
 } as const);
 
 export const THRESHOLD_REVISION = 0.7;
@@ -25,6 +29,14 @@ export function confianzaPorFuente(fuente: FuenteCategoria): number {
       return CONFIANZA.ia_max;
     case 'manual':
       return CONFIANZA.manual;
+    case 'patrones':
+      return CONFIANZA.patrones;
+    case 'literal':
+      return CONFIANZA.literal;
+    case 'prefijo':
+      return CONFIANZA.prefijo;
+    case 'contiene':
+      return CONFIANZA.contiene;
   }
 }
 

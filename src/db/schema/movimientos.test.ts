@@ -42,6 +42,10 @@ describe('movimientos schema', () => {
       'mcc',
       'ia',
       'manual',
+      'patrones',
+      'literal',
+      'prefijo',
+      'contiene',
     ]);
   });
 

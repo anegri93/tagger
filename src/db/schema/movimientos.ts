@@ -34,6 +34,10 @@ export const fuenteCategoriaEnum = pgEnum('fuente_categoria', [
   'mcc',
   'ia',
   'manual',
+  'patrones',
+  'literal',
+  'prefijo',
+  'contiene',
 ]);
 
 export const movimientos = pgTable(

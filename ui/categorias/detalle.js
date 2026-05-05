@@ -31,6 +31,7 @@ $$('.tab').forEach((t) =>
     if (t.dataset.tab === 'mcc') loadMcc();
     if (t.dataset.tab === 'marcas') loadMarcas();
     if (t.dataset.tab === 'comercios') loadComercios();
+    if (t.dataset.tab === 'patrones') loadPatrones();
   }),
 );
 
@@ -372,6 +373,93 @@ $('#comercios-tbl').addEventListener('change', async (e) => {
     } else {
       await loadComercios();
     }
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// Patrones
+async function loadPatrones() {
+  try {
+    const { items } = await window.taggerApi(
+      `/patrones?categoria=${encodeURIComponent(SLUG)}`,
+    );
+    const tbody = $('#patrones-tbl tbody');
+    tbody.innerHTML = items
+      .map(
+        (p) => `<tr data-id="${p.id}">
+          <td>${esc(p.tipo)}</td>
+          <td><code>${esc(p.valor)}</code></td>
+          <td>${p.prioridad}</td>
+          <td>${p.activo ? '✓' : '✗'}</td>
+          <td>${esc(p.descripcion)}</td>
+          <td>
+            <button class="action-btn" data-act="p-toggle" data-id="${p.id}" data-activo="${p.activo}">${p.activo ? 'Desact' : 'Act'}</button>
+            <button class="action-btn delete" data-act="p-del" data-id="${p.id}">Eliminar</button>
+          </td>
+        </tr>`,
+      )
+      .join('');
+  } catch (e) {
+    setStatus(`error patrones: ${e.message}`, 'error');
+  }
+}
+
+$('#p-add').addEventListener('click', async () => {
+  const tipo = $('#p-tipo').value;
+  const valor = $('#p-valor').value.trim();
+  const prioridad = Number($('#p-prio').value) || 100;
+  const descripcion = $('#p-desc').value.trim() || undefined;
+  if (!valor) return alert('falta valor');
+  try {
+    await window.taggerApi('/patrones', {
+      method: 'POST',
+      body: JSON.stringify({ tipo, valor, categoria_slug: SLUG, prioridad, descripcion }),
+    });
+    $('#p-valor').value = '';
+    $('#p-desc').value = '';
+    await loadPatrones();
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
+$('#p-test-btn').addEventListener('click', async () => {
+  const tipo = $('#p-tipo').value;
+  const valor = $('#p-valor').value.trim();
+  const texto = $('#p-test-texto').value.trim();
+  if (!valor || !texto) return;
+  try {
+    const r = await window.taggerApi('/patrones/test', {
+      method: 'POST',
+      body: JSON.stringify({ tipo, valor, texto }),
+    });
+    const el = $('#p-test-result');
+    el.style.display = 'block';
+    el.className = `test-result ${r.match ? 'match' : 'no-match'}`;
+    el.textContent = r.match ? `✓ matchea` : `✗ no matchea`;
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
+$('#patrones-tbl').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.action-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const act = btn.dataset.act;
+  try {
+    if (act === 'p-del') {
+      if (!confirm('Eliminar patrón?')) return;
+      await window.taggerApi(`/patrones/${id}`, { method: 'DELETE' });
+    } else if (act === 'p-toggle') {
+      const activo = btn.dataset.activo !== 'true';
+      await window.taggerApi(`/patrones/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ activo }),
+      });
+    } else return;
+    await loadPatrones();
   } catch (err) {
     alert(err.message);
   }

@@ -18,6 +18,7 @@ patron	categoria_slug	prioridad	descripcion	activo
 \b(AZAR|SLOTS?|TRAGAMONEDAS?|CASINO|GAMING|APUESTAS?|BETSAT|GIRO\s?WIN|SOLBET|PGP|UPAY|EGLOBALT)\b	azar	10	Juegos de azar	1
 \bCIAL\b	supermercado	30		1
 \b(COMERC|COMERCIAL|CIAL|HIPER|MINIMARKET|MERCADO\s|ABASTO|DESPENSA|VIVERES)\b	supermercado	25	Comercial/super genéricos	1
+\bCOMIDA\b	restaurante	20		1
 \bBIGGIE\b	supermercado	10	Biggie	1
 \bSUPER\s*SEIS\b	supermercado	10	Super Seis	1
 \bCATEDRAL\b.*FARMA	farmacia	30	Catedral farmacia	1

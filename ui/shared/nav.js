@@ -5,6 +5,7 @@
     { path: '/ui/categorias/index.html', label: 'Categorías', icon: '📂', prefix: '/ui/categorias/' },
     { path: '/ui/tester/index.html', label: 'Tester', icon: '🧪', prefix: '/ui/tester/' },
     { path: '/ui/test-monitor/index.html', label: 'Monitor', icon: '📊', prefix: '/ui/test-monitor/' },
+    { path: '/ui/recat/index.html', label: 'Recat', icon: '🔁', prefix: '/ui/recat/' },
     { path: '/ui/tasks/index.html', label: 'Tareas', icon: '✅', prefix: '/ui/tasks/' },
   ];
 

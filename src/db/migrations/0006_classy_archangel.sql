@@ -1,0 +1,1 @@
+ALTER TYPE "public"."fuente_categoria" ADD VALUE 'patrones';

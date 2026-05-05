@@ -33,6 +33,12 @@ export const comerciosCatalogo = pgTable(
     evidencia: jsonb('evidencia').$type<Evidencia>(),
     marca: text('marca'),
     mccInferido: boolean('mcc_inferido').notNull().default(false),
+    categoriaNuevaId: uuid('categoria_nueva_id').references(() => categorias.id, {
+      onDelete: 'set null',
+    }),
+    fuenteNueva: fuenteCategoriaEnum('fuente_nueva'),
+    confianzaNueva: numeric('confianza_nueva', { precision: 3, scale: 2 }),
+    recategorizadoAt: timestamp('recategorizado_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

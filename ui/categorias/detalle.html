@@ -57,6 +57,7 @@
       <div class="tab" data-tab="mcc">MCCs</div>
       <div class="tab" data-tab="marcas">Marcas</div>
       <div class="tab" data-tab="comercios">Comercios</div>
+      <div class="tab" data-tab="patrones">Patrones</div>
     </div>
 
     <div class="tab-content active" data-tab="info">
@@ -144,6 +145,33 @@
             <th>Fuente</th><th>Conf</th><th>Rev</th><th>Cambiar a</th>
           </tr>
         </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tab-content" data-tab="patrones">
+      <h2>Patrones</h2>
+      <div class="form-row">
+        <label>Tipo
+          <select id="p-tipo">
+            <option value="contiene">contiene</option>
+            <option value="literal">literal</option>
+            <option value="prefijo">prefijo</option>
+            <option value="regex">regex</option>
+          </select>
+        </label>
+        <label>Valor<input id="p-valor" placeholder="CIAL" /></label>
+        <label>Prioridad<input id="p-prio" type="number" value="20" style="width:80px" /></label>
+        <label>Descripción<input id="p-desc" /></label>
+        <button id="p-add">+ Agregar</button>
+      </div>
+      <div class="form-row">
+        <label>Probar tipo+valor vs texto<input id="p-test-texto" placeholder="CIAL.VIRGEN DEL ROSA" /></label>
+        <button id="p-test-btn">Probar</button>
+      </div>
+      <div id="p-test-result" class="test-result" style="display:none"></div>
+      <table class="tbl" id="patrones-tbl">
+        <thead><tr><th>Tipo</th><th>Valor</th><th>Prio</th><th>Activo</th><th>Descripción</th><th>Acciones</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>

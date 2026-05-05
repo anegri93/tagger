@@ -98,6 +98,77 @@ describe('capa comercio', () => {
     expect(r?.categoriaId).toBe('cat-comb');
   });
 
+  it('match exacto con fuentePrev=mcc descarta (cache débil → null para que siga cascada)', async () => {
+    const capa = crearCapaComercio(
+      lookupFijo([
+        {
+          id: 'c1',
+          nombreNormalizado: 'JOYERIA RUBI',
+          categoriaId: 'cat-otros',
+          fuentePrev: 'mcc',
+          confianzaPrev: 0.3,
+        },
+      ]),
+    );
+    expect(await capa.evaluar('JOYERIA RUBI')).toBeNull();
+  });
+
+  it('match exacto con fuentePrev=ia descarta', async () => {
+    const capa = crearCapaComercio(
+      lookupFijo([
+        {
+          id: 'c1',
+          nombreNormalizado: 'X COMERCIO',
+          categoriaId: 'cat-x',
+          fuentePrev: 'ia',
+          confianzaPrev: 0.7,
+        },
+      ]),
+    );
+    expect(await capa.evaluar('X COMERCIO')).toBeNull();
+  });
+
+  it('match exacto con fuentePrev=nombre descarta (no se auto-confirma)', async () => {
+    const capa = crearCapaComercio(
+      lookupFijo([
+        {
+          id: 'c1',
+          nombreNormalizado: 'X COMERCIO',
+          categoriaId: 'cat-x',
+          fuentePrev: 'nombre',
+          confianzaPrev: 0.8,
+        },
+      ]),
+    );
+    expect(await capa.evaluar('X COMERCIO')).toBeNull();
+  });
+
+  it('match exacto con fuentePrev=manual propaga', async () => {
+    const capa = crearCapaComercio(
+      lookupFijo([
+        {
+          id: 'c1',
+          nombreNormalizado: 'BIGGIE',
+          categoriaId: 'cat-super',
+          fuentePrev: 'manual',
+          confianzaPrev: 1.0,
+        },
+      ]),
+    );
+    const r = await capa.evaluar('BIGGIE');
+    expect(r?.fuente).toBe('manual');
+    expect(r?.confianza).toBe(1.0);
+  });
+
+  it('match exacto sin fuentePrev (legacy) cae a fuente=nombre conf=0.8', async () => {
+    const capa = crearCapaComercio(
+      lookupFijo([{ id: 'c1', nombreNormalizado: 'X COMERCIO', categoriaId: 'cat-x' }]),
+    );
+    const r = await capa.evaluar('X COMERCIO');
+    expect(r?.fuente).toBe('nombre');
+    expect(r?.confianza).toBe(0.8);
+  });
+
   it('match parcial NO propaga fuente del catálogo (usa nombre 0.8)', async () => {
     const capa = crearCapaComercio(
       lookupFijo([

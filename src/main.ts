@@ -31,6 +31,12 @@ import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
 import { crearReglasLoader } from './db/repos/reglas.js';
 import { crearReglaWriter } from './db/repos/reglas-writer.js';
+import { crearPatronesLoader, crearPatronWriter } from './db/repos/patrones.js';
+import { crearCapaPatrones } from './layers/patrones.js';
+import { patronesRoute } from './api/routes/patrones.js';
+import { recategorizarCatalogoRoute } from './api/routes/recategorizar-catalogo.js';
+import { tokensSinCategoriaRoute } from './api/routes/tokens-sin-categoria.js';
+import { aplicarDiffRoute } from './api/routes/aplicar-diff.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import {
   crearBancardLookup,
@@ -65,6 +71,7 @@ async function main() {
   const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
 
   const reglasLoader = crearReglasLoader(db);
+  const patronesLoader = crearPatronesLoader(db);
   const bancardLookup = crearBancardLookup(db);
   const comercioLookup = crearComercioLookup(db);
   const catalogoLookup = crearCatalogoLookup(db);
@@ -83,6 +90,7 @@ async function main() {
     regex: crearCapaRegex(reglasLoader),
     bancard: crearCapaBancard(bancardLookup),
     comercio: crearCapaComercio(comercioLookup),
+    patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
   };
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
@@ -105,6 +113,11 @@ async function main() {
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
   const reglaWriter = crearReglaWriter(db, () => capas.regex.invalidar());
   await app.register(reglasRoute(reglaWriter));
+  const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());
+  await app.register(patronesRoute(patronWriter));
+  await app.register(recategorizarCatalogoRoute(db, capas));
+  await app.register(tokensSinCategoriaRoute(db));
+  await app.register(aplicarDiffRoute(db));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
   const catalogoRunner = new CatalogoMassiveRunner({
