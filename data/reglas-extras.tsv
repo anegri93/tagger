@@ -4,7 +4,6 @@ patron	categoria_slug	prioridad	descripcion	activo
 \bNETFLIX\b	entretenimiento	10	Netflix	1
 \bSPOTIFY\b	entretenimiento	10	Spotify	1
 \bDISNEY	entretenimiento	10	Disney+	1
-\b(COMERC|COMERCIAL|CIAL|HIPER|MINIMARKET|MERCADO\s|ABASTO|DESPENSA|VIVERES)\b	supermercado	25	Comercial/super genéricos	1
 \b(FARMA|FARMACIA|DROGUERIA|BOTICA)\b	farmacia	25	Farmacia genérico	1
 \b(PANADERIA|HELADERIA|CONFITERIA|RESTAURANT|PIZZERIA|HAMBURG|PARRILLA|LOMITERIA)\b	restaurante	25	Gastro genérico	1
 \bSHELL\b	combustible	10	Shell	1
@@ -18,6 +17,7 @@ patron	categoria_slug	prioridad	descripcion	activo
 ^MANGO\b	transferencia	5	Mango P2P	1
 \b(AZAR|SLOTS?|TRAGAMONEDAS?|CASINO|GAMING|APUESTAS?|BETSAT|GIRO\s?WIN|SOLBET|PGP|UPAY|EGLOBALT)\b	azar	10	Juegos de azar	1
 \bCIAL\b	supermercado	30		1
+\b(COMERC|COMERCIAL|CIAL|HIPER|MINIMARKET|MERCADO\s|ABASTO|DESPENSA|VIVERES)\b	supermercado	25	Comercial/super genéricos	1
 \bBIGGIE\b	supermercado	10	Biggie	1
 \bSUPER\s*SEIS\b	supermercado	10	Super Seis	1
 \bCATEDRAL\b.*FARMA	farmacia	30	Catedral farmacia	1

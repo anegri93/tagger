@@ -7,6 +7,7 @@ export function normalize(input: string | null | undefined): string {
   if (!input) return '';
   let s = input.normalize('NFD').replace(DIACRITICS_EXCEPT_TILDE_RE, '').normalize('NFC');
   s = s.replace(SEPARATOR_RE, ' ');
+  s = s.replace(/\.(?=[A-Za-zÀ-ÿÑñ]{2,})/g, ' ');
   s = s.replace(STRIP_RE, '');
   s = s.toUpperCase();
   s = s.replace(/\s+/g, ' ').trim();
