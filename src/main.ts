@@ -9,6 +9,8 @@ import { reglasRoute } from './api/routes/reglas.js';
 import { mccRoute } from './api/routes/mcc.js';
 import { catalogoRoute } from './api/routes/catalogo.js';
 import { CatalogoMassiveRunner } from './test-batch/catalogo-runner.js';
+import { comerciosRoute } from './api/routes/comercios.js';
+import { crearComerciosWriter } from './db/repos/comercios-writer.js';
 import { marcasRoute } from './api/routes/marcas.js';
 import { crearMarcaWriter, crearMarcasReader } from './db/repos/marcas.js';
 import { testBatchStatsRoute } from './api/routes/test-batch-stats.js';
@@ -112,6 +114,8 @@ async function main() {
   await app.register(catalogoRoute(catalogoRunner));
   const marcaWriter = crearMarcaWriter(db, marcasReader);
   await app.register(marcasRoute(marcaWriter));
+  const comerciosWriter = crearComerciosWriter(db);
+  await app.register(comerciosRoute(comerciosWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo });
   await app.register(testBatchControlRoute(testRunner));

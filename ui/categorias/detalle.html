@@ -56,6 +56,7 @@
       <div class="tab" data-tab="reglas">Reglas</div>
       <div class="tab" data-tab="mcc">MCCs</div>
       <div class="tab" data-tab="marcas">Marcas</div>
+      <div class="tab" data-tab="comercios">Comercios</div>
     </div>
 
     <div class="tab-content active" data-tab="info">
@@ -118,6 +119,31 @@
       </div>
       <table class="tbl" id="marcas-tbl">
         <thead><tr><th>Marca</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tab-content" data-tab="comercios">
+      <h2>Comercios en esta categoría</h2>
+      <div class="form-row">
+        <label>Buscar nombre<input id="cm-q" placeholder="BIGGIE…" /></label>
+        <label>Solo revisión<input id="cm-rev" type="checkbox" /></label>
+        <button id="cm-search">Buscar</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-family:var(--mono);font-size:12px;">
+        <span id="cm-info">—</span>
+        <span>
+          <button id="cm-prev" class="action-btn">← Anterior</button>
+          <button id="cm-next" class="action-btn">Siguiente →</button>
+        </span>
+      </div>
+      <table class="tbl" id="comercios-tbl">
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Bancard</th><th>Cód</th><th>MCC</th>
+            <th>Fuente</th><th>Conf</th><th>Rev</th><th>Cambiar a</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>

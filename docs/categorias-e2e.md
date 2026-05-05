@@ -49,6 +49,14 @@ bash start.sh
 - Si hay refs → error 409 con detalle counts
 - Eliminar reglas, MCCs, marcas asociadas → Eliminar funciona si counts movimientos = 0
 
+### 9. Tab Comercios (re-categorizar individuales)
+- En detalle de categoría → tab **Comercios**
+- Búsqueda por nombre + checkbox "solo revisión"
+- Tabla paginada (50 por página): nombre, bancard, codigo, MCC, fuente, confianza, revisión
+- Dropdown **Cambiar a** → mueve comercio a otra categoría (fuente='manual', confianza=1.00)
+- Toggle revisión inline
+- Comercios movidos desaparecen de la vista actual
+
 ## Flujo automático verificado
 
 Cuando creás una categoría, el sistema cubre los 8 pasos manuales:

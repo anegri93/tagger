@@ -30,6 +30,7 @@ $$('.tab').forEach((t) =>
     if (t.dataset.tab === 'reglas') loadReglas();
     if (t.dataset.tab === 'mcc') loadMcc();
     if (t.dataset.tab === 'marcas') loadMarcas();
+    if (t.dataset.tab === 'comercios') loadComercios();
   }),
 );
 
@@ -265,6 +266,114 @@ $('#marcas-tbl').addEventListener('click', async (e) => {
     await loadMarcas();
   } catch (e) {
     alert(e.message);
+  }
+});
+
+// Comercios tab
+const comerciosState = { offset: 0, limit: 50, total: 0, q: '', revOnly: false, allCats: [] };
+
+async function loadAllCats() {
+  if (comerciosState.allCats.length > 0) return;
+  try {
+    const r = await window.taggerApi('/categorias');
+    comerciosState.allCats = r.items;
+  } catch {}
+}
+
+async function loadComercios() {
+  await loadAllCats();
+  const params = new URLSearchParams();
+  params.set('categoria', SLUG);
+  params.set('limit', String(comerciosState.limit));
+  params.set('offset', String(comerciosState.offset));
+  if (comerciosState.q) params.set('q', comerciosState.q);
+  if (comerciosState.revOnly) params.set('requiere_revision', 'true');
+  try {
+    const r = await window.taggerApi(`/comercios?${params}`);
+    comerciosState.total = r.total;
+    const tbody = $('#comercios-tbl tbody');
+    const opts = comerciosState.allCats
+      .map((c) => `<option value="${c.slug}">${esc(c.slug)}</option>`)
+      .join('');
+    tbody.innerHTML = r.items
+      .map(
+        (c) => `<tr data-id="${c.id}">
+          <td>${esc(c.nombre)}</td>
+          <td>${esc(c.bancardId)}</td>
+          <td>${esc(c.codigoComercio)}</td>
+          <td>${esc(c.mcc)}</td>
+          <td><span class="tag tag-info">${esc(c.fuenteCategoria)}</span></td>
+          <td class="num">${c.confianza ?? '—'}</td>
+          <td><input type="checkbox" data-act="rev" data-id="${c.id}" ${c.requiereRevision ? 'checked' : ''} /></td>
+          <td>
+            <select data-act="cat" data-id="${c.id}">
+              <option value="">—</option>
+              ${opts}
+            </select>
+          </td>
+        </tr>`,
+      )
+      .join('');
+    const from = comerciosState.offset + 1;
+    const to = Math.min(comerciosState.offset + r.items.length, comerciosState.total);
+    $('#cm-info').textContent = r.items.length === 0
+      ? 'sin resultados'
+      : `${from}-${to} de ${comerciosState.total}`;
+    $('#cm-prev').disabled = comerciosState.offset === 0;
+    $('#cm-next').disabled = comerciosState.offset + comerciosState.limit >= comerciosState.total;
+  } catch (e) {
+    setStatus(`error comercios: ${e.message}`, 'error');
+  }
+}
+
+$('#cm-search').addEventListener('click', () => {
+  comerciosState.q = $('#cm-q').value.trim();
+  comerciosState.revOnly = $('#cm-rev').checked;
+  comerciosState.offset = 0;
+  loadComercios();
+});
+
+$('#cm-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#cm-search').click();
+});
+
+$('#cm-prev').addEventListener('click', () => {
+  comerciosState.offset = Math.max(0, comerciosState.offset - comerciosState.limit);
+  loadComercios();
+});
+
+$('#cm-next').addEventListener('click', () => {
+  if (comerciosState.offset + comerciosState.limit < comerciosState.total) {
+    comerciosState.offset += comerciosState.limit;
+    loadComercios();
+  }
+});
+
+$('#comercios-tbl').addEventListener('change', async (e) => {
+  const el = e.target;
+  const id = el.dataset.id;
+  const act = el.dataset.act;
+  if (!id || !act) return;
+  const payload =
+    act === 'cat'
+      ? el.value
+        ? { categoria_slug: el.value }
+        : null
+      : { requiere_revision: el.checked };
+  if (!payload) return;
+  try {
+    await window.taggerApi(`/comercios/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    if (act === 'cat' && el.value && el.value !== SLUG) {
+      // movió a otra categoría → quitar fila de esta vista
+      el.closest('tr').remove();
+    } else {
+      await loadComercios();
+    }
+  } catch (err) {
+    alert(err.message);
   }
 });
 

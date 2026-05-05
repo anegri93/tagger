@@ -3038,6 +3038,117 @@
       "validated_at": "2026-05-05T12:13:36.923Z"
     },
     {
+      "id": "P20",
+      "name": "Comercios CRUD via UI categoria detalle",
+      "tasks": [
+        {
+          "id": "T2001",
+          "title": "Endpoints comercios listar + actualizar",
+          "detail": [
+            "GET /comercios?categoria=X&q=&limit=&offset= → lista paginada",
+            "Filter: nombre LIKE %q%, default limit 50, max 500",
+            "PATCH /comercios/:id { categoria_slug?, requiere_revision? }",
+            "Repo writer + zod schemas",
+            "Cache invalidation comercios lookup"
+          ],
+          "files": [
+            "src/api/routes/comercios.ts",
+            "src/api/schemas/comercios.ts",
+            "src/db/repos/comercios-writer.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T12:20:28.180Z",
+          "completed_at": "2026-05-05T12:21:43.185Z"
+        },
+        {
+          "id": "T2002",
+          "title": "Tests endpoints comercios",
+          "detail": [
+            "Tests fastify.inject GET con filtros",
+            "Test PATCH cambio categoría",
+            "Test 404 si no existe",
+            "Test 400 categoria_slug inexistente"
+          ],
+          "files": [
+            "src/api/routes/comercios.test.ts"
+          ],
+          "depends_on": [
+            "T2001"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T12:21:48.451Z",
+          "completed_at": "2026-05-05T12:22:18.651Z"
+        },
+        {
+          "id": "T2003",
+          "title": "UI tab Comercios en detalle categoría",
+          "detail": [
+            "Nueva tab Comercios en ui/categorias/detalle.html",
+            "Tabla: nombre, bancard_id, codigo_comercio, mcc, fuente, confianza, revisión",
+            "Input búsqueda nombre",
+            "Paginación (Anterior/Siguiente con offset+limit)",
+            "Dropdown cambio categoría inline (lista todas categorías)",
+            "Toggle revisión inline",
+            "Refresh tras cambio"
+          ],
+          "files": [
+            "ui/categorias/detalle.html",
+            "ui/categorias/detalle.js",
+            "ui/categorias/styles.css"
+          ],
+          "depends_on": [
+            "T2001"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T12:22:22.779Z",
+          "completed_at": "2026-05-05T12:23:34.978Z"
+        },
+        {
+          "id": "T2004",
+          "title": "Validación e2e + doc",
+          "detail": [
+            "Manual: abrir mascotas → tab Comercios → buscar PETSHOP → cambiar comercio a otra cat",
+            "Verificar usage counts cambian en lista",
+            "doc actualizar README/categorias-e2e.md"
+          ],
+          "files": [
+            "docs/categorias-e2e.md",
+            "README.md"
+          ],
+          "depends_on": [
+            "T2003"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T12:23:46.847Z",
+          "completed_at": "2026-05-05T12:25:29.118Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T12:25:32.410Z"
+    },
+    {
       "id": "PNH",
       "name": "Nice to have (post-MVP)",
       "tasks": [

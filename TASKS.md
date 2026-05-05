@@ -4,7 +4,7 @@
 
 **Stack:** TypeScript, Node, Fastify, Drizzle, Postgres, Vitest, Ollama
 
-**Progreso global:** 111/125 (89%)
+**Progreso global:** 115/129 (89%)
 
 ## Reglas
 
@@ -1422,6 +1422,59 @@
 - Doc README sección 'Servicio web unificado'
 
 **Archivos:** `README.md`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P20 — Comercios CRUD via UI categoria detalle (4/4)
+
+### ✅ T2001 — Endpoints comercios listar + actualizar
+
+**Detalle:**
+- GET /comercios?categoria=X&q=&limit=&offset= → lista paginada
+- Filter: nombre LIKE %q%, default limit 50, max 500
+- PATCH /comercios/:id { categoria_slug?, requiere_revision? }
+- Repo writer + zod schemas
+- Cache invalidation comercios lookup
+
+**Archivos:** `src/api/routes/comercios.ts`, `src/api/schemas/comercios.ts`, `src/db/repos/comercios-writer.ts`, `src/main.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2002 — Tests endpoints comercios _deps: T2001_
+
+**Detalle:**
+- Tests fastify.inject GET con filtros
+- Test PATCH cambio categoría
+- Test 404 si no existe
+- Test 400 categoria_slug inexistente
+
+**Archivos:** `src/api/routes/comercios.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2003 — UI tab Comercios en detalle categoría _deps: T2001_
+
+**Detalle:**
+- Nueva tab Comercios en ui/categorias/detalle.html
+- Tabla: nombre, bancard_id, codigo_comercio, mcc, fuente, confianza, revisión
+- Input búsqueda nombre
+- Paginación (Anterior/Siguiente con offset+limit)
+- Dropdown cambio categoría inline (lista todas categorías)
+- Toggle revisión inline
+- Refresh tras cambio
+
+**Archivos:** `ui/categorias/detalle.html`, `ui/categorias/detalle.js`, `ui/categorias/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2004 — Validación e2e + doc _deps: T2003_
+
+**Detalle:**
+- Manual: abrir mascotas → tab Comercios → buscar PETSHOP → cambiar comercio a otra cat
+- Verificar usage counts cambian en lista
+- doc actualizar README/categorias-e2e.md
+
+**Archivos:** `docs/categorias-e2e.md`, `README.md`
 
 **Gates:** consistency ✅  lint ✅  test ✅
 
