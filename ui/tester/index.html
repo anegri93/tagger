@@ -4,24 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>tagger — tester</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <h1>tagger · tester</h1>
-      <div class="config">
-        <label>
-          API URL
-          <input id="cfg-url" type="text" placeholder="http://localhost:3000" />
-        </label>
-        <label>
-          API Key
-          <input id="cfg-key" type="password" placeholder="x-api-key" />
-        </label>
-        <button id="cfg-save">Guardar</button>
-        <span id="cfg-status" class="status"></span>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <section class="page-actions">
+      <h2>🧪 Tester</h2>
+      <div class="actions">
+        <span id="cfg-status" class="t-small t-muted"></span>
       </div>
-    </header>
+    </section>
 
     <main>
       <section class="panel">

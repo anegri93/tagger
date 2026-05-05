@@ -1,0 +1,161 @@
+const $ = (id) => document.getElementById(id);
+
+function setStatus(t, c = '') {
+  const el = $('status');
+  el.textContent = t;
+  el.className = `t-small ${c === 'live' ? '' : 't-muted'}`;
+}
+
+function esc(s) {
+  if (s == null) return '—';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function loadList() {
+  setStatus('cargando…');
+  try {
+    const { items } = await window.taggerApi('/categorias');
+    const tbody = $('lista-cats');
+    tbody.innerHTML = items
+      .map(
+        (c) => `<tr data-slug="${c.slug}">
+          <td><a href="detalle.html?slug=${c.slug}">${esc(c.slug)}</a></td>
+          <td>${esc(c.nombre)}</td>
+          <td class="num"><span data-usage="movimientos">…</span></td>
+          <td class="num"><span data-usage="reglas">…</span></td>
+          <td class="num"><span data-usage="mcc">…</span></td>
+          <td class="num"><span data-usage="comercios">…</span></td>
+          <td>
+            <button class="action-btn" data-act="edit" data-slug="${c.slug}">Editar</button>
+            <button class="action-btn delete" data-act="delete" data-slug="${c.slug}">Eliminar</button>
+          </td>
+        </tr>`,
+      )
+      .join('');
+    await Promise.all(
+      items.map(async (c) => {
+        try {
+          const u = await window.taggerApi(`/categorias/${encodeURIComponent(c.slug)}/usage`);
+          const row = tbody.querySelector(`tr[data-slug="${c.slug}"]`);
+          if (!row) return;
+          row.querySelector('[data-usage="movimientos"]').textContent = u.movimientos;
+          row.querySelector('[data-usage="reglas"]').textContent = u.reglas;
+          row.querySelector('[data-usage="mcc"]').textContent = u.mcc;
+          row.querySelector('[data-usage="comercios"]').textContent = u.comercios;
+        } catch {}
+      }),
+    );
+    setStatus(`${items.length} categorías`, 'live');
+  } catch (e) {
+    setStatus(`error: ${e.message}`, 'error');
+  }
+}
+
+async function crear() {
+  const slug = $('new-slug').value.trim();
+  const nombre = $('new-nombre').value.trim();
+  const desc = $('new-desc').value.trim() || undefined;
+  $('new-error').textContent = '';
+  if (!slug || !nombre) {
+    $('new-error').textContent = 'slug y nombre requeridos';
+    return;
+  }
+  try {
+    await window.taggerApi('/categorias', {
+      method: 'POST',
+      body: JSON.stringify({ slug, nombre, descripcion: desc }),
+    });
+    $('modal-new').style.display = 'none';
+    $('new-slug').value = '';
+    $('new-nombre').value = '';
+    $('new-desc').value = '';
+    await loadList();
+  } catch (e) {
+    $('new-error').textContent = e.message;
+  }
+}
+
+async function eliminar(slug) {
+  try {
+    const u = await window.taggerApi(`/categorias/${encodeURIComponent(slug)}/usage`);
+    if (u.movimientos > 0 || u.reglas > 0 || u.mcc > 0 || u.comercios > 0) {
+      alert(`No se puede eliminar: tiene refs\nmov:${u.movimientos} reglas:${u.reglas} mcc:${u.mcc} comercios:${u.comercios}`);
+      return;
+    }
+    if (!confirm(`Eliminar categoría '${slug}'?`)) return;
+    await window.taggerApi(`/categorias/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+    await loadList();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function editar(slug) {
+  const nombre = prompt('Nuevo nombre:', '');
+  if (!nombre) return;
+  try {
+    await window.taggerApi(`/categorias/${encodeURIComponent(slug)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nombre }),
+    });
+    await loadList();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function reprocess() {
+  if (!confirm('Re-procesar catálogo masivo (49k comercios)?\nTarda ~30s.\n\nTRUNCAR comercios_catalogo antes?')) return;
+  const truncate = confirm('OK = TRUNCAR antes (limpio).\nCancelar = mantener existentes (upsert).');
+  try {
+    setStatus('reproceso disparado…', 'live');
+    await window.taggerApi('/catalogo/reprocess', {
+      method: 'POST',
+      body: JSON.stringify({ truncate_first: truncate }),
+    });
+    pollReprocess();
+  } catch (e) {
+    setStatus(`error: ${e.message}`, 'error');
+  }
+}
+
+let reprocInterval = null;
+async function pollReprocess() {
+  if (reprocInterval) clearInterval(reprocInterval);
+  $('reproc-status').style.display = 'block';
+  const tick = async () => {
+    try {
+      const s = await window.taggerApi('/catalogo/reprocess/status');
+      $('rp-status').textContent = s.status;
+      $('rp-total').textContent = s.total ?? '—';
+      $('rp-rev').textContent = s.revision ?? '—';
+      $('rp-fuente').textContent = s.porFuente
+        ? Object.entries(s.porFuente).map(([k, v]) => `${k}=${v}`).join(' ')
+        : '—';
+      if (s.status === 'done' || s.status === 'error') {
+        clearInterval(reprocInterval);
+        reprocInterval = null;
+        await loadList();
+      }
+    } catch {}
+  };
+  await tick();
+  reprocInterval = setInterval(tick, 2000);
+}
+
+$('btn-reload').addEventListener('click', loadList);
+$('btn-new').addEventListener('click', () => ($('modal-new').style.display = 'flex'));
+$('btn-cancel').addEventListener('click', () => ($('modal-new').style.display = 'none'));
+$('btn-save').addEventListener('click', crear);
+$('btn-reprocess').addEventListener('click', reprocess);
+$('lista-cats').addEventListener('click', (e) => {
+  const btn = e.target.closest('.action-btn');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  const slug = btn.dataset.slug;
+  if (act === 'edit') editar(slug);
+  else if (act === 'delete') eliminar(slug);
+});
+
+window.tagger.on('apiKey', () => loadList());
+loadList();

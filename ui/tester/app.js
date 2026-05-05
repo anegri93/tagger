@@ -6,8 +6,6 @@ const STORAGE = {
 };
 
 const state = {
-  url: localStorage.getItem(STORAGE.url) || 'http://localhost:3000',
-  key: localStorage.getItem(STORAGE.key) || '',
   categorias: [],
   history: JSON.parse(localStorage.getItem(STORAGE.history) || '[]'),
 };
@@ -29,28 +27,7 @@ function saveHistory() {
 }
 
 async function api(path, opts = {}) {
-  const res = await fetch(state.url + path, {
-    ...opts,
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': state.key,
-      ...(opts.headers || {}),
-    },
-  });
-  let body;
-  const text = await res.text();
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = text;
-  }
-  if (!res.ok) {
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.body = body;
-    throw err;
-  }
-  return body;
+  return window.taggerApi(path, opts);
 }
 
 async function checkConfig() {
@@ -226,13 +203,7 @@ async function aplicarCorreccion() {
 }
 
 // Eventos
-$('#cfg-save').addEventListener('click', () => {
-  state.url = $('#cfg-url').value.trim().replace(/\/+$/, '') || 'http://localhost:3000';
-  state.key = $('#cfg-key').value.trim();
-  localStorage.setItem(STORAGE.url, state.url);
-  localStorage.setItem(STORAGE.key, state.key);
-  checkConfig();
-});
+window.tagger.on('apiKey', () => checkConfig());
 
 $('#form-categorizar').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -306,7 +277,5 @@ $('#modal').addEventListener('click', (e) => {
 });
 
 // init
-$('#cfg-url').value = state.url;
-$('#cfg-key').value = state.key;
 renderHistorial();
 checkConfig();

@@ -1,37 +1,183 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>tagger — tareas</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <style>
+      .container { max-width: 1100px; margin: 24px auto; padding: 0 20px; }
+      .hero {
+        background: linear-gradient(135deg, var(--bg-2), var(--bg-3));
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+      .hero h1 { margin: 0 0 8px; font-size: 28px; }
+      .hero p { margin: 0; color: var(--text-3); }
+
+      .health-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .health-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
+      }
+      .health-card .label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+      .health-card .value { font-size: 22px; font-weight: 600; margin-top: 4px; font-family: var(--mono); }
+      .health-card .value.ok { color: var(--success); }
+      .health-card .value.err { color: var(--danger); }
+      .health-card .sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+      .nav-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .nav-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 20px;
+        text-decoration: none;
+        color: var(--text);
+        transition: all 0.15s;
+        display: block;
+      }
+      .nav-card:hover {
+        border-color: var(--primary);
+        background: var(--bg-3);
+        text-decoration: none;
+      }
+      .nav-card .icon { font-size: 32px; margin-bottom: 8px; }
+      .nav-card h3 { margin: 0 0 4px; font-size: 16px; }
+      .nav-card p { margin: 0; font-size: 12px; color: var(--text-3); line-height: 1.4; }
+    </style>
   </head>
   <body>
-    <header>
-      <h1>tagger</h1>
-      <p id="desc"></p>
-      <div class="progress-wrap">
-        <div id="progress-bar"></div>
-        <span id="progress-label"></span>
-      </div>
-      <div class="filters">
-        <label>Estado:
-          <select id="filter-status">
-            <option value="">todos</option>
-            <option value="pending">pending</option>
-            <option value="in_progress">in_progress</option>
-            <option value="done">done</option>
-            <option value="blocked">blocked</option>
-          </select>
-        </label>
-        <label>Fase:
-          <select id="filter-phase"><option value="">todas</option></select>
-        </label>
-        <button id="reload">↻ recargar</button>
-      </div>
-    </header>
-    <main id="phases"></main>
-    <script src="./tasks.data.js"></script>
-    <script src="./app.js"></script>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <div class="container">
+      <section class="hero">
+        <h1>🏷️ tagger</h1>
+        <p>Servicio categorización movimientos bancarios — cascada catálogo→regex→bancard→comercio→MCC→IA.</p>
+      </section>
+
+      <section class="health-grid">
+        <div class="health-card">
+          <div class="label">API</div>
+          <div class="value" id="h-api">…</div>
+          <div class="sub" id="h-api-sub">—</div>
+        </div>
+        <div class="health-card">
+          <div class="label">Database</div>
+          <div class="value" id="h-db">…</div>
+        </div>
+        <div class="health-card">
+          <div class="label">Ollama IA</div>
+          <div class="value" id="h-ollama">…</div>
+        </div>
+        <div class="health-card">
+          <div class="label">Categorías</div>
+          <div class="value" id="h-cats">—</div>
+        </div>
+        <div class="health-card">
+          <div class="label">Reglas regex</div>
+          <div class="value" id="h-reglas">—</div>
+        </div>
+        <div class="health-card">
+          <div class="label">Marcas IA</div>
+          <div class="value" id="h-marcas">—</div>
+        </div>
+      </section>
+
+      <section class="nav-grid">
+        <a class="nav-card" href="/ui/categorias/index.html">
+          <div class="icon">📂</div>
+          <h3>Categorías</h3>
+          <p>CRUD categorías, reglas regex, MCCs, marcas IA. Re-procesar catálogo masivo.</p>
+        </a>
+        <a class="nav-card" href="/ui/tester/index.html">
+          <div class="icon">🧪</div>
+          <h3>Tester</h3>
+          <p>Probar movimientos uno a uno. Ver fuente, confianza, evidencia. Marcar correcciones.</p>
+        </a>
+        <a class="nav-card" href="/ui/test-monitor/index.html">
+          <div class="icon">📊</div>
+          <h3>Test Monitor</h3>
+          <p>Dashboard realtime. Run/stop tests masivos 109k. Latencia, agreement, mismatches.</p>
+        </a>
+        <a class="nav-card" href="/ui/tasks/index.html">
+          <div class="icon">✅</div>
+          <h3>Tareas</h3>
+          <p>Dashboard de fases y tareas del proyecto. Estado, gates, dependencias.</p>
+        </a>
+      </section>
+    </div>
+
+    <script>
+      async function loadHealth() {
+        try {
+          const r = await fetch(window.tagger.baseUrl + '/health');
+          const apiOk = r.ok;
+          document.getElementById('h-api').textContent = apiOk ? 'OK' : `HTTP ${r.status}`;
+          document.getElementById('h-api').className = 'value ' + (apiOk ? 'ok' : 'err');
+          document.getElementById('h-api-sub').textContent = apiOk ? 'ok' : '';
+        } catch {
+          document.getElementById('h-api').textContent = 'down';
+          document.getElementById('h-api').className = 'value err';
+        }
+        try {
+          const r = await fetch(window.tagger.baseUrl + '/health/ready');
+          const body = await r.json();
+          const dbOk = body?.db === 'ok';
+          const ollamaOk = body?.ollama === 'ok';
+          document.getElementById('h-db').textContent = dbOk ? 'OK' : 'down';
+          document.getElementById('h-db').className = 'value ' + (dbOk ? 'ok' : 'err');
+          document.getElementById('h-ollama').textContent =
+            body?.ollama === 'skip' ? 'n/a' : ollamaOk ? 'OK' : 'down';
+          document.getElementById('h-ollama').className =
+            'value ' + (ollamaOk ? 'ok' : body?.ollama === 'skip' ? '' : 'err');
+        } catch {
+          document.getElementById('h-db').textContent = 'down';
+          document.getElementById('h-db').className = 'value err';
+        }
+      }
+
+      async function loadCounts() {
+        try {
+          const r = await window.taggerApi('/categorias');
+          document.getElementById('h-cats').textContent = r.items?.length ?? 0;
+        } catch {
+          document.getElementById('h-cats').textContent = '—';
+        }
+        try {
+          const r = await window.taggerApi('/reglas');
+          document.getElementById('h-reglas').textContent = r.items?.length ?? 0;
+        } catch {
+          document.getElementById('h-reglas').textContent = '—';
+        }
+        try {
+          const r = await window.taggerApi('/marcas');
+          document.getElementById('h-marcas').textContent = r.items?.length ?? 0;
+        } catch {
+          document.getElementById('h-marcas').textContent = '—';
+        }
+      }
+
+      window.addEventListener('load', () => {
+        loadHealth();
+        loadCounts();
+        window.tagger.on('apiKey', () => loadCounts());
+      });
+    </script>
   </body>
 </html>

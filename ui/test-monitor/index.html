@@ -4,28 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tagger — test monitor</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <h1>📊 tagger test monitor</h1>
-      <div class="controls">
-        <input id="base-url" placeholder="Base URL" />
-        <input id="api-key" placeholder="API key" type="password" />
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <section class="page-actions">
+      <h2>📊 Test Monitor</h2>
+      <div class="actions">
         <input id="batch-id" placeholder="batch_id" />
         <input id="limit" placeholder="limit" type="number" />
         <input id="concurrency" placeholder="conc" type="number" value="30" />
-        <label class="cb" title="Skip capa catálogo. Mide cascada pura (regex+nombre+mcc+ia) sin lookup directo. Agreement = test honesto.">
+        <label class="cb" title="Skip capa catálogo. Cascada pura (regex+nombre+mcc+ia). Agreement honesto.">
           <input id="bypass-cat" type="checkbox" />
-          <span>bypass</span>
+          <span class="t-small">bypass</span>
         </label>
-        <button id="btn-run">▶ Run</button>
-        <button id="btn-stop">■ Stop</button>
-        <button id="btn-monitor">👁 Monitor</button>
-        <button id="btn-pause">⏸ Pause poll</button>
-        <span id="status">idle</span>
+        <button id="btn-run" class="btn">▶ Run</button>
+        <button id="btn-stop" class="btn btn-danger">■ Stop</button>
+        <button id="btn-monitor" class="btn btn-primary">👁 Monitor</button>
+        <button id="btn-pause" class="btn btn-warn">⏸ Pause</button>
+        <span id="status" class="t-small t-muted"></span>
       </div>
-    </header>
+    </section>
 
     <section class="runner-status" id="runner-row" style="display:none">
       <div class="rs-label">Worker:</div>

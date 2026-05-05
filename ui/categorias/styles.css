@@ -1,0 +1,81 @@
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+.page-actions h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.page-actions .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.reproc {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.reproc strong { color: var(--text-2); }
+
+.tbl td a { font-weight: 600; }
+
+.action-btn {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  cursor: pointer;
+  margin-right: 4px;
+  font-family: inherit;
+}
+.action-btn.delete { color: var(--danger); }
+.action-btn:hover { background: var(--bg-3); }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-content {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  width: 400px;
+  max-width: 90%;
+}
+.modal-content h3 { margin: 0 0 16px; font-size: 16px; }
+.modal-content label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.modal-content small { color: var(--text-4); font-weight: 400; }
+.modal-content input,
+.modal-content textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.modal-content textarea { min-height: 60px; resize: vertical; }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.error { color: var(--danger); font-size: 12px; margin-top: 8px; }

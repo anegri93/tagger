@@ -2559,6 +2559,472 @@ window.__TASKS__ = {
       "validated_at": "2026-05-04T20:21:59.447Z"
     },
     {
+      "id": "P18",
+      "name": "Gestión categorías UI completa",
+      "tasks": [
+        {
+          "id": "T1801",
+          "title": "CRUD categorías endpoints + persistencia extras",
+          "detail": [
+            "POST /categorias { slug, nombre, descripcion? }",
+            "PATCH /categorias/:slug",
+            "DELETE /categorias/:slug (check refs)",
+            "GET /categorias/:slug/usage (counts movimientos/reglas/mcc/comercios)",
+            "Persiste a data/categorias-extras.tsv",
+            "Loader extras tras DEFAULTS",
+            "Invalidar cache CategoriaResolver",
+            "Validar slug [a-z0-9_]+ max 30",
+            "Tests fastify.inject CRUD + edge cases"
+          ],
+          "files": [
+            "src/api/routes/categorias.ts",
+            "src/api/routes/categorias.test.ts",
+            "src/api/schemas/categorias.ts",
+            "src/db/repos/categorias.ts",
+            "src/db/loaders/categorias.ts",
+            "src/db/loaders/categorias-extras.ts",
+            "src/main.ts",
+            "data/categorias-extras.tsv",
+            "scripts/load.ts"
+          ],
+          "depends_on": [],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:40:19.238Z",
+          "completed_at": "2026-05-05T11:42:56.815Z"
+        },
+        {
+          "id": "T1802",
+          "title": "CRUD reglas regex endpoints + persistencia extras",
+          "detail": [
+            "GET /reglas?categoria=X",
+            "POST /reglas {patron,categoria_slug,prioridad,descripcion?}",
+            "PATCH /reglas/:id",
+            "DELETE /reglas/:id",
+            "POST /reglas/test {patron,texto} pa probar live",
+            "Validar regex compilable (try new RegExp)",
+            "Persiste data/reglas-extras.tsv",
+            "Loader extras tras inline DEFAULTS",
+            "Invalidar cache CapaRegex",
+            "Tests"
+          ],
+          "files": [
+            "src/api/routes/reglas.ts",
+            "src/api/routes/reglas.test.ts",
+            "src/api/schemas/reglas.ts",
+            "src/db/repos/reglas.ts",
+            "src/db/loaders/reglas.ts",
+            "src/db/loaders/reglas-extras.ts",
+            "src/main.ts",
+            "data/reglas-extras.tsv",
+            "scripts/load.ts"
+          ],
+          "depends_on": [
+            "T1801"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:43:01.288Z",
+          "completed_at": "2026-05-05T11:45:06.991Z"
+        },
+        {
+          "id": "T1803",
+          "title": "CRUD MCC mapping endpoints",
+          "detail": [
+            "GET /mcc?categoria=X|sin_categoria=true",
+            "POST /mcc {cod_mcc,descripcion,categoria_slug?,ambiguo?}",
+            "PATCH /mcc/:cod_mcc",
+            "DELETE /mcc/:cod_mcc (block si refs)",
+            "Persiste cambios a data/mcc-extras.tsv (existing file)",
+            "Cache invalidate",
+            "Tests"
+          ],
+          "files": [
+            "src/api/routes/mcc.ts",
+            "src/api/routes/mcc.test.ts",
+            "src/api/schemas/mcc.ts",
+            "src/db/repos/mcc.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T1801"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:45:10.972Z",
+          "completed_at": "2026-05-05T11:46:44.554Z"
+        },
+        {
+          "id": "T1804",
+          "title": "Endpoint reproceso catálogo masivo",
+          "detail": [
+            "POST /catalogo/reprocess {truncate_first?:bool} → spawn worker",
+            "Reutiliza TestBatchRunner extendido o nuevo CatalogoMassiveRunner",
+            "Returns {batch_id,status} pa monitorear via /test-batch/list",
+            "Mutex: solo 1 reproceso simultáneo",
+            "Tests con sample"
+          ],
+          "files": [
+            "src/api/routes/catalogo.ts",
+            "src/api/routes/catalogo.test.ts",
+            "src/api/schemas/catalogo.ts",
+            "src/test-batch/catalogo-runner.ts",
+            "src/main.ts"
+          ],
+          "depends_on": [
+            "T1803"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:46:50.869Z",
+          "completed_at": "2026-05-05T11:48:19.639Z"
+        },
+        {
+          "id": "T1805",
+          "title": "Tabla marcas_conocidas + IA dinámica",
+          "detail": [
+            "Migration: marcas_conocidas (id, categoria_id FK, marca, descripcion?)",
+            "Seed migra constante MARCAS_PY actual",
+            "CRUD endpoints /marcas",
+            "Refactor src/layers/ia.ts: leer marcas DB con cache 60s",
+            "Generar bloque MARCAS_PY dinámico",
+            "Tests integración prompt incluye marca nueva tras crear"
+          ],
+          "files": [
+            "src/db/schema/marcas_conocidas.ts",
+            "src/db/migrations/*.sql",
+            "src/db/repos/marcas.ts",
+            "src/api/routes/marcas.ts",
+            "src/api/routes/marcas.test.ts",
+            "src/api/schemas/marcas.ts",
+            "src/layers/ia.ts",
+            "src/main.ts",
+            "src/db/loaders/marcas.ts"
+          ],
+          "depends_on": [
+            "T1801"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:48:23.365Z",
+          "completed_at": "2026-05-05T11:52:06.811Z"
+        },
+        {
+          "id": "T1806",
+          "title": "UI listado categorías",
+          "detail": [
+            "ui/categorias/index.html + app.js + styles.css (dark theme consistente)",
+            "Lista con counts (mov/reglas/mcc/comercios)",
+            "Botón + Nueva (modal form)",
+            "Click row → /ui/categorias/[slug]/",
+            "Botón Re-procesar catálogo (confirm + link a test-monitor)",
+            "Nav links desde tester y test-monitor"
+          ],
+          "files": [
+            "ui/categorias/index.html",
+            "ui/categorias/app.js",
+            "ui/categorias/styles.css",
+            "ui/test-monitor/index.html",
+            "ui/tester/index.html"
+          ],
+          "depends_on": [
+            "T1804",
+            "T1805"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:52:10.962Z",
+          "completed_at": "2026-05-05T11:53:51.791Z"
+        },
+        {
+          "id": "T1807",
+          "title": "UI detalle categoría con tabs",
+          "detail": [
+            "ui/categorias/[slug]/index.html (single file, query param ?slug=X)",
+            "Tabs: Info | Reglas | MCCs | Marcas",
+            "Form editar info",
+            "Tabla reglas inline CRUD + probar patron",
+            "Tabla MCCs filtrable + asignar/quitar",
+            "Tabla marcas CRUD",
+            "Eliminar categoría (mostrar usage si bloqueado)"
+          ],
+          "files": [
+            "ui/categorias/detalle.html",
+            "ui/categorias/detalle.js",
+            "ui/categorias/styles.css"
+          ],
+          "depends_on": [
+            "T1806"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:53:55.942Z",
+          "completed_at": "2026-05-05T11:55:08.682Z"
+        },
+        {
+          "id": "T1808",
+          "title": "E2E verificación + doc",
+          "detail": [
+            "Test integración src/api/categorias-flow.test.ts cubriendo pasos 1-12",
+            "doc docs/categorias-e2e.md con pasos manuales UI",
+            "README sección 'Gestión categorías via UI'",
+            "Manual: crear mascotas, regla, MCC, marca, reprocess, validar predicciones, eliminar"
+          ],
+          "files": [
+            "src/api/categorias-flow.test.ts",
+            "docs/categorias-e2e.md",
+            "README.md"
+          ],
+          "depends_on": [
+            "T1807"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:55:43.615Z",
+          "completed_at": "2026-05-05T11:57:23.925Z"
+        }
+      ],
+      "validated": true,
+      "validated_at": "2026-05-05T11:57:26.984Z"
+    },
+    {
+      "id": "P19",
+      "name": "UIs unificadas con shared layout + landing",
+      "tasks": [
+        {
+          "id": "T1901",
+          "title": "Shared layout: theme.css + state.js + api.js + nav.js",
+          "detail": [
+            "ui/shared/theme.css: CSS variables dark theme (colores, espaciados, tipografía)",
+            "ui/shared/state.js: singleton window.tagger {baseUrl, apiKey, setApiKey, on(event,cb)}",
+            "ui/shared/api.js: fetch wrapper con auth + manejo errores",
+            "ui/shared/nav.js: auto-inject navbar (detecta página activa, persist API key entre tabs)",
+            "Verificar: importar 4 scripts en HTML simple muestra nav + funciona api key sync"
+          ],
+          "files": [
+            "ui/shared/theme.css",
+            "ui/shared/state.js",
+            "ui/shared/api.js",
+            "ui/shared/nav.js"
+          ],
+          "depends_on": [],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T11:59:46.399Z",
+          "completed_at": "2026-05-05T12:00:51.167Z"
+        },
+        {
+          "id": "T1902",
+          "title": "Landing /ui/index.html con health + counts + cards",
+          "detail": [
+            "Landing usa shared layout",
+            "Cards: Categorías / Tester / Monitor / Tareas (con icons)",
+            "Health badges: DB ok/fail, Ollama ok/fail (fetch /health)",
+            "Counts: GET /categorias (count), GET /reglas (count), /marcas (count)",
+            "Click card navega a sección"
+          ],
+          "files": [
+            "ui/index.html"
+          ],
+          "depends_on": [
+            "T1901"
+          ],
+          "status": "done",
+          "gates_progress": {
+            "consistency": "pass",
+            "lint": "pass",
+            "test": "pass"
+          },
+          "started_at": "2026-05-05T12:00:57.113Z",
+          "completed_at": "2026-05-05T12:01:42.882Z"
+        },
+        {
+          "id": "T1903",
+          "title": "Mover dashboard tareas a /ui/tasks/index.html",
+          "detail": [
+            "mv ui/index.html → ui/tasks/index.html (renombrando, antiguo era dashboard tareas)",
+            "Mover ui/app.js, ui/styles.css, ui/tasks.data.js → ui/tasks/",
+            "Actualizar scripts/sync-tasks.mjs a generar ui/tasks/tasks.data.js",
+            "Refactor pa usar shared nav"
+          ],
+          "files": [
+            "ui/tasks/index.html",
+            "ui/tasks/app.js",
+            "ui/tasks/styles.css",
+            "ui/tasks/tasks.data.js",
+            "scripts/sync-tasks.mjs"
+          ],
+          "depends_on": [
+            "T1901"
+          ],
+          "status": "in_progress",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          },
+          "started_at": "2026-05-05T12:01:47.330Z"
+        },
+        {
+          "id": "T1904",
+          "title": "Refactor ui/categorias usa shared",
+          "detail": [
+            "Reemplazar topbar custom por shared nav",
+            "Migrar API client a shared api.js",
+            "Migrar config persistencia a shared state",
+            "Theme.css en lugar de styles propios donde aplique"
+          ],
+          "files": [
+            "ui/categorias/index.html",
+            "ui/categorias/detalle.html",
+            "ui/categorias/app.js",
+            "ui/categorias/detalle.js",
+            "ui/categorias/styles.css"
+          ],
+          "depends_on": [
+            "T1901"
+          ],
+          "status": "pending",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          }
+        },
+        {
+          "id": "T1905",
+          "title": "Refactor ui/test-monitor usa shared",
+          "detail": [
+            "Reemplazar topbar custom por shared nav",
+            "Migrar API client",
+            "Mantener KPIs y gráficos",
+            "Theme consistente"
+          ],
+          "files": [
+            "ui/test-monitor/index.html",
+            "ui/test-monitor/app.js",
+            "ui/test-monitor/styles.css"
+          ],
+          "depends_on": [
+            "T1901"
+          ],
+          "status": "pending",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          }
+        },
+        {
+          "id": "T1906",
+          "title": "Refactor ui/tester usa shared",
+          "detail": [
+            "Reemplazar header custom por shared nav",
+            "Migrar API client",
+            "Mantener form + history + correccion",
+            "Theme consistente"
+          ],
+          "files": [
+            "ui/tester/index.html",
+            "ui/tester/app.js",
+            "ui/tester/styles.css"
+          ],
+          "depends_on": [
+            "T1901"
+          ],
+          "status": "pending",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          }
+        },
+        {
+          "id": "T1907",
+          "title": "Fastify: redirect /ui → /ui/index.html",
+          "detail": [
+            "src/api/server.ts: agregar redirect 302 /ui → /ui/index.html",
+            "Verificar /ui/ devuelve landing",
+            "Asegurar /ui/shared/* sirve correctamente"
+          ],
+          "files": [
+            "src/api/server.ts"
+          ],
+          "depends_on": [
+            "T1902"
+          ],
+          "status": "pending",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          }
+        },
+        {
+          "id": "T1908",
+          "title": "Verificación e2e nav unificada + doc",
+          "detail": [
+            "Probar nav entre todas: landing→tareas→tester→monitor→categorias→landing",
+            "Verificar API key sync (set en una página, leer en otra)",
+            "Verificar active state correcto en cada sección",
+            "Doc README sección 'Servicio web unificado'"
+          ],
+          "files": [
+            "README.md"
+          ],
+          "depends_on": [
+            "T1903",
+            "T1904",
+            "T1905",
+            "T1906",
+            "T1907"
+          ],
+          "status": "pending",
+          "gates_progress": {
+            "consistency": "pending",
+            "lint": "pending",
+            "test": "pending"
+          }
+        }
+      ]
+    },
+    {
       "id": "PNH",
       "name": "Nice to have (post-MVP)",
       "tasks": [

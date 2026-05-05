@@ -29,6 +29,13 @@
       "when": 1777922290410,
       "tag": "0003_stale_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777981731286,
+      "tag": "0004_polite_wrecker",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,10 @@ export interface CategoriasLoader {
   activas(): Promise<CategoriaActiva[]>;
 }
 
+export interface MarcasReaderPort {
+  porCategoria(): Promise<Map<string, Array<{ marca: string }>>>;
+}
+
 export interface CapaIa {
   evaluar(input: MovimientoInput): Promise<ResultadoCapa | null>;
 }
@@ -20,19 +24,21 @@ const SYSTEM_PROMPT = `Sos un clasificador de movimientos bancarios paraguayos. 
 {"categoria_slug": "<slug>", "confianza": <0..1>}
 Si no estás seguro, devolvés {"categoria_slug": null, "confianza": 0}.`;
 
-const MARCAS_PY = `Marcas conocidas en Paraguay (interpretá typos/variantes con flexibilidad):
-- supermercado: BIGGIE, SUPERSEIS, SUPER 6, STOCK, SALEMMA, AREA UNO, CASA RICA, LOS JARDINES, NUESTRA CASA, REAL, GRANJA, COMERCIAL, CIAL, HIPER, SUPER
-- alimentacion: AMANDAU (heladería), GRIDO, MBURUCUYA, CHIPERIA, HELADERIA, CONFITERIA, PANADERIA
-- combustible: COPETROL, SHELL, PETROBRAS, PUMA, ESSO, BARCOS Y RODADOS, MONTE ALTO, ENERGY (estación)
-- farmacia: PUNTO FARMA, FARMACENTER, FARMA OLIVA, FARMATOTAL, BRISTOL (farmacia), CATEDRAL, FARMACIA, DROGUERIA, BOTICA
-- restaurante: MC DONALDS, BURGER KING, KFC, PIZZA HUT, DELIPOLLO, HAMBURG, PIZZERIA, RESTAURANT, PARRILLA, LOMITERIA
-- transporte: MUV, UBER, BOLT, TAXI, REMIS
-- entretenimiento: NETFLIX, SPOTIFY, DISNEY, HBO, AMAZON PRIME
-- servicios: ANDE (luz), ESSAP (agua), COPACO (telecom), TIGO, PERSONAL, CLARO, CABLE
-- azar: AZAR LATINO, SLOTS, GIRO WIN, SOLBET, BETSAT, CASINO, TRAGAMONEDA, APUESTA
-- transferencia: MANGO (P2P interno banco)`;
+function buildMarcasBlock(marcasPorCat: Map<string, Array<{ marca: string }>>): string {
+  if (marcasPorCat.size === 0) return '';
+  const lines = ['Marcas conocidas en Paraguay (interpretá typos/variantes con flexibilidad):'];
+  for (const [slug, list] of marcasPorCat) {
+    if (list.length === 0) continue;
+    lines.push(`- ${slug}: ${list.map((m) => m.marca).join(', ')}`);
+  }
+  return lines.join('\n');
+}
 
-function buildPrompt(input: MovimientoInput, categorias: CategoriaActiva[]): string {
+function buildPrompt(
+  input: MovimientoInput,
+  categorias: CategoriaActiva[],
+  marcasBlock: string,
+): string {
   const lista = categorias.map((c) => `- ${c.slug}: ${c.nombre}`).join('\n');
   const datos = [
     input.descripcion ? `descripcion: ${input.descripcion}` : null,
@@ -49,7 +55,7 @@ function buildPrompt(input: MovimientoInput, categorias: CategoriaActiva[]): str
 Categorías disponibles:
 ${lista}
 
-${MARCAS_PY}
+${marcasBlock}
 
 Movimiento:
 ${datos}
@@ -76,12 +82,18 @@ function parseJson(raw: string): IaResponse | null {
   }
 }
 
-export function crearCapaIa(client: OllamaClient, loader: CategoriasLoader): CapaIa {
+export function crearCapaIa(
+  client: OllamaClient,
+  loader: CategoriasLoader,
+  marcasReader?: MarcasReaderPort,
+): CapaIa {
   return {
     async evaluar(input) {
       const cats = await loader.activas();
       if (cats.length === 0) return null;
-      const prompt = buildPrompt(input, cats);
+      const marcasMap = marcasReader ? await marcasReader.porCategoria() : new Map();
+      const marcasBlock = buildMarcasBlock(marcasMap);
+      const prompt = buildPrompt(input, cats, marcasBlock);
       let raw: string;
       try {
         raw = await client.generate({ prompt, format: 'json', temperature: 0.1 });

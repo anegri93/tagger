@@ -1,4 +1,4 @@
-{
+window.__TASKS__ = {
   "meta": {
     "project": "tagger",
     "description": "Servicio categorización gastos. Cascada regex→Bancard→comercio→MCC→IA(Gemma).",
@@ -3272,4 +3272,4 @@
       ]
     }
   ]
-}
+};

@@ -69,8 +69,8 @@ for (const phase of data.phases) {
 writeFileSync(resolve(root, 'TASKS.md'), lines.join('\n'));
 
 writeFileSync(
-  resolve(root, 'ui/tasks.data.js'),
+  resolve(root, 'ui/tasks/tasks.data.js'),
   `window.__TASKS__ = ${JSON.stringify(data, null, 2)};\n`,
 );
 
-console.log(`TASKS.md + ui/tasks.data.js regenerados. ${done}/${total} (${pct}%)`);
+console.log(`TASKS.md + ui/tasks/tasks.data.js regenerados. ${done}/${total} (${pct}%)`);

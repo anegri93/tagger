@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — categoría detalle</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .tabs { display: flex; gap: 4px; border-bottom: 1px solid #30363d; padding: 0 20px; }
+      .tab {
+        padding: 10px 16px;
+        background: #161b22;
+        color: #8b949e;
+        border: 1px solid #30363d;
+        border-bottom: none;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .tab.active { color: #e6edf3; background: #0d1117; }
+      .tab-content { padding: 20px; display: none; }
+      .tab-content.active { display: block; }
+      .form-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: flex-end; }
+      .form-row label { font-size: 11px; color: #8b949e; display: flex; flex-direction: column; gap: 4px; }
+      .form-row input, .form-row select, .form-row textarea {
+        background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+        padding: 6px 10px; border-radius: 4px; font-size: 13px;
+        font-family: ui-monospace, monospace;
+      }
+      .form-row button {
+        background: #238636; color: white; border: none;
+        padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer;
+      }
+      .test-result { margin-top: 8px; padding: 8px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; }
+      .test-result.match { background: #1c4d23; color: #56d364; }
+      .test-result.no-match { background: #4f1a1a; color: #ff7b72; }
+      h2 { font-size: 14px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+    </style>
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <section class="page-actions">
+      <h2>📂 <span id="cat-slug">…</span></h2>
+      <div class="actions">
+        <a href="/ui/categorias/index.html" class="btn btn-ghost">← Volver lista</a>
+        <span id="status" class="t-small t-muted"></span>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="info">Info</div>
+      <div class="tab" data-tab="reglas">Reglas</div>
+      <div class="tab" data-tab="mcc">MCCs</div>
+      <div class="tab" data-tab="marcas">Marcas</div>
+    </div>
+
+    <div class="tab-content active" data-tab="info">
+      <h2>Información</h2>
+      <div class="form-row">
+        <label>Slug<input id="info-slug" disabled /></label>
+        <label>Nombre<input id="info-nombre" /></label>
+        <label>Descripción<input id="info-desc" /></label>
+        <button id="info-save">Guardar</button>
+      </div>
+      <h2>Uso</h2>
+      <div id="info-usage" class="test-result">Cargando…</div>
+      <div style="margin-top:16px">
+        <button class="action-btn delete" id="btn-delete-cat">Eliminar categoría</button>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="reglas">
+      <h2>Reglas regex</h2>
+      <div class="form-row">
+        <label>Patrón<input id="r-patron" placeholder="\\bMASCOTA\\b" /></label>
+        <label>Prioridad<input id="r-prio" type="number" value="20" style="width:80px" /></label>
+        <label>Descripción<input id="r-desc" /></label>
+        <button id="r-add">+ Agregar</button>
+      </div>
+      <div class="form-row">
+        <label>Probar patrón vs texto<input id="r-test-texto" placeholder="VETERINARIA SAN ROQUE" /></label>
+        <button id="r-test-btn">Probar</button>
+      </div>
+      <div id="r-test-result" class="test-result" style="display:none"></div>
+      <table class="tbl" id="reglas-tbl">
+        <thead><tr><th>Patrón</th><th>Prio</th><th>Activo</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tab-content" data-tab="mcc">
+      <h2>MCCs asignados</h2>
+      <table class="tbl" id="mcc-asignados-tbl">
+        <thead><tr><th>Código</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <h2 style="margin-top:24px">Asignar MCC sin categoría</h2>
+      <div class="form-row">
+        <label>Código MCC<input id="mcc-asignar-cod" /></label>
+        <button id="mcc-asignar-btn">Asignar</button>
+      </div>
+      <table class="tbl" id="mcc-disponibles-tbl">
+        <thead><tr><th>Código</th><th>Descripción</th><th>Asignar</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="tab-content" data-tab="marcas">
+      <h2>Marcas conocidas</h2>
+      <div class="form-row">
+        <label>Marca<input id="m-marca" placeholder="PETSHOP CITY" /></label>
+        <label>Descripción<input id="m-desc" /></label>
+        <button id="m-add">+ Agregar</button>
+      </div>
+      <table class="tbl" id="marcas-tbl">
+        <thead><tr><th>Marca</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script src="detalle.js"></script>
+  </body>
+</html>

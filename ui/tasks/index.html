@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>tagger — tareas</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <header>
+      <h1>tareas</h1>
+      <p id="desc"></p>
+      <div class="progress-wrap">
+        <div id="progress-bar"></div>
+        <span id="progress-label"></span>
+      </div>
+      <div class="filters">
+        <label>Estado:
+          <select id="filter-status">
+            <option value="">todos</option>
+            <option value="pending">pending</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+            <option value="blocked">blocked</option>
+          </select>
+        </label>
+        <label>Fase:
+          <select id="filter-phase"><option value="">todas</option></select>
+        </label>
+        <button id="reload" class="btn btn-primary">↻ recargar</button>
+      </div>
+    </header>
+    <main id="phases"></main>
+    <script src="./tasks.data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

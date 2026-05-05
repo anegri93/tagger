@@ -2,7 +2,10 @@ import { db, pool } from '../src/db/client.js';
 import { categorias as categoriasTable } from '../src/db/schema/index.js';
 import { runLoader, logResult, type LoaderConfig, type LoaderContext } from '../src/db/loaders/csv.js';
 import { categoriasLoaderConfig } from '../src/db/loaders/categorias.js';
+import { categoriasExtrasLoaderConfig } from '../src/db/loaders/categorias-extras.js';
 import { reglasLoaderConfig } from '../src/db/loaders/reglas.js';
+import { reglasExtrasLoaderConfig } from '../src/db/loaders/reglas-extras.js';
+import { marcasLoaderConfig } from '../src/db/loaders/marcas.js';
 import { mccLoaderConfig } from '../src/db/loaders/mcc.js';
 import { mccGeneralLoaderConfig } from '../src/db/loaders/mcc-general.js';
 import { mccCategoriaLoaderConfig } from '../src/db/loaders/mcc-categoria.js';
@@ -14,7 +17,10 @@ import { loadComerciosBancardMasivo } from '../src/db/loaders/comercios-bancard-
 
 const LOADERS: Record<string, LoaderConfig<Record<string, string>, Record<string, unknown>>> = {
   categorias: categoriasLoaderConfig as never,
+  'categorias-extras': categoriasExtrasLoaderConfig as never,
   reglas: reglasLoaderConfig as never,
+  'reglas-extras': reglasExtrasLoaderConfig as never,
+  marcas: marcasLoaderConfig as never,
   mcc: mccLoaderConfig as never,
   'mcc-general': mccGeneralLoaderConfig as never,
   'mcc-categoria': mccCategoriaLoaderConfig as never,

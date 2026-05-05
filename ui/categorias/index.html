@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — categorías</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <section class="page-actions">
+      <h2>📂 Categorías</h2>
+      <div class="actions">
+        <button id="btn-reload" class="btn btn-primary">↻ Reload</button>
+        <button id="btn-new" class="btn">+ Nueva</button>
+        <button id="btn-reprocess" class="btn btn-danger">⚙ Re-procesar catálogo</button>
+        <span id="status" class="t-small t-muted"></span>
+      </div>
+    </section>
+
+    <section id="reproc-status" class="reproc card" style="display:none;margin:0 20px 16px">
+      <div><strong>Reproceso:</strong> <span id="rp-status">—</span></div>
+      <div>Total: <span id="rp-total">—</span> | Revisión: <span id="rp-rev">—</span></div>
+      <div>Por fuente: <span id="rp-fuente">—</span></div>
+    </section>
+
+    <section class="list" style="padding:0 20px 20px">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Slug</th><th>Nombre</th>
+            <th>Movs</th><th>Reglas</th><th>MCC</th><th>Comercios</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="lista-cats"></tbody>
+      </table>
+    </section>
+
+    <div id="modal-new" class="modal" style="display:none">
+      <div class="modal-content">
+        <h3>Nueva categoría</h3>
+        <label>Slug <small>(a-z, 0-9, _, max 30)</small>
+          <input id="new-slug" pattern="[a-z0-9_]+" required />
+        </label>
+        <label>Nombre <input id="new-nombre" required /></label>
+        <label>Descripción <textarea id="new-desc"></textarea></label>
+        <div class="modal-actions">
+          <button id="btn-cancel" class="btn btn-ghost">Cancelar</button>
+          <button id="btn-save" class="btn">Crear</button>
+        </div>
+        <div id="new-error" class="error"></div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

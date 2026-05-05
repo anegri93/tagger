@@ -35,6 +35,9 @@ export async function build(opts: BuildOptions = {}) {
 
   app.get('/health', async () => ({ status: 'ok' }));
 
+  app.get('/', async (_req, reply) => reply.redirect('/ui/'));
+  app.get('/ui', async (_req, reply) => reply.redirect('/ui/'));
+
   return app;
 }
 

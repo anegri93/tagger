@@ -56,6 +56,47 @@ Pa categorizar 100k+ comercios Bancard con MCCs oficiales:
 
 El TSV de mapeo es idempotente: re-correr `export-mcc-mapping.mjs` preserva slugs ya editados.
 
+## Servicio web unificado
+
+Todas las UIs servidas por el mismo servidor Fastify en mismo origen (sin CORS):
+
+```
+http://localhost:3000/             → redirect a /ui/
+http://localhost:3000/ui/          → landing con health + counts + cards
+http://localhost:3000/ui/categorias/   → CRUD categorías + reglas + MCC + marcas
+http://localhost:3000/ui/tester/       → tester movimiento por movimiento
+http://localhost:3000/ui/test-monitor/ → dashboard tests masivos realtime
+http://localhost:3000/ui/tasks/        → dashboard fases/tareas del proyecto
+```
+
+**Shared layout** en `/ui/shared/`:
+- `theme.css` — CSS variables, dark theme consistente
+- `state.js` — `window.tagger` singleton (apiKey, baseUrl, sync entre tabs)
+- `api.js` — `window.taggerApi(path, opts)` fetch wrapper unificado
+- `nav.js` — navbar auto-inyectado con active state + health badge live
+
+API key se setea una vez y persiste en localStorage compartido entre todas las UIs.
+
+## Gestión categorías via UI
+
+UI completa CRUD pa categorías + reglas + MCC + marcas IA, con persistencia que sobrevive re-deploys:
+
+- **Lista**: http://localhost:3000/ui/categorias/index.html
+- **Detalle por slug**: tabs Info / Reglas / MCCs / Marcas
+- **Re-procesar catálogo**: botón global dispara worker masivo
+
+Cuando creás una categoría desde UI:
+1. Inserta en DB + persiste a `data/categorias-extras.tsv`
+2. Cache CategoriaResolver invalidado → próximas requests ven la nueva
+3. Endpoint `/categorias` devuelve la nueva (auto en tester dropdown)
+4. IA Gemma usa la nueva categoría automáticamente (lee de DB)
+
+Reglas regex y MCC mapping persisten igual a `data/reglas-extras.tsv` y `data/mcc-extras.tsv`.
+
+Marcas conocidas viven en tabla `marcas_conocidas` (no archivo): IA prompt se construye dinámico desde DB con cache 60s.
+
+Ver `docs/categorias-e2e.md` pa workflow completo verificación.
+
 ## Test interactivo via UI
 
 API sirve dashboard control en mismo origen (sin CORS file://):

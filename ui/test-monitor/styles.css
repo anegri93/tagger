@@ -15,6 +15,9 @@ body {
   flex-wrap: wrap;
 }
 .topbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.topnav { display: flex; gap: 12px; }
+.topnav a { color: #58a6ff; text-decoration: none; font-size: 13px; }
+.topnav a:hover { text-decoration: underline; }
 .controls { display: flex; gap: 8px; align-items: center; flex: 1; flex-wrap: wrap; }
 .controls input {
   background: #0d1117;

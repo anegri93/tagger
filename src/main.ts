@@ -5,6 +5,12 @@ import { categorizarRoute } from './api/routes/categorizar.js';
 import { movimientoGetRoute } from './api/routes/movimiento-get.js';
 import { correccionRoute } from './api/routes/correccion.js';
 import { categoriasRoute } from './api/routes/categorias.js';
+import { reglasRoute } from './api/routes/reglas.js';
+import { mccRoute } from './api/routes/mcc.js';
+import { catalogoRoute } from './api/routes/catalogo.js';
+import { CatalogoMassiveRunner } from './test-batch/catalogo-runner.js';
+import { marcasRoute } from './api/routes/marcas.js';
+import { crearMarcaWriter, crearMarcasReader } from './db/repos/marcas.js';
 import { testBatchStatsRoute } from './api/routes/test-batch-stats.js';
 import { testBatchControlRoute } from './api/routes/test-batch-control.js';
 import { TestBatchRunner } from './test-batch/runner.js';
@@ -22,6 +28,8 @@ import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
 import { crearReglasLoader } from './db/repos/reglas.js';
+import { crearReglaWriter } from './db/repos/reglas-writer.js';
+import { crearMccWriter } from './db/repos/mcc-writer.js';
 import {
   crearBancardLookup,
   crearComercioLookup,
@@ -38,6 +46,7 @@ import {
   crearCategoriasReader,
   crearCategoriasLoader,
   crearCategoriaResolver,
+  crearCategoriaWriter,
 } from './db/repos/categorias.js';
 import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
 
@@ -65,6 +74,7 @@ async function main() {
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
+  const marcasReader = crearMarcasReader(db);
 
   const capas = {
     catalogo: crearCapaCatalogo(catalogoLookup),
@@ -73,7 +83,7 @@ async function main() {
     comercio: crearCapaComercio(comercioLookup),
     mcc: crearCapaMcc(mccLookup),
   };
-  const capaIa = crearCapaIa(ollama, categoriasLoader);
+  const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
   const iaFallback = crearIaFallback({
     capa: capaIa,
     updater: movUpdater,
@@ -89,7 +99,19 @@ async function main() {
   );
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
-  await app.register(categoriasRoute(categoriasReader));
+  const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
+  await app.register(categoriasRoute(categoriasReader, categoriaWriter));
+  const reglaWriter = crearReglaWriter(db, () => capas.regex.invalidar());
+  await app.register(reglasRoute(reglaWriter));
+  const mccWriter = crearMccWriter(db);
+  await app.register(mccRoute(mccWriter));
+  const catalogoRunner = new CatalogoMassiveRunner({
+    db,
+    resolveCategoria: () => undefined,
+  });
+  await app.register(catalogoRoute(catalogoRunner));
+  const marcaWriter = crearMarcaWriter(db, marcasReader);
+  await app.register(marcasRoute(marcaWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo });
   await app.register(testBatchControlRoute(testRunner));

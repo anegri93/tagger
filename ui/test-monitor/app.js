@@ -1,13 +1,7 @@
 const $ = (id) => document.getElementById(id);
-const LS = 'tagger-test-monitor-v2';
-
-const DEFAULT_BASE = window.location.origin.startsWith('http')
-  ? window.location.origin
-  : 'http://localhost:3000';
+const LS = 'tagger-test-monitor-v3';
 
 const state = {
-  baseUrl: DEFAULT_BASE,
-  apiKey: '',
   batchId: '',
   limit: '',
   concurrency: 30,
@@ -21,8 +15,6 @@ function loadCfg() {
     const raw = localStorage.getItem(LS);
     if (raw) Object.assign(state, JSON.parse(raw));
   } catch {}
-  $('base-url').value = state.baseUrl;
-  $('api-key').value = state.apiKey;
   $('batch-id').value = state.batchId;
   $('limit').value = state.limit ?? '';
   $('concurrency').value = state.concurrency ?? 30;
@@ -32,8 +24,6 @@ function saveCfg() {
   localStorage.setItem(
     LS,
     JSON.stringify({
-      baseUrl: state.baseUrl,
-      apiKey: state.apiKey,
       batchId: state.batchId,
       limit: state.limit,
       concurrency: state.concurrency,
@@ -42,8 +32,6 @@ function saveCfg() {
 }
 
 function syncFromUI() {
-  state.baseUrl = $('base-url').value.trim() || DEFAULT_BASE;
-  state.apiKey = $('api-key').value.trim();
   state.batchId = $('batch-id').value.trim();
   state.limit = $('limit').value.trim();
   state.concurrency = Number($('concurrency').value) || 30;
@@ -53,31 +41,10 @@ function syncFromUI() {
 function setStatus(text, cls = '') {
   const el = $('status');
   el.textContent = text;
-  el.className = cls;
+  el.className = `t-small ${cls === 'live' ? '' : 't-muted'}`;
 }
 
-async function api(path, opts = {}) {
-  const res = await fetch(`${state.baseUrl}${path}`, {
-    ...opts,
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': state.apiKey,
-      ...(opts.headers ?? {}),
-    },
-  });
-  const text = await res.text();
-  let body;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    body = { _raw: text };
-  }
-  if (!res.ok) {
-    const msg = body.error ?? `http_${res.status}`;
-    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
-  }
-  return body;
-}
+const api = window.taggerApi;
 
 async function startRun() {
   syncFromUI();

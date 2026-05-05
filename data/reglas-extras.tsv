@@ -1,0 +1,41 @@
+patron	categoria_slug	prioridad	descripcion	activo
+\b(PANADERIA|HELADERIA|CONFITERIA|RESTAURANT|PIZZERIA|HAMBURG|PARRILLA|LOMITERIA)\b	restaurante	25	Gastro genérico	1
+^MANGO\b	transferencia	5	Mango P2P	1
+\bMONTE\s*ALTO\b	combustible	20	Monte Alto	1
+\bBARCOS\s*Y\s*ROD	combustible	20	Barcos y Rodados	1
+\bPUNTO\s*FARMA\b	farmacia	10	Punto Farma	1
+\bFARMA\s*CENTER\b	farmacia	10	Farmacenter	1
+\bCATEDRAL\b.*FARMA	farmacia	30	Catedral farmacia	1
+\bMC\s*DONALDS?\b	restaurante	10	McDonalds	1
+\b(AZAR|SLOTS?|TRAGAMONEDAS?|CASINO|GAMING|APUESTAS?|BETSAT|GIRO\s?WIN|SOLBET|PGP|UPAY|EGLOBALT)\b	azar	10	Juegos de azar	1
+\b(VETERINARIA|PETSHOP|MASCOTA)\b	mascotas	20		1
+\bBURGER\s*KING\b	restaurante	10	Burger King	1
+\bPIZZA\s*HUT\b	restaurante	10	Pizza Hut	1
+\bKFC\b	restaurante	10	KFC	1
+\bANDE\b	servicios	10	ANDE energía	1
+\bESSAP\b	servicios	10	ESSAP agua	1
+\bCOPACO\b	servicios	10	Copaco	1
+\bTIGO\b	servicios	10	Tigo	1
+\bPERSONAL\b	servicios	20	Personal	1
+\bCLARO\b	servicios	20	Claro	1
+\bMUV\b	transporte	10	MUV	1
+\bUBER\b	transporte	10	Uber	1
+\bBOLT\b	transporte	10	Bolt	1
+\bBIGGIE\b	supermercado	10	Biggie	1
+\bSUPER\s*SEIS\b	supermercado	10	Super Seis	1
+\bSUPERSEIS\b	supermercado	10	Superseis	1
+\bSTOCK\b	supermercado	20	Stock	1
+\bAREA\s*UNO\b	supermercado	20	Area Uno	1
+\bNETFLIX\b	entretenimiento	10	Netflix	1
+\bSPOTIFY\b	entretenimiento	10	Spotify	1
+\bDISNEY	entretenimiento	10	Disney+	1
+\b(COMERC|COMERCIAL|CIAL|HIPER|MINIMARKET|MERCADO\s|ABASTO|DESPENSA|VIVERES)\b	supermercado	25	Comercial/super genéricos	1
+\bSALEMMA\b	supermercado	20	Salemma	1
+\bCASA\s*RICA\b	supermercado	20	Casa Rica	1
+\bLOS\s*JARDINES\b	supermercado	30	Los Jardines	1
+\bCOPETROL\b	combustible	10	Copetrol	1
+\bSHELL\b	combustible	10	Shell	1
+\bPETROBRAS\b	combustible	10	Petrobras	1
+\b(AZAR|SLOT|SLOTS|TRAGAMONEDA|CASINO|GAMING|APUESTA|BETSAT|GIRO\s?WIN|SOLBET|PGP|UPAY|EGLOBALT)\b	azar	10	Juegos de azar	1
+\bPUMA\s*ENERGY\b	combustible	10	Puma Energy	1
+\b(FARMA|FARMACIA|DROGUERIA|BOTICA)\b	farmacia	25	Farmacia genérico	1
