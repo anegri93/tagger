@@ -162,8 +162,8 @@ $('#reglas-tbl').addEventListener('click', async (e) => {
 async function loadMcc() {
   try {
     const [asignados, sin] = await Promise.all([
-      api(`/mcc?categoria=${encodeURIComponent(SLUG)}`),
-      api('/mcc?sin_categoria=true'),
+      window.taggerApi(`/mcc?categoria=${encodeURIComponent(SLUG)}`),
+      window.taggerApi('/mcc?sin_categoria=true'),
     ]);
     $('#mcc-asignados-tbl tbody').innerHTML = asignados.items
       .map(
