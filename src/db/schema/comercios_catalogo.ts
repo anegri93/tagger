@@ -38,6 +38,7 @@ export const comerciosCatalogo = pgTable(
     }),
     fuenteNueva: fuenteCategoriaEnum('fuente_nueva'),
     confianzaNueva: numeric('confianza_nueva', { precision: 3, scale: 2 }),
+    evidenciaNueva: jsonb('evidencia_nueva').$type<Evidencia>(),
     recategorizadoAt: timestamp('recategorizado_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

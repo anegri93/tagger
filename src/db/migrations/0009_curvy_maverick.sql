@@ -1,0 +1,1 @@
+ALTER TABLE "comercios_catalogo" ADD COLUMN "evidencia_nueva" jsonb;

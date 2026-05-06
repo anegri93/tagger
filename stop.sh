@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stop.sh — detiene API y postgres. Volúmenes preservados.
+# stop.sh — detiene API + todos los servicios docker (postgres, ollama si activo). Volúmenes preservados.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,12 +31,23 @@ else
   log "no hay PID file"
 fi
 
-# matar procesos huérfanos tsx watch que pudieron quedar
-pkill -f 'tsx watch src/main.ts' 2>/dev/null || true
+# matar procesos huérfanos tsx/pnpm
+pkill -f 'src/main.ts' 2>/dev/null || true
+pkill -f 'tsx.*watch' 2>/dev/null || true
+pkill -f 'pnpm dev' 2>/dev/null || true
+# liberar puerto 3000 si quedó algo escuchando
+if command -v lsof >/dev/null 2>&1; then
+  PORT_PID=$(lsof -ti:3000 2>/dev/null || true)
+  if [[ -n "$PORT_PID" ]]; then
+    log "liberando puerto 3000 (PID $PORT_PID)"
+    kill -9 $PORT_PID 2>/dev/null || true
+  fi
+fi
 
 if command -v docker >/dev/null 2>&1; then
-  log "deteniendo postgres (volumen preservado)"
-  docker compose stop postgres 2>/dev/null || true
+  log "deteniendo todos los servicios docker compose (postgres, ollama, api si corren)"
+  # --profile ai cubre ollama; sin profile baja postgres y api solamente.
+  docker compose --profile ai down 2>/dev/null || docker compose down 2>/dev/null || true
 fi
 
 log "stop completo"

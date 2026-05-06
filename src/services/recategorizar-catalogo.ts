@@ -56,6 +56,7 @@ export async function recategorizarCatalogo(deps: RecategorizarDeps): Promise<Re
       const categoriaNuevaId = r.resultado?.categoriaId ?? null;
       const fuenteNueva = r.resultado?.fuente ?? null;
       const confianzaNueva = r.resultado?.confianza ?? null;
+      const evidenciaNueva = r.resultado?.evidencia ?? null;
 
       await db
         .update(comerciosCatalogo)
@@ -63,6 +64,7 @@ export async function recategorizarCatalogo(deps: RecategorizarDeps): Promise<Re
           categoriaNuevaId,
           fuenteNueva,
           confianzaNueva: confianzaNueva !== null ? String(confianzaNueva) : null,
+          evidenciaNueva,
           recategorizadoAt: new Date(),
         })
         .where(eq(comerciosCatalogo.id, row.id));

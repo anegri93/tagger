@@ -64,6 +64,13 @@
       "when": 1778001332886,
       "tag": "0008_fixed_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778069860227,
+      "tag": "0009_curvy_maverick",
+      "breakpoints": true
     }
   ]
 }

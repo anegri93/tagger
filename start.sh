@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# start.sh — levanta postgres, instala deps, corre migración + seeds, arranca API en background.
+# start.sh — levanta postgres, instala deps, corre migración + seeds, arranca API en foreground (logs en consola).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 PID_FILE="$ROOT/.tagger.pid"
-LOG_FILE="$ROOT/.tagger.log"
 
 log() { printf '\033[1;36m[start]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[start]\033[0m %s\n' "$*" >&2; }
@@ -15,6 +14,8 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   err "API ya corre (PID $(cat "$PID_FILE")). Usá restart.sh o stop.sh."
   exit 1
 fi
+# limpiar PID stale
+rm -f "$PID_FILE"
 
 if [[ ! -f .env ]]; then
   if [[ -f .env.example ]]; then
@@ -63,17 +64,7 @@ pnpm db:migrate
 log "cargando catálogos (loaders)"
 pnpm db:load:all || log "loaders parciales (continúa)"
 
-log "arrancando API en background → $LOG_FILE"
-nohup pnpm dev > "$LOG_FILE" 2>&1 &
-echo $! > "$PID_FILE"
-sleep 1
-
-if kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-  log "API PID $(cat "$PID_FILE")"
-  log "logs: tail -f $LOG_FILE"
-  log "stop: ./stop.sh"
-else
-  err "API falló al arrancar. Revisá $LOG_FILE"
-  rm -f "$PID_FILE"
-  exit 1
-fi
+log "arrancando API en foreground (Ctrl+C para detener)"
+echo $$ > "$PID_FILE"
+trap 'rm -f "$PID_FILE"' EXIT
+exec pnpm dev

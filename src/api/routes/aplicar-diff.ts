@@ -59,6 +59,50 @@ export const aplicarDiffRoute =
       return reply.send({ actualizadas: updated.length });
     });
 
+    const aplicarPatronSchema = z.object({
+      categoria_actual_slug: z.string().min(1).max(50),
+      categoria_nueva_slug: z.string().min(1).max(50),
+      patron: z.string().min(1).max(500),
+    });
+
+    app.post('/catalogo/aplicar-diff-patron', async (req, reply) => {
+      const parsed = aplicarPatronSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_input', issues: parsed.error.flatten() });
+      }
+      const { categoria_actual_slug, categoria_nueva_slug, patron } = parsed.data;
+      if (categoria_actual_slug === categoria_nueva_slug) {
+        return reply.code(422).send({ error: 'slugs_iguales' });
+      }
+      const [actualId, nuevaId] = await Promise.all([
+        resolverSlug(db, categoria_actual_slug),
+        resolverSlug(db, categoria_nueva_slug),
+      ]);
+      if (!actualId) return reply.code(400).send({ error: 'categoria_actual_inexistente' });
+      if (!nuevaId) return reply.code(400).send({ error: 'categoria_nueva_inexistente' });
+
+      // Match por evidencia_nueva->>'patron' = patron O evidencia_nueva->>'mcc_match' = patron
+      const updated = await db
+        .update(comerciosCatalogo)
+        .set({
+          categoriaId: nuevaId,
+          fuenteCategoria: 'manual',
+          confianza: '1.00',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(comerciosCatalogo.categoriaId, actualId),
+            eq(comerciosCatalogo.categoriaNuevaId, nuevaId),
+            isNotNull(comerciosCatalogo.recategorizadoAt),
+            sql`(${comerciosCatalogo.evidenciaNueva}->>'patron' = ${patron} OR ${comerciosCatalogo.evidenciaNueva}->>'mcc_match' = ${patron})`,
+          ),
+        )
+        .returning({ id: comerciosCatalogo.id });
+
+      return reply.send({ actualizadas: updated.length, patron });
+    });
+
     const decisionSchema = z.object({
       decision: z.enum(['aplicar', 'mantener']),
     });

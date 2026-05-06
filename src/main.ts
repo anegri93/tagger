@@ -37,6 +37,8 @@ import { patronesRoute } from './api/routes/patrones.js';
 import { recategorizarCatalogoRoute } from './api/routes/recategorizar-catalogo.js';
 import { tokensSinCategoriaRoute } from './api/routes/tokens-sin-categoria.js';
 import { aplicarDiffRoute } from './api/routes/aplicar-diff.js';
+import { sugerenciasPatronesRoute } from './api/routes/sugerencias-patrones.js';
+import { sugerenciasIaRoute } from './api/routes/sugerencias-ia.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import {
   crearBancardLookup,
@@ -69,6 +71,13 @@ async function pingDb(): Promise<boolean> {
 
 async function main() {
   const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
+  // Cliente con timeout largo para batch (sugerencias IA con prompts grandes)
+  const ollamaBatch = crearOllamaClient({
+    url: env.OLLAMA_URL,
+    model: env.OLLAMA_MODEL,
+    timeoutMs: 300_000, // 5 min
+    retries: 0,
+  });
 
   const reglasLoader = crearReglasLoader(db);
   const patronesLoader = crearPatronesLoader(db);
@@ -118,6 +127,8 @@ async function main() {
   await app.register(recategorizarCatalogoRoute(db, capas));
   await app.register(tokensSinCategoriaRoute(db));
   await app.register(aplicarDiffRoute(db));
+  await app.register(sugerenciasPatronesRoute(db, patronWriter));
+  await app.register(sugerenciasIaRoute(db, ollamaBatch, patronWriter));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
   const catalogoRunner = new CatalogoMassiveRunner({

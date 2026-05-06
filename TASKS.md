@@ -4,7 +4,7 @@
 
 **Stack:** TypeScript, Node, Fastify, Drizzle, Postgres, Vitest, Ollama
 
-**Progreso global:** 141/155 (91%)
+**Progreso global:** 151/165 (92%)
 
 ## Reglas
 
@@ -1881,6 +1881,152 @@
 - Gates: pnpm lint && pnpm typecheck && pnpm check:consistency
 
 **Archivos:** `ui/recat/index.html`, `ui/recat/recat.js`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P28 — Sugerencia autónoma de patrones (con criterios anti-basura) (3/3)
+
+### ✅ T2801 — Service sugerir-patrones _deps: T2702_
+
+**Detalle:**
+- src/services/sugerir-patrones.ts
+- Algoritmo: leer comercios con categoria_id Y fuente IN (regex,manual,patrones,bancard,literal,prefijo,contiene) Y conf>=0.8 (seed bueno)
+- Tokenizar nombre con normalize+split, filtrar stopwords + length>=4
+- Construir matriz token→{categoria: count}
+- Para cada token: pureza = max(counts)/sum(counts), freq=sum(counts)
+- Filtros: freq>=5 (configurable), pureza>=0.8 (configurable), longitud>=4 (configurable)
+- Calcular impacto: cuántos comercios sin categoría matcheará (lookup texto contains/regex)
+- Filtros adicionales: descartar si ya existe patrón con mismo (tipo,valor,categoria), descartar si conflicta (mismo valor distinta categoria)
+- Token corto (<=4): tipo=regex con \b...\b. Token largo: tipo=contiene
+- Devuelve [{ token, tipo, valor, categoria_id, categoria_slug, freq_seed, pureza, impacto_sin_cat }] ordenado por impacto desc
+- Stopwords: PARAGUAY, ASUNCION, CALLE, AVENIDA, CENTRO, SUCURSAL, BRANCH, etc (lista corta)
+- Tests src/services/sugerir-patrones.test.ts: pureza correcta, descarta freq baja, descarta token corto sin regex, descarta conflictos, impacto calculado
+- Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/services/sugerir-patrones.test.ts && pnpm check:consistency
+
+**Archivos:** `src/services/sugerir-patrones.ts`, `src/services/sugerir-patrones.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2802 — Endpoints GET sugerencias + POST aplicar _deps: T2801_
+
+**Detalle:**
+- src/api/routes/sugerencias-patrones.ts
+- GET /patrones/sugerencias?freq_min=5&pureza_min=0.8&longitud_min=4 → lista de candidatos
+- POST /patrones/sugerencias/aplicar { items: [{tipo, valor, categoria_slug, prioridad?}] } → crea N patrones, reporta {creados, errores}
+- Cada patrón creado con descripcion='auto-sugerido', prioridad default 35
+- Tests src/api/routes/sugerencias-patrones.test.ts
+- Registrar en main.ts
+- Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency
+
+**Archivos:** `src/api/routes/sugerencias-patrones.ts`, `src/api/routes/sugerencias-patrones.test.ts`, `src/main.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2803 — UI: panel Patrones sugeridos en /ui/recat/ _deps: T2802_
+
+**Detalle:**
+- ui/recat/index.html: nueva sección con botón 'Generar sugerencias' + sliders/inputs (freq_min, pureza_min)
+- Tabla: checkbox | token | tipo | categoría | pureza % | freq seed | impacto sin-cat
+- Selector master 'todos / ninguno'
+- Botón 'Crear N seleccionados' → POST aplicar
+- Tras crear: mensaje N creados + refrescar tokens panel + comparación
+- Smoke manual: generar, revisar, aplicar 5-10, re-correr recat, verificar bajada de sin-cat
+- Gates: pnpm lint && pnpm typecheck && pnpm check:consistency
+
+**Archivos:** `ui/recat/index.html`, `ui/recat/recat.js`, `ui/recat/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P29 — IA sugiere patrones (con ejemplos validados de comercios_catalogo) (3/3)
+
+### ✅ T2901 — Service sugerir-patrones-ia _deps: T2803_
+
+**Detalle:**
+- src/services/sugerir-patrones-ia.ts
+- Construir prompt con: (1) seed validado: comercios con fuente_nueva fuerte (regex/literal/prefijo/contiene/manual) y conf>=0.8, top 5 por categoría aleatorios, (2) lote de 100 sin-cat, (3) lista de patrones existentes para no duplicar
+- Llamar Ollama con format='json', parsear lista de sugerencias
+- Validación post-IA: filtrar sugerencias con confianza<0.7, descartar tokens duplicados con patrones existentes, descartar conflictos (mismo valor distinta categoria)
+- Devolver { token, tipo, valor, categoriaSlug, ejemplos, confianza, razonamiento }
+- Tests src/services/sugerir-patrones-ia.test.ts: stub Ollama, valida prompt construido, parseo, filtros
+- Gates: pnpm lint && pnpm typecheck && pnpm vitest run src/services/sugerir-patrones-ia.test.ts && pnpm check:consistency
+
+**Archivos:** `src/services/sugerir-patrones-ia.ts`, `src/services/sugerir-patrones-ia.test.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2902 — Endpoints sugerencias IA _deps: T2901_
+
+**Detalle:**
+- src/api/routes/sugerencias-ia.ts
+- POST /patrones/sugerencias-ia/run → dispara llamada IA async, devuelve run_id
+- GET /patrones/sugerencias-ia/status → estado + sugerencias resultantes
+- POST /patrones/sugerencias-ia/aplicar { items } → reusa logica de POST /patrones/sugerencias/aplicar (mismo writer)
+- Tests stub Ollama
+- Registrar en main.ts
+- Gates: pnpm lint && pnpm typecheck && pnpm vitest run && pnpm check:consistency
+
+**Archivos:** `src/api/routes/sugerencias-ia.ts`, `src/api/routes/sugerencias-ia.test.ts`, `src/main.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T2903 — UI: panel sugerencias IA en /ui/recat/ _deps: T2902_
+
+**Detalle:**
+- ui/recat/index.html: nueva sección 'Sugerencias IA'
+- Botón 'Generar con IA', muestra progreso (pull cada 3s a /status)
+- Tabla: checkbox | token | tipo | categoría | confianza | ejemplos | razonamiento
+- Botón 'Crear seleccionados' → POST aplicar
+- Smoke: corre IA, revisa sugerencias, aplica buenos, re-corre recat, verifica bajada de sin-cat
+- Gates: pnpm lint && pnpm typecheck && pnpm check:consistency
+
+**Archivos:** `ui/recat/index.html`, `ui/recat/recat.js`, `ui/recat/styles.css`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+## P30 — Patrones inline en diffs de recategorización (4/4)
+
+### ✅ T3001 — Migration evidencia_nueva + service stores evidencia
+
+**Detalle:**
+- Agregar columna evidencia_nueva jsonb a comercios_catalogo
+- Service recategorizarCatalogo persiste r.resultado.evidencia en evidencia_nueva
+- drizzle generate + migrate
+
+**Archivos:** `src/db/schema/comercios_catalogo.ts`, `src/services/recategorizar-catalogo.ts`, `src/db/migrations/*.sql`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T3002 — Endpoint /comparacion devuelve patrones por par _deps: T3001_
+
+**Detalle:**
+- En /catalogo/recategorizar/comparacion, junto a top_diffs incluir patrones_por_diff
+- Para cada par (actual, nueva), agregar top 3 patrones (valor, count) que dispararon
+- Usa evidencia_nueva->>regla_id|patron|patron_id pa identificar
+
+**Archivos:** `src/api/routes/recategorizar-catalogo.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T3003 — Endpoint aplicar-diff-patron _deps: T3002_
+
+**Detalle:**
+- POST /catalogo/aplicar-diff-patron {actual, nueva, patron_valor}
+- UPDATE comercios_catalogo SET categoria_id=categoria_nueva_id WHERE actual y nueva matchean Y evidencia_nueva contiene patron_valor
+- Devuelve count actualizados
+
+**Archivos:** `src/api/routes/recategorizar-catalogo.ts`, `src/services/recategorizar-catalogo.ts`
+
+**Gates:** consistency ✅  lint ✅  test ✅
+
+### ✅ T3004 — UI top diffs con patrones inline _deps: T3003_
+
+**Detalle:**
+- Expand row diff: muestra patrones que dispararon (top 3) + count por patron
+- Botón inline 'Aplicar solo este patrón' → POST aplicar-diff-patron
+- Botón 'Crear/refinar patrón' → form con valor pre-llenado
+- Refresh tras aplicar
+
+**Archivos:** `ui/recat/index.html`, `ui/recat/recat.js`, `ui/recat/styles.css`
 
 **Gates:** consistency ✅  lint ✅  test ✅
 

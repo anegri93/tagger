@@ -66,6 +66,72 @@
     </section>
 
     <section class="card">
+      <h3>Sugerencias IA (Ollama)</h3>
+      <div class="t-small t-muted" style="margin-bottom:8px">
+        IA analiza un lote de comercios sin-cat usando ejemplos validados de
+        comercios ya categorizados, propone patrones reusables.
+      </div>
+      <div class="form-row" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:flex-end">
+        <label>lote size<input id="ia-lote" type="number" value="100" style="width:80px" /></label>
+        <label>confianza min<input id="ia-conf" type="number" step="0.05" value="0.7" style="width:90px" /></label>
+        <button id="ia-run" class="btn btn-primary">Generar con IA</button>
+        <span id="ia-status" class="t-small t-muted">—</span>
+      </div>
+      <div style="margin:6px 0">
+        <label class="t-small"><input type="checkbox" id="ia-toggle-all" /> seleccionar todo</label>
+        <button id="ia-aplicar" class="btn btn-primary" style="margin-left:8px">Crear seleccionados</button>
+      </div>
+      <table class="tbl" id="tbl-ia">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Token</th>
+            <th>Tipo</th>
+            <th>Categoría</th>
+            <th>Confianza</th>
+            <th>Ejemplos</th>
+            <th>Razonamiento</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3>Patrones sugeridos (autónomo con criterio)</h3>
+      <div class="t-small t-muted" style="margin-bottom:8px">
+        Algoritmo: tokens en comercios bien categorizados (regex/manual/patrones), con
+        pureza ≥ N% en una categoría dominante. Filtra stopwords, conflictos y duplicados.
+      </div>
+      <div class="form-row" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:flex-end">
+        <label>freq min<input id="sg-freq" type="number" value="5" style="width:70px" /></label>
+        <label>pureza min<input id="sg-pureza" type="number" step="0.05" value="0.8" style="width:80px" /></label>
+        <label>longitud min<input id="sg-long" type="number" value="4" style="width:70px" /></label>
+        <label>impacto min<input id="sg-imp" type="number" value="3" style="width:70px" /></label>
+        <button id="sg-gen" class="btn btn-primary">Generar sugerencias</button>
+        <span id="sg-status" class="t-small t-muted"></span>
+      </div>
+      <div style="margin:6px 0">
+        <label class="t-small"><input type="checkbox" id="sg-toggle-all" /> seleccionar todo</label>
+        <button id="sg-aplicar" class="btn btn-primary" style="margin-left:8px">Crear seleccionados</button>
+      </div>
+      <table class="tbl" id="tbl-sugeridos">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Token</th>
+            <th>Tipo</th>
+            <th>Categoría</th>
+            <th>Pureza</th>
+            <th>Freq seed</th>
+            <th>Impacto sin-cat</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
       <h3>Tokens sin patrón</h3>
       <div class="t-small t-muted" style="margin-bottom:8px">
         Tokens más frecuentes en comercios sin categorización. Crear un patrón

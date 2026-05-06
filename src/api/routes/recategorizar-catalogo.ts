@@ -147,6 +147,32 @@ export const recategorizarCatalogoRoute =
             ORDER BY n DESC`,
       );
 
+      // patrones que dispararon por par (actual, nueva)
+      // extrae regla_id, patron, patron_id de evidencia_nueva
+      const patronesPorDiff = await db.execute(
+        sql`WITH evid AS (
+              SELECT
+                cat_a.slug AS actual,
+                cat_n.slug AS nueva,
+                COALESCE(
+                  cc.evidencia_nueva->>'patron',
+                  cc.evidencia_nueva->>'mcc_match',
+                  '(sin patrón)'
+                ) AS patron,
+                cc.fuente_nueva AS fuente
+              FROM ${comerciosCatalogo} cc
+              JOIN ${categorias} cat_a ON cat_a.id = cc.categoria_id
+              JOIN ${categorias} cat_n ON cat_n.id = cc.categoria_nueva_id
+              WHERE cc.recategorizado_at IS NOT NULL
+                AND cc.categoria_nueva_id IS NOT NULL
+                AND cc.categoria_nueva_id <> cc.categoria_id
+            )
+            SELECT actual, nueva, patron, fuente, count(*)::int AS n
+            FROM evid
+            GROUP BY actual, nueva, patron, fuente
+            ORDER BY actual, nueva, n DESC`,
+      );
+
       void eq;
       void and;
       void isNotNull;
@@ -159,6 +185,7 @@ export const recategorizarCatalogoRoute =
         sin_categoria: sinCategoria,
         top_diffs: topDiffs.rows,
         por_fuente_nueva: pivotFuente.rows,
+        patrones_por_diff: patronesPorDiff.rows,
       });
     });
   };
