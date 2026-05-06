@@ -40,7 +40,14 @@ const aplicarSchema = z.object({
 export const sugerenciasIaRoute =
   (db: Db, ollama: OllamaClient, writer: PatronWriter): FastifyPluginAsync =>
   async (app) => {
-    app.post<{ Body: { lote_size?: number; confianza_min?: number } }>(
+    app.post<{
+      Body: {
+        lote_size?: number;
+        confianza_min?: number;
+        min_sugerencias?: number;
+        max_iteraciones?: number;
+      };
+    }>(
       '/patrones/sugerencias-ia/run',
       async (req, reply) => {
         if (currentRun?.estado === 'running') {
@@ -57,6 +64,8 @@ export const sugerenciasIaRoute =
         const opts: Parameters<typeof sugerirPatronesIa>[1] = {};
         if (req.body?.lote_size) opts.loteSize = Number(req.body.lote_size);
         if (req.body?.confianza_min) opts.confianzaMin = Number(req.body.confianza_min);
+        if (req.body?.min_sugerencias) opts.minSugerencias = Number(req.body.min_sugerencias);
+        if (req.body?.max_iteraciones) opts.maxIteraciones = Number(req.body.max_iteraciones);
         void sugerirPatronesIa({ db, ollama }, opts)
           .then((sugs) => {
             if (currentRun) {
