@@ -20,6 +20,7 @@ export const testBatchControlRoute =
         if (body.limit !== undefined) opts.limit = body.limit;
         if (body.concurrency !== undefined) opts.concurrency = body.concurrency;
         if (body.bypass_catalogo !== undefined) opts.bypassCatalogo = body.bypass_catalogo;
+        if (body.source !== undefined) opts.source = body.source;
         const info = await runner.start(body.batch_id, opts);
         return reply.send({ ok: true, batch: info });
       } catch (err) {

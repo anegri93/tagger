@@ -55,6 +55,8 @@ async function startRun() {
   const payload = { batch_id: state.batchId, concurrency: state.concurrency };
   if (state.limit) payload.limit = Number(state.limit);
   if ($('bypass-cat').checked) payload.bypass_catalogo = true;
+  const src = $('sel-source')?.value || 'tsv';
+  if (src !== 'tsv') payload.source = src;
   try {
     setStatus('starting…', 'live');
     await api('/test-batch/start', {
@@ -278,4 +280,21 @@ $('btn-run').addEventListener('click', startRun);
 $('btn-stop').addEventListener('click', stopRun);
 $('btn-monitor').addEventListener('click', monitorOnly);
 $('btn-pause').addEventListener('click', togglePause);
+
+async function cargarDatasetsSource() {
+  try {
+    const r = await api('/datasets');
+    const sel = $('sel-source');
+    if (!sel) return;
+    for (const ds of r.items || []) {
+      const opt = document.createElement('option');
+      opt.value = `datasets:${ds.slug}`;
+      opt.textContent = `dataset: ${ds.nombre} (${ds.total})`;
+      sel.appendChild(opt);
+    }
+  } catch (e) {
+    console.warn('no pude cargar datasets', e);
+  }
+}
+cargarDatasetsSource();
 loadCfg();

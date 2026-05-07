@@ -71,6 +71,13 @@
       "when": 1778069860227,
       "tag": "0009_curvy_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778071609791,
+      "tag": "0010_lyrical_magus",
+      "breakpoints": true
     }
   ]
 }

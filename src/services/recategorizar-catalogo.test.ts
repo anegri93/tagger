@@ -5,6 +5,7 @@ import type { CapasSincrono } from '../pipeline/categorizar.js';
 function fakeDb(rows: Array<{ id: string; nombre: string; categoriaActual: string }>) {
   let updateCount = 0;
   const db = {
+    execute: () => Promise.resolve({ rows: [{ c: rows.length }] }),
     select: () => ({
       from: () => ({
         // primer select: total

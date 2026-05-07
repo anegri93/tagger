@@ -27,6 +27,7 @@ export const sugerenciasPatronesRoute =
         pureza_min?: string;
         longitud_min?: string;
         impacto_min?: string;
+        categoria_slug?: string;
       };
     }>('/patrones/sugerencias', async (req, reply) => {
       const opts: Parameters<typeof sugerirPatrones>[1] = {};
@@ -35,7 +36,9 @@ export const sugerenciasPatronesRoute =
       if (req.query.longitud_min) opts.longitudMin = Number(req.query.longitud_min);
       if (req.query.impacto_min) opts.impactoMin = Number(req.query.impacto_min);
       const sugs = await sugerirPatrones(db, opts);
-      return reply.send({ items: sugs });
+      const slug = req.query.categoria_slug?.trim();
+      const items = slug ? sugs.filter((s) => s.categoriaSlug === slug) : sugs;
+      return reply.send({ items });
     });
 
     app.post('/patrones/sugerencias/aplicar', async (req, reply) => {

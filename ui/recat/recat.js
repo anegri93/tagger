@@ -2,6 +2,27 @@ const $ = (s) => document.querySelector(s);
 
 let pollTimer = null;
 
+function tablaActual() {
+  return $('#sel-tabla')?.value || 'catalogo';
+}
+
+async function cargarDatasets() {
+  try {
+    const r = await window.taggerApi('/datasets');
+    const sel = $('#sel-tabla');
+    if (!sel) return;
+    const items = r.items || [];
+    for (const ds of items) {
+      const opt = document.createElement('option');
+      opt.value = `datasets:${ds.slug}`;
+      opt.textContent = `${ds.nombre} (${ds.total})`;
+      sel.appendChild(opt);
+    }
+  } catch (e) {
+    console.warn('no pude cargar datasets', e);
+  }
+}
+
 function setStatus(t) {
   $('#status').textContent = t;
 }
@@ -92,7 +113,9 @@ async function loadStatus() {
 
 async function loadComparacion() {
   try {
-    const c = await window.taggerApi('/catalogo/recategorizar/comparacion');
+    const c = await window.taggerApi(
+      `/catalogo/recategorizar/comparacion?tabla=${encodeURIComponent(tablaActual())}`,
+    );
     renderComparacion(c);
     setStatus('live');
   } catch (e) {
@@ -206,7 +229,7 @@ document.addEventListener('click', async (e) => {
       cont.textContent = 'cargando…';
       try {
         const r = await window.taggerApi(
-          `/catalogo/recategorizar/diff-detalle?actual=${encodeURIComponent(actual)}&nueva=${encodeURIComponent(nueva)}&limit=100`,
+          `/catalogo/recategorizar/diff-detalle?actual=${encodeURIComponent(actual)}&nueva=${encodeURIComponent(nueva)}&limit=100&tabla=${encodeURIComponent(tablaActual())}`,
         );
         if (!r.items.length) {
           cont.textContent = 'sin filas';
@@ -357,7 +380,7 @@ $('#btn-run').addEventListener('click', async () => {
   try {
     const r = await window.taggerApi('/catalogo/recategorizar', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ tabla: tablaActual() }),
     });
     setStatus(`run iniciado ${r.run_id}`);
     schedulePoll();
@@ -426,9 +449,16 @@ $('#ia-run').addEventListener('click', async () => {
       body: JSON.stringify({
         lote_size: Number($('#ia-lote').value),
         confianza_min: Number($('#ia-conf').value),
+        min_sugerencias: Number($('#ia-min-sug').value),
+        max_iteraciones: Number($('#ia-max-iter').value),
+        tabla: tablaActual(),
       }),
     });
     $('#ia-status').textContent = `run iniciado ${r.run_id}`;
+    $('#ia-progress-wrap').style.display = '';
+    $('#ia-progress-bar').style.width = '2%';
+    $('#ia-progress-bar').style.background = '#3b82f6';
+    $('#ia-progress-text').textContent = 'iniciando…';
     iniciarPollIa();
   } catch (e) {
     if (e.body && e.body.error === 'run_en_progreso') {
@@ -451,6 +481,7 @@ async function pollIa() {
     const { run } = await window.taggerApi('/patrones/sugerencias-ia/status');
     if (!run) return;
     $('#ia-status').textContent = `${run.estado}${run.error ? ' — ' + run.error : ''}`;
+    renderProgresoIa(run);
     if (run.estado !== 'running') {
       clearInterval(iaPollTimer);
       iaPollTimer = null;
@@ -458,6 +489,36 @@ async function pollIa() {
     }
   } catch {
     /* silencioso */
+  }
+}
+
+function renderProgresoIa(run) {
+  const wrap = $('#ia-progress-wrap');
+  const bar = $('#ia-progress-bar');
+  const txt = $('#ia-progress-text');
+  if (run.estado === 'running' || run.progreso) {
+    wrap.style.display = '';
+    const p = run.progreso;
+    if (!p) {
+      bar.style.width = '2%';
+      txt.textContent = 'iniciando…';
+      return;
+    }
+    const porIter = p.maxIteraciones > 0 ? p.iter / p.maxIteraciones : 0;
+    const porSug = p.minSugerencias > 0 ? p.acumuladas / p.minSugerencias : 0;
+    const pct = Math.min(1, Math.max(porIter, porSug)) * 100;
+    bar.style.width = `${pct.toFixed(0)}%`;
+    txt.textContent = `fase=${p.fase} · iter ${p.iter}/${p.maxIteraciones} · sugerencias ${p.acumuladas}/${p.minSugerencias}`;
+    if (run.estado === 'done') {
+      bar.style.width = '100%';
+      bar.style.background = '#10b981';
+    } else if (run.estado === 'error') {
+      bar.style.background = '#ef4444';
+    } else {
+      bar.style.background = '#3b82f6';
+    }
+  } else {
+    wrap.style.display = 'none';
   }
 }
 
@@ -550,4 +611,91 @@ $('#sg-aplicar').addEventListener('click', async () => {
   }
 });
 
-loadStatus();
+cargarDatasets().then(() => {
+  $('#sel-tabla')?.addEventListener('change', () => {
+    loadComparacion();
+  });
+  loadStatus();
+});
+
+// ===== Marcas candidatas =====
+async function poblarCategoriasFiltro() {
+  const sel = $('#mc-categoria');
+  if (!sel || sel.dataset.poblado) return;
+  const cats = await getCategorias();
+  for (const c of cats) {
+    const opt = document.createElement('option');
+    opt.value = c.slug;
+    opt.textContent = `${c.slug}`;
+    sel.appendChild(opt);
+  }
+  sel.dataset.poblado = '1';
+}
+
+async function cargarMarcasCandidatas() {
+  await poblarCategoriasFiltro();
+  const minFreq = Number($('#mc-min-freq').value) || 3;
+  const limit = Number($('#mc-limit').value) || 50;
+  const tabla = tablaActual();
+  const cat = $('#mc-categoria').value;
+  $('#mc-status').textContent = 'cargando…';
+  try {
+    const qs = new URLSearchParams({ tabla, min_freq: String(minFreq), limit: String(limit) });
+    if (cat) qs.set('categoria', cat);
+    const r = await window.taggerApi(`/datasets/marcas-candidatas?${qs.toString()}`);
+    const items = r.items || [];
+    const cats = await getCategorias();
+    const optsCat = cats
+      .map((c) => `<option value="${c.slug}">${esc(c.slug)}</option>`)
+      .join('');
+    const tbody = $('#tbl-marcas tbody');
+    tbody.innerHTML = items
+      .map((it, i) => {
+        const ej = (it.ejemplos || []).slice(0, 3).map(esc).join(' · ');
+        return `<tr data-idx="${i}" data-prefijo="${esc(it.prefijo)}">
+          <td><code>${esc(it.prefijo)}</code></td>
+          <td class="num">${it.freq}</td>
+          <td class="t-small t-muted">${ej}</td>
+          <td><select class="mc-cat"><option value="">—</option>${optsCat}</select></td>
+          <td><button class="btn mc-crear">+ Crear patrón</button></td>
+        </tr>`;
+      })
+      .join('');
+    $('#mc-status').textContent = `${items.length} prefijos`;
+  } catch (e) {
+    $('#mc-status').textContent = `error: ${e.message}`;
+  }
+}
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.mc-crear');
+  if (!btn) return;
+  const tr = btn.closest('tr');
+  const prefijo = tr.dataset.prefijo;
+  const cat = tr.querySelector('.mc-cat').value;
+  if (!cat) {
+    alert('elegí categoría');
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await window.taggerApi('/patrones', {
+      method: 'POST',
+      body: JSON.stringify({
+        tipo: 'contiene',
+        valor: prefijo,
+        categoria_slug: cat,
+        prioridad: 30,
+        descripcion: 'marca-candidata',
+      }),
+    });
+    tr.style.opacity = '0.4';
+    btn.textContent = '✓ creado';
+  } catch (err) {
+    alert(err.message);
+    btn.disabled = false;
+  }
+});
+
+$('#mc-cargar')?.addEventListener('click', cargarMarcasCandidatas);
+poblarCategoriasFiltro();

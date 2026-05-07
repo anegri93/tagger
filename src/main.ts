@@ -39,6 +39,8 @@ import { tokensSinCategoriaRoute } from './api/routes/tokens-sin-categoria.js';
 import { aplicarDiffRoute } from './api/routes/aplicar-diff.js';
 import { sugerenciasPatronesRoute } from './api/routes/sugerencias-patrones.js';
 import { sugerenciasIaRoute } from './api/routes/sugerencias-ia.js';
+import { datasetsRoute } from './api/routes/datasets.js';
+import { marcasCandidatasRoute } from './api/routes/marcas-candidatas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import {
   crearBancardLookup,
@@ -129,6 +131,8 @@ async function main() {
   await app.register(aplicarDiffRoute(db));
   await app.register(sugerenciasPatronesRoute(db, patronWriter));
   await app.register(sugerenciasIaRoute(db, ollamaBatch, patronWriter));
+  await app.register(datasetsRoute(db));
+  await app.register(marcasCandidatasRoute(db));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
   const catalogoRunner = new CatalogoMassiveRunner({
@@ -141,7 +145,7 @@ async function main() {
   const comerciosWriter = crearComerciosWriter(db);
   await app.register(comerciosRoute(comerciosWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
-  const testRunner = new TestBatchRunner({ capas, repo: movRepo });
+  const testRunner = new TestBatchRunner({ capas, repo: movRepo, db });
   await app.register(testBatchControlRoute(testRunner));
 
   await app.listen({ port: env.PORT, host: '0.0.0.0' });

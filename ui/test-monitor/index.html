@@ -18,6 +18,12 @@
         <input id="batch-id" placeholder="batch_id" />
         <input id="limit" placeholder="limit" type="number" />
         <input id="concurrency" placeholder="conc" type="number" value="30" />
+        <label>Source:
+          <select id="sel-source" style="margin-left:4px">
+            <option value="tsv">tsv (data/*.tsv)</option>
+            <option value="catalogo">comercios_catalogo</option>
+          </select>
+        </label>
         <label class="cb" title="Skip capa catálogo. Cascada pura (regex+nombre+mcc+ia). Agreement honesto.">
           <input id="bypass-cat" type="checkbox" />
           <span class="t-small">bypass</span>

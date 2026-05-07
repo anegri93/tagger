@@ -2,9 +2,12 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import type { Db } from '../../db/client.js';
 import type { OllamaClient } from '../../lib/ollama.js';
+import { sql } from 'drizzle-orm';
 import {
   sugerirPatronesIa,
   type SugerenciaIa,
+  type ProgresoIa,
+  type IaTarget,
 } from '../../services/sugerir-patrones-ia.js';
 import type { PatronWriter, PatronTipo } from '../../db/repos/patrones.js';
 
@@ -15,6 +18,7 @@ interface RunState {
   estado: 'running' | 'done' | 'error';
   error?: string;
   sugerencias: SugerenciaIa[];
+  progreso: ProgresoIa | null;
 }
 
 let currentRun: RunState | null = null;
@@ -46,6 +50,7 @@ export const sugerenciasIaRoute =
         confianza_min?: number;
         min_sugerencias?: number;
         max_iteraciones?: number;
+        tabla?: string;
       };
     }>(
       '/patrones/sugerencias-ia/run',
@@ -60,12 +65,25 @@ export const sugerenciasIaRoute =
           finishedAt: null,
           estado: 'running',
           sugerencias: [],
+          progreso: null,
         };
         const opts: Parameters<typeof sugerirPatronesIa>[1] = {};
         if (req.body?.lote_size) opts.loteSize = Number(req.body.lote_size);
         if (req.body?.confianza_min) opts.confianzaMin = Number(req.body.confianza_min);
         if (req.body?.min_sugerencias) opts.minSugerencias = Number(req.body.min_sugerencias);
         if (req.body?.max_iteraciones) opts.maxIteraciones = Number(req.body.max_iteraciones);
+        const tabla = req.body?.tabla;
+        if (tabla && tabla !== 'catalogo' && tabla !== 'comercios_catalogo') {
+          const m = tabla.match(/^datasets:(.+)$/);
+          if (!m) return reply.code(400).send({ error: 'tabla_invalida', tabla });
+          const r = await db.execute(sql`SELECT id FROM datasets WHERE slug = ${m[1]}`);
+          if (r.rows.length === 0) return reply.code(400).send({ error: 'dataset_inexistente', tabla });
+          const target: IaTarget = { kind: 'dataset', datasetId: (r.rows[0] as { id: string }).id };
+          opts.target = target;
+        }
+        opts.onProgreso = (p) => {
+          if (currentRun) currentRun.progreso = p;
+        };
         void sugerirPatronesIa({ db, ollama }, opts)
           .then((sugs) => {
             if (currentRun) {

@@ -15,6 +15,11 @@
     <section class="page-actions">
       <h2>🔁 Recategorización catálogo</h2>
       <div class="actions">
+        <label>Tabla:
+          <select id="sel-tabla" style="margin-left:6px">
+            <option value="catalogo">comercios_catalogo</option>
+          </select>
+        </label>
         <button id="btn-run" class="btn btn-primary">▶ Correr recategorización</button>
         <button id="btn-refresh" class="btn">↻ Refrescar comparación</button>
         <span id="status" class="t-small t-muted">—</span>
@@ -66,6 +71,37 @@
     </section>
 
     <section class="card">
+      <h3>Marcas candidatas (prefijos multi-palabra)</h3>
+      <div class="t-small t-muted" style="margin-bottom:8px">
+        Detecta prefijos de 2 palabras frecuentes en sin-categoría, propone patrón <code>contiene</code>.
+      </div>
+      <div class="form-row" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:flex-end">
+        <label>categoría
+          <select id="mc-categoria" style="margin-left:4px">
+            <option value="">(sin categoría — buscar nuevos)</option>
+            <option value="__all__">(todas las categorizadas)</option>
+          </select>
+        </label>
+        <label>min freq<input id="mc-min-freq" type="number" value="3" min="2" style="width:80px" /></label>
+        <label>limit<input id="mc-limit" type="number" value="50" style="width:80px" /></label>
+        <button id="mc-cargar" class="btn btn-primary">Cargar</button>
+        <span id="mc-status" class="t-small t-muted">—</span>
+      </div>
+      <table class="tbl" id="tbl-marcas">
+        <thead>
+          <tr>
+            <th>Prefijo</th>
+            <th>Freq</th>
+            <th>Ejemplos</th>
+            <th>Categoría</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
       <h3>Sugerencias IA (Ollama)</h3>
       <div class="t-small t-muted" style="margin-bottom:8px">
         IA analiza un lote de comercios sin-cat usando ejemplos validados de
@@ -74,8 +110,16 @@
       <div class="form-row" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:flex-end">
         <label>lote size<input id="ia-lote" type="number" value="100" style="width:80px" /></label>
         <label>confianza min<input id="ia-conf" type="number" step="0.05" value="0.7" style="width:90px" /></label>
+        <label>min sugerencias<input id="ia-min-sug" type="number" value="10" style="width:80px" /></label>
+        <label>max iteraciones<input id="ia-max-iter" type="number" value="5" style="width:80px" /></label>
         <button id="ia-run" class="btn btn-primary">Generar con IA</button>
         <span id="ia-status" class="t-small t-muted">—</span>
+      </div>
+      <div id="ia-progress-wrap" style="display:none;margin-bottom:8px">
+        <div style="background:#eee;border-radius:4px;overflow:hidden;height:14px;width:100%">
+          <div id="ia-progress-bar" style="background:#3b82f6;height:100%;width:0%;transition:width .3s"></div>
+        </div>
+        <div id="ia-progress-text" class="t-small t-muted" style="margin-top:4px">—</div>
       </div>
       <div style="margin:6px 0">
         <label class="t-small"><input type="checkbox" id="ia-toggle-all" /> seleccionar todo</label>

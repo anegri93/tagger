@@ -152,6 +152,27 @@
     <div class="tab-content" data-tab="patrones">
       <h2>Patrones</h2>
       <div class="form-row">
+        <button id="p-sugerir" type="button">🪄 Sugerir patrones</button>
+        <span id="p-sugerir-status" class="t-small t-muted"></span>
+      </div>
+      <div id="p-sugerir-panel" style="display:none;border:1px solid #30363d;padding:12px;border-radius:6px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong>Sugerencias auto</strong>
+          <span>
+            <button id="p-sug-aplicar" class="action-btn">Aplicar seleccionados</button>
+            <button id="p-sug-cerrar" class="action-btn">Cerrar</button>
+          </span>
+        </div>
+        <table class="tbl" id="p-sug-tbl">
+          <thead><tr>
+            <th><input type="checkbox" id="p-sug-all" /></th>
+            <th>Token</th><th>Tipo</th><th>Valor</th>
+            <th>Freq</th><th>Pureza</th><th>Impacto sin-cat</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="form-row">
         <label>Tipo
           <select id="p-tipo">
             <option value="contiene">contiene</option>

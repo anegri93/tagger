@@ -14,12 +14,24 @@ export interface SugerenciaIa {
   razonamiento: string;
 }
 
+export interface ProgresoIa {
+  iter: number;
+  maxIteraciones: number;
+  acumuladas: number;
+  minSugerencias: number;
+  fase: 'preparando' | 'iterando' | 'finalizando';
+}
+
+export type IaTarget = { kind: 'catalogo' } | { kind: 'dataset'; datasetId: string };
+
 export interface SugerirIaOpts {
   loteSize?: number;
   ejemplosPorCategoria?: number;
   confianzaMin?: number;
   minSugerencias?: number;
   maxIteraciones?: number;
+  onProgreso?: (p: ProgresoIa) => void;
+  target?: IaTarget;
 }
 
 export interface SugerirIaDeps {
@@ -53,7 +65,7 @@ interface TokenFreqRow {
 
 // Stopwords geográficos PY/región: países, departamentos, principales ciudades/zonas.
 // Se excluyen del ranking de tokens porque agrupan por ubicación, no por rubro.
-const STOPWORDS_GEO = [
+export const STOPWORDS_GEO = [
   // países
   'PARAGUAY','ARGENTINA','BRASIL','URUGUAY','CHILE','BOLIVIA','PERU','ESPANA','ESPAÑA',
   'USA','EEUU','MEXICO','COLOMBIA',
@@ -161,6 +173,14 @@ export async function sugerirPatronesIa(
   const confianzaMin = opts.confianzaMin ?? 0.7;
   const minSugerencias = opts.minSugerencias ?? 10;
   const maxIteraciones = opts.maxIteraciones ?? 5;
+  const onProgreso = opts.onProgreso;
+  const target: IaTarget = opts.target ?? { kind: 'catalogo' };
+  // Subquery del universo "sin categorizar" según target
+  const sinCatFrom =
+    target.kind === 'catalogo'
+      ? sql`comercios_catalogo WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL`
+      : sql`dataset_comercios WHERE dataset_id = ${target.datasetId} AND recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL`;
+  onProgreso?.({ iter: 0, maxIteraciones, acumuladas: 0, minSugerencias, fase: 'preparando' });
 
   // 1. Seed validado: top N por categoría
   const seedRows = await db.execute(sql`
@@ -184,8 +204,7 @@ export async function sugerirPatronesIa(
     WITH base AS (
       SELECT id, nombre,
              upper(regexp_replace(nombre, '[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ ]', ' ', 'g')) AS norm
-      FROM comercios_catalogo
-      WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL
+      FROM ${sinCatFrom}
     ),
     toks AS (
       SELECT id, unnest(string_to_array(norm, ' ')) AS tok FROM base
@@ -232,17 +251,15 @@ export async function sugerirPatronesIa(
       break;
     }
 
-    let sinCatRows;
     const tokensSql = sql.join(
       tokensCandidatos.map((t) => sql`${t.tok}`),
       sql`, `,
     );
-    sinCatRows = await db.execute(sql`
+    const sinCatRows = await db.execute(sql`
       WITH base AS (
         SELECT id, nombre,
                upper(regexp_replace(nombre, '[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ ]', ' ', 'g')) AS norm
-        FROM comercios_catalogo
-        WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL
+        FROM ${sinCatFrom}
       ),
       toks AS (
         SELECT unnest(ARRAY[${tokensSql}]::text[]) AS tok
@@ -330,9 +347,23 @@ export async function sugerirPatronesIa(
     console.log(
       `[sugerir-patrones-ia] iter=${iter} aceptadas=${aceptadasIter} acum=${out.length}/${minSugerencias}`,
     );
+    onProgreso?.({
+      iter,
+      maxIteraciones,
+      acumuladas: out.length,
+      minSugerencias,
+      fase: 'iterando',
+    });
   }
 
   console.log(`[sugerir-patrones-ia] finales=${out.length} iters=${iter}`);
+  onProgreso?.({
+    iter,
+    maxIteraciones,
+    acumuladas: out.length,
+    minSugerencias,
+    fase: 'finalizando',
+  });
   out.sort((a, b) => b.confianza - a.confianza);
   return out;
 }

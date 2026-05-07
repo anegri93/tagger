@@ -465,4 +465,75 @@ $('#patrones-tbl').addEventListener('click', async (e) => {
   }
 });
 
+// Sugerencias patrones
+const sugPanel = document.getElementById('p-sugerir-panel');
+const sugStatus = document.getElementById('p-sugerir-status');
+const sugTbody = document.querySelector('#p-sug-tbl tbody');
+
+document.getElementById('p-sugerir').addEventListener('click', async () => {
+  sugStatus.textContent = 'cargando…';
+  try {
+    const { items } = await window.taggerApi(
+      `/patrones/sugerencias?categoria_slug=${encodeURIComponent(SLUG)}`,
+    );
+    sugTbody.innerHTML = items.length
+      ? items
+          .map(
+            (s, i) => `<tr data-i="${i}">
+        <td><input type="checkbox" class="p-sug-chk" /></td>
+        <td><code>${esc(s.token)}</code></td>
+        <td>${esc(s.tipo)}</td>
+        <td><code>${esc(s.valor)}</code></td>
+        <td>${s.freqSeed}</td>
+        <td>${(s.pureza * 100).toFixed(0)}%</td>
+        <td>${s.impactoSinCat}</td>
+      </tr>`,
+          )
+          .join('')
+      : '<tr><td colspan="7" class="t-muted">sin sugerencias</td></tr>';
+    sugPanel.dataset.items = JSON.stringify(items);
+    sugPanel.style.display = 'block';
+    sugStatus.textContent = `${items.length} sugerencias`;
+  } catch (e) {
+    sugStatus.textContent = `error: ${e.message}`;
+  }
+});
+
+document.getElementById('p-sug-cerrar').addEventListener('click', () => {
+  sugPanel.style.display = 'none';
+});
+
+document.getElementById('p-sug-all').addEventListener('change', (e) => {
+  document.querySelectorAll('.p-sug-chk').forEach((c) => (c.checked = e.target.checked));
+});
+
+document.getElementById('p-sug-aplicar').addEventListener('click', async () => {
+  const items = JSON.parse(sugPanel.dataset.items || '[]');
+  const seleccion = [];
+  document.querySelectorAll('#p-sug-tbl tbody tr').forEach((tr) => {
+    const chk = tr.querySelector('.p-sug-chk');
+    if (chk && chk.checked) {
+      const it = items[Number(tr.dataset.i)];
+      seleccion.push({
+        tipo: it.tipo,
+        valor: it.valor,
+        categoria_slug: it.categoriaSlug,
+        prioridad: 35,
+      });
+    }
+  });
+  if (seleccion.length === 0) return alert('seleccionar al menos uno');
+  try {
+    const r = await window.taggerApi('/patrones/sugerencias/aplicar', {
+      method: 'POST',
+      body: JSON.stringify({ items: seleccion }),
+    });
+    sugStatus.textContent = `creados: ${r.creados}, errores: ${r.errores.length}`;
+    sugPanel.style.display = 'none';
+    await loadPatrones();
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
 loadInfo();
