@@ -17,6 +17,7 @@ export async function build(opts: BuildOptions = {}) {
     loggerInstance: logger,
     trustProxy: opts.trustProxy ?? false,
     disableRequestLogging: false,
+    bodyLimit: 200 * 1024 * 1024, // 200 MB para imports grandes
   });
 
   await app.register(sensible);

@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
-const SKIP_PATHS = new Set(['/health', '/health/ready', '/', '/ui']);
+const SKIP_PATHS = new Set(['/health', '/health/ready', '/', '/ui', '/favicon.ico']);
 
 function safeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a);

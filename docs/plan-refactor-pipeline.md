@@ -1,6 +1,6 @@
 # Plan refactor pipeline categorización
 
-**Estado global**: 🟡 EN PROGRESO
+**Estado global**: ✅ COMPLETADO
 **Inicio**: 2026-05-11
 **Última actualización**: 2026-05-11
 
@@ -262,7 +262,8 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### B4 Commit Fase B
 
-**Estado**: `[~]`
+**Estado**: `[x]` (completada 2026-05-11)
+**Resultado**: commit `71993ce` en main. 9 archivos, +140 / −55. Fase B cerrada. Pipeline final estable.
 
 **Detalle**:
 - Commit atómico.

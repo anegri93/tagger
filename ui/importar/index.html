@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — importar catálogo</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <style>
+      .card { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+      h2 { font-size: 14px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+      .row label { font-size: 12px; color: #8b949e; }
+      input[type="file"], select, input[type="text"] {
+        background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+        padding: 6px 10px; border-radius: 4px; font-size: 13px;
+        font-family: ui-monospace, monospace;
+      }
+      button { background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      .preview { font-family: ui-monospace, monospace; font-size: 11px; max-height: 250px; overflow: auto; border: 1px solid #30363d; border-radius: 4px; padding: 8px; }
+      .preview table { width: 100%; border-collapse: collapse; }
+      .preview th, .preview td { border: 1px solid #30363d; padding: 4px 6px; text-align: left; }
+      .preview th { background: #21262d; color: #e6edf3; }
+      .stat { display: inline-block; margin-right: 16px; }
+      .stat .label { font-size: 10px; color: #8b949e; text-transform: uppercase; }
+      .stat .value { font-size: 18px; color: #e6edf3; font-family: ui-monospace, monospace; }
+      .progress { background: #30363d; border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0; }
+      .progress-bar { background: #1f6feb; height: 100%; transition: width 0.3s; }
+      .mapping { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .mapping > div { display: flex; gap: 8px; align-items: center; }
+      .mapping label { width: 130px; font-size: 12px; color: #8b949e; }
+      .err { color: #ff7b72; font-size: 12px; }
+      .ok { color: #56d364; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <section class="page-actions">
+      <h2>📥 Importar</h2>
+    </section>
+
+    <div class="card" style="margin: 20px;">
+      <h2>0. Destino</h2>
+      <div class="row">
+        <label><input type="radio" name="dest" value="catalogo" checked /> comercios_catalogo (base)</label>
+        <label style="margin-left:16px"><input type="radio" name="dest" value="movimientos" /> movimientos (test categorización)</label>
+      </div>
+    </div>
+
+    <div class="card" style="margin: 20px;">
+      <h2>1. Archivo</h2>
+      <div class="row">
+        <input type="file" id="file" accept=".csv,.xlsx,.xls" />
+        <select id="sheet" style="display:none"></select>
+        <span id="info" class="t-small t-muted"></span>
+      </div>
+    </div>
+
+    <div class="card" id="step-preview" style="margin: 20px; display: none;">
+      <h2>2. Preview (5 primeras filas)</h2>
+      <div class="preview" id="preview"></div>
+    </div>
+
+    <div class="card" id="step-mapping" style="margin: 20px; display: none;">
+      <h2>3. Mapeo de campos</h2>
+      <div class="mapping">
+        <div><label>nombre *</label><select id="m-nombre"></select></div>
+        <div><label>bancard_id</label><select id="m-bancard_id"></select></div>
+        <div><label>codigo_comercio</label><select id="m-codigo_comercio"></select></div>
+        <div><label>mcc</label><select id="m-mcc"></select></div>
+        <div id="m-monto-row" style="display:none"><label>monto</label><select id="m-monto"></select></div>
+      </div>
+      <div class="row" style="margin-top:16px" id="row-cascada">
+        <label><input type="checkbox" id="cascada" checked /> Correr cascada inicial (asignar categoría)</label>
+      </div>
+      <div class="row" style="margin-top:16px" id="row-batch" style="display:none">
+        <label>batch_id <input type="text" id="batch-id" placeholder="opcional (auto si vacío)" /></label>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button id="btn-importar">Importar</button>
+        <span id="estado" class="t-small t-muted"></span>
+      </div>
+    </div>
+
+    <div class="card" id="step-progress" style="margin: 20px; display: none;">
+      <h2>4. Progreso</h2>
+      <div class="progress"><div class="progress-bar" id="bar" style="width:0%"></div></div>
+      <div id="stats"></div>
+      <div id="error-line" class="err" style="margin-top:8px"></div>
+    </div>
+
+    <script>
+      let parsedRows = null;
+      let headers = null;
+      let workbook = null;
+
+      const $ = (id) => document.getElementById(id);
+
+      $('file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        $('info').textContent = `Leyendo ${file.name}...`;
+        try {
+          const buf = await file.arrayBuffer();
+          workbook = XLSX.read(buf, { type: 'array' });
+          const sel = $('sheet');
+          sel.innerHTML = workbook.SheetNames.map((s) => `<option>${s}</option>`).join('');
+          sel.style.display = workbook.SheetNames.length > 1 ? '' : 'none';
+          parseSheet(workbook.SheetNames[0]);
+        } catch (err) {
+          $('info').textContent = `error: ${err.message}`;
+        }
+      });
+
+      $('sheet').addEventListener('change', (e) => parseSheet(e.target.value));
+
+      function parseSheet(sheetName) {
+        const sheet = workbook.Sheets[sheetName];
+        parsedRows = XLSX.utils.sheet_to_json(sheet, { defval: null });
+        if (parsedRows.length === 0) {
+          $('info').textContent = 'sheet vacío';
+          return;
+        }
+        headers = Object.keys(parsedRows[0]);
+        $('info').textContent = `${parsedRows.length.toLocaleString()} filas · ${headers.length} columnas`;
+        renderPreview();
+        renderMapping();
+        $('step-preview').style.display = '';
+        $('step-mapping').style.display = '';
+      }
+
+      function renderPreview() {
+        const rows = parsedRows.slice(0, 5);
+        const html = `<table>
+          <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+          <tbody>${rows
+            .map(
+              (r) =>
+                `<tr>${headers.map((h) => `<td>${escapeHtml(String(r[h] ?? ''))}</td>`).join('')}</tr>`,
+            )
+            .join('')}</tbody>
+        </table>`;
+        $('preview').innerHTML = html;
+      }
+
+      function renderMapping() {
+        const opts = ['<option value="">— ninguno —</option>']
+          .concat(headers.map((h) => `<option value="${escapeAttr(h)}">${escapeHtml(h)}</option>`))
+          .join('');
+        const fields = ['nombre', 'bancard_id', 'codigo_comercio', 'mcc', 'monto'];
+        for (const field of fields) {
+          const el = $('m-' + field);
+          if (!el) continue;
+          el.innerHTML = opts;
+          const guess = headers.find((h) =>
+            h.toLowerCase().replace(/[^a-z0-9]/g, '').includes(field.replace(/_/g, '')),
+          );
+          if (guess) el.value = guess;
+        }
+      }
+
+      function getDest() {
+        return document.querySelector('input[name="dest"]:checked').value;
+      }
+
+      document.querySelectorAll('input[name="dest"]').forEach((el) =>
+        el.addEventListener('change', () => {
+          const isMov = getDest() === 'movimientos';
+          $('m-monto-row').style.display = isMov ? '' : 'none';
+          $('row-cascada').style.display = isMov ? 'none' : '';
+          $('row-batch').style.display = isMov ? '' : 'none';
+        }),
+      );
+
+      $('btn-importar').addEventListener('click', async () => {
+        const dest = getDest();
+        const map = {
+          nombre: $('m-nombre').value,
+          bancard_id: $('m-bancard_id').value,
+          codigo_comercio: $('m-codigo_comercio').value,
+          mcc: $('m-mcc').value,
+          monto: dest === 'movimientos' ? $('m-monto').value : '',
+        };
+        if (!map.nombre) {
+          alert('mapeá al menos "nombre"');
+          return;
+        }
+        const rows = parsedRows
+          .map((r) => {
+            const o = { nombre: String(r[map.nombre] ?? '').trim() };
+            if (!o.nombre) return null;
+            if (map.bancard_id && r[map.bancard_id] != null) o.bancard_id = String(r[map.bancard_id]).trim();
+            if (map.codigo_comercio && r[map.codigo_comercio] != null) o.codigo_comercio = String(r[map.codigo_comercio]).trim();
+            if (map.mcc && r[map.mcc] != null) o.mcc = String(r[map.mcc]).trim();
+            if (map.monto && r[map.monto] != null) {
+              const n = Number(r[map.monto]);
+              if (Number.isFinite(n)) o.monto = n;
+            }
+            return o;
+          })
+          .filter(Boolean);
+
+        $('btn-importar').disabled = true;
+        $('estado').textContent = `enviando ${rows.length.toLocaleString()} filas...`;
+        $('step-progress').style.display = '';
+
+        try {
+          const endpoint = dest === 'movimientos' ? '/movimientos/importar' : '/catalogo/importar';
+          const body = dest === 'movimientos'
+            ? { rows, batch_id: $('batch-id').value.trim() || undefined }
+            : { rows, correr_cascada: $('cascada').checked };
+          const res = await window.taggerApi(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+          $('estado').textContent = `import_id: ${res.import_id}${res.batch_id ? ` batch=${res.batch_id}` : ''} — corriendo...`;
+          pollStatus(dest);
+        } catch (err) {
+          $('estado').textContent = `error: ${err.message}`;
+          $('btn-importar').disabled = false;
+        }
+      });
+
+      async function pollStatus(dest) {
+        try {
+          const endpoint = dest === 'movimientos' ? '/movimientos/importar/status' : '/catalogo/importar/status';
+          const { run } = await window.taggerApi(endpoint);
+          if (!run) return;
+          const s = run.stats;
+          const pct = s.total ? Math.round((100 * s.procesados) / s.total) : 0;
+          $('bar').style.width = pct + '%';
+          if (dest === 'movimientos') {
+            const fuentes = Object.entries(s.por_fuente || {})
+              .sort((a, b) => b[1] - a[1])
+              .map(([f, c]) => `${f}=${c.toLocaleString()}`)
+              .join(' · ');
+            $('stats').innerHTML = `
+              <span class="stat"><div class="label">Procesados</div><div class="value">${s.procesados.toLocaleString()} / ${s.total.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">OK</div><div class="value">${s.ok.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Con cat</div><div class="value">${s.con_categoria.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Sin cat</div><div class="value">${s.sin_categoria.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Errores</div><div class="value">${s.errores.toLocaleString()}</div></span>
+              <div style="margin-top:8px;font-family:ui-monospace,monospace;font-size:11px;color:#8b949e">${fuentes}</div>
+            `;
+          } else {
+            $('stats').innerHTML = `
+              <span class="stat"><div class="label">Procesados</div><div class="value">${s.procesados.toLocaleString()} / ${s.total.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Insertados</div><div class="value">${s.insertados.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Actualizados</div><div class="value">${s.actualizados.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Con cat</div><div class="value">${s.con_categoria.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Sin cat</div><div class="value">${s.sin_categoria.toLocaleString()}</div></span>
+              <span class="stat"><div class="label">Errores</div><div class="value">${s.errores.toLocaleString()}</div></span>
+            `;
+          }
+          $('error-line').textContent = s.ultimo_error ?? '';
+          if (run.estado === 'running') {
+            setTimeout(() => pollStatus(dest), 1000);
+          } else {
+            $('estado').textContent = run.estado === 'done' ? 'completado ✓' : `error: ${run.error}`;
+            $('estado').className = run.estado === 'done' ? 'ok' : 'err';
+            $('btn-importar').disabled = false;
+          }
+        } catch {
+          setTimeout(() => pollStatus(dest), 2000);
+        }
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+      function escapeAttr(s) {
+        return s.replace(/"/g, '&quot;');
+      }
+    </script>
+  </body>
+</html>
