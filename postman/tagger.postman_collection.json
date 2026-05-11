@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "tagger",
-    "description": "Servicio categorización gastos. Cascada catalogo→patrones→MCC→IA(Gemma).",
+    "description": "# tagger API\n\nServicio de categorización automática de movimientos bancarios.\n\n## Pipeline\nCascada en orden, primer hit retorna:\n1. **Catálogo** — lookup directo `bancard_id + codigo_comercio` (más rápido + confiable)\n2. **Patrones** — `regex` / `literal` / `contiene` / `prefijo` sobre descripción\n3. **MCC** — código MCC oficial mapeado a categoría\n4. **IA fallback** — Ollama (Gemma) async, response inmediato es null + revisión\n\n## Auth\nHeader `x-api-key: <apiKey>` excepto `/health*` y `/ui/*`.\n\n## Variables collection\n- `baseUrl` — URL del servicio (default `http://localhost:3000`)\n- `apiKey` — valor del header `x-api-key`\n- `movimientoId` — auto-seteado tras POST `/categorizar-movimiento`\n- `categoriaId` — auto-seteado tras GET `/categorias`\n\n## Workflow sugerido para explorar\n1. `health → GET /health` (verificar servicio vivo)\n2. `categorias → GET /categorias` (cachea `categoriaId`)\n3. `categorizar → POST regex hit` (cachea `movimientoId`)\n4. `movimientos → GET /movimientos/:id` (ver detalle + evidencia)\n5. `movimientos → POST correccion` (usa `categoriaId` cacheado)\n\n## Docs adicionales\n- `docs/integration-guide.md` — guía detallada para devs mobile\n- `openapi.yaml` — spec OpenAPI 3.1 (importable a Swagger UI / generadores TS)\n- `docs/runbook.md` — operación + troubleshooting",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "11111111-1111-1111-1111-111111111111"
   },
@@ -22,6 +22,7 @@
   "item": [
     {
       "name": "health",
+      "description": "Endpoints sin auth para liveness/readiness probes.\n\n- **`/health`** — liveness: ¿servicio respondiendo? Usar para k8s livenessProbe / ALB target health.\n- **`/health/ready`** — readiness: ¿DB + Ollama OK? Usar para k8s readinessProbe (no recibir tráfico hasta listo).",
       "item": [
         {
           "name": "GET /health",
@@ -29,7 +30,8 @@
             "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Liveness probe. Sin auth.\n\n**Response 200:** `{\"status\":\"ok\"}`"
           }
         },
         {
@@ -38,13 +40,15 @@
             "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] }
+            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] },
+            "description": "Readiness probe. Verifica DB + Ollama.\n\n**Response:** `{\"status\":\"ok|degraded\", \"db\":bool, \"ollama\":bool}`\n\nOllama puede estar `false` (servicio igual operativo, IA fallback no disponible)."
           }
         }
       ]
     },
     {
       "name": "categorias",
+      "description": "Catálogo de categorías disponibles.\n\nCliente mobile lo usa para:\n- Poblar dropdown UI al mostrar correcciones\n- Mapear `categoria_id` de response → slug/nombre para render\n\n**Cachear en cliente** — cambian raro. 35 categorías por defecto en seed.",
       "item": [
         {
           "name": "GET /categorias",
@@ -66,13 +70,15 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] }
+            "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] },
+            "description": "Lista todas las categorías activas.\n\n**Response 200:**\n```json\n{\"items\":[{\"id\":\"uuid\",\"slug\":\"transporte\",\"nombre\":\"Transporte\",\"descripcion\":\"...\",\"activo\":true}, ...]}\n```\n\nTest script: setea `categoriaId` con primer item (uso en correccion)."
           }
         }
       ]
     },
     {
       "name": "categorizar",
+      "description": "**Endpoint principal del servicio.** Cliente mobile manda movimientos aquí y recibe categoría.\n\n## Cascada\nOrden de resolución (primer hit retorna):\n1. Catálogo `bancard_id+codigo_comercio` — confianza heredada\n2. Patrones `regex` / `literal` (0.95) / `contiene` / `prefijo` (0.90)\n3. MCC mapeado (0.75)\n4. IA fallback Gemma async (cap 0.70) — response inmediato es `null`, cliente debe poll `/movimientos/:id`\n\n## Confianza < 0.70\n→ `requiere_revision: true` — mobile debería mostrar badge \"Verificar\".\n\n## Body\nAl menos uno requerido: `descripcion`, `nombre_comercio`, `nombre_bancard`, `mcc`.\nOpcionales: `bancard_id`, `codigo_comercio`, `monto`, `origen`, `batch_id`, `bypass_catalogo`.\n\n## Ejemplos abajo\n- regex hit — pega un patrón conocido (BIGGIE → supermercado)\n- solo MCC — sin descripción, solo código MCC\n- combustible — todos los campos (caso ideal con catálogo)\n- desconocido → IA — dispara fallback async\n- input inválido — 400 con detalle Zod",
       "item": [
         {
           "name": "POST /categorizar-movimiento (regex hit)",
@@ -102,7 +108,8 @@
               "raw": "{{baseUrl}}/categorizar-movimiento",
               "host": ["{{baseUrl}}"],
               "path": ["categorizar-movimiento"]
-            }
+            },
+            "description": "**Caso típico:** descripción matchea patrón (`BIGGIE` → supermercado).\n\n**Espera:** `fuente: 'contiene'` o `'regex'`, confianza 0.90-0.95.\n\nTest script: cachea `movimiento_id` para usar en GET detalle + correccion."
           }
         },
         {
@@ -118,7 +125,8 @@
               "raw": "{{baseUrl}}/categorizar-movimiento",
               "host": ["{{baseUrl}}"],
               "path": ["categorizar-movimiento"]
-            }
+            },
+            "description": "**Caso:** banco solo envía MCC, sin descripción.\n\n5411 = Grocery Stores. Capa MCC matchea → categoría supermercado.\n\n**Espera:** `fuente: 'mcc'`, confianza 0.75."
           }
         },
         {
@@ -134,7 +142,8 @@
               "raw": "{{baseUrl}}/categorizar-movimiento",
               "host": ["{{baseUrl}}"],
               "path": ["categorizar-movimiento"]
-            }
+            },
+            "description": "**Caso ideal:** todos los campos disponibles. Pipeline elige el primer hit (patrón `COPETROL` o MCC 5541 → combustible)."
           }
         },
         {
@@ -150,7 +159,8 @@
               "raw": "{{baseUrl}}/categorizar-movimiento",
               "host": ["{{baseUrl}}"],
               "path": ["categorizar-movimiento"]
-            }
+            },
+            "description": "**Caso:** descripción no matchea nada. Cascada agotada → response inmediato `categoria_id: null`, IA dispara async.\n\n**Mobile UX:** mostrar \"categorizando...\", poll `GET /movimientos/:id` cada 2-3s hasta `categoria_id !== null` (timeout 15s)."
           }
         },
         {
@@ -163,13 +173,15 @@
               "raw": "{{baseUrl}}/categorizar-movimiento",
               "host": ["{{baseUrl}}"],
               "path": ["categorizar-movimiento"]
-            }
+            },
+            "description": "**Caso error:** body sin ningún campo de texto/MCC requerido.\n\n**Espera 400:** `{\"error\":\"invalid_input\", \"issues\":{...}}` con detalle Zod."
           }
         }
       ]
     },
     {
       "name": "movimientos",
+      "description": "Detalle y corrección de movimientos previamente categorizados.\n\n- **GET /movimientos/:id** — usado para polling de IA fallback. Devuelve evidencia completa (prompt IA, candidatos, etc.).\n- **POST /movimientos/:id/correccion** — usuario corrige categoría desde mobile. Audit trail en `correcciones_usuario`. NO retroalimenta patrones automáticamente (review manual via UI recat).",
       "item": [
         {
           "name": "GET /movimientos/:id",
@@ -180,7 +192,8 @@
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}",
               "host": ["{{baseUrl}}"],
               "path": ["movimientos", "{{movimientoId}}"]
-            }
+            },
+            "description": "Detalle del movimiento.\n\nUsar para:\n- Polling tras IA fallback (categoria_id pasa de null → uuid cuando Ollama termina)\n- Inspeccionar `evidencia` (prompt IA, candidatos, scores)\n\n`movimientoId` se setea automáticamente al ejecutar el primer POST /categorizar-movimiento."
           }
         },
         {
@@ -190,13 +203,14 @@
             "header": [{ "key": "content-type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\",\n  \"usuario\": \"aldo\"\n}"
+              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/correccion",
               "host": ["{{baseUrl}}"],
               "path": ["movimientos", "{{movimientoId}}", "correccion"]
-            }
+            },
+            "description": "Corrección manual desde mobile.\n\n**Body:**\n- `categoria_id_nueva` (UUID, required) — id de la categoría correcta. Cliente lo obtiene del cache de `GET /categorias`.\n- `motivo` (string, opcional) — feedback opcional.\n\n**Response 200:**\n```json\n{\n  \"ok\": true,\n  \"correccion_id\": \"uuid\",\n  \"categoria_anterior_id\": \"uuid|null\",\n  \"categoria_anterior\": \"slug|null\",\n  \"categoria_nueva_id\": \"uuid\",\n  \"categoria_nueva\": \"slug\"\n}\n```\n\nVariables: usa `{{categoriaId}}` (auto-seteada de GET /categorias) y `{{movimientoId}}` (auto-seteada de POST categorizar)."
           }
         }
       ]
@@ -207,7 +221,8 @@
         "auth": { "type": "noauth" },
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] }
+        "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] },
+        "description": "**Test negativo:** request sin header `x-api-key`.\n\n**Espera 401:** `{\"error\":\"unauthorized\"}`.\n\nÚtil para verificar auth funciona antes de configurar API_KEY real en producción."
       }
     }
   ]
