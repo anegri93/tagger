@@ -8,8 +8,6 @@ import { movimientoGetRoute } from './api/routes/movimiento-get.js';
 import { correccionRoute } from './api/routes/correccion.js';
 import { categoriasRoute } from './api/routes/categorias.js';
 import { mccRoute } from './api/routes/mcc.js';
-import { catalogoRoute } from './api/routes/catalogo.js';
-import { CatalogoMassiveRunner } from './test-batch/catalogo-runner.js';
 import { comerciosRoute } from './api/routes/comercios.js';
 import { crearComerciosWriter } from './db/repos/comercios-writer.js';
 import { marcasRoute } from './api/routes/marcas.js';
@@ -119,11 +117,6 @@ async function main() {
   await app.register(marcasCandidatasRoute(db));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
-  const catalogoRunner = new CatalogoMassiveRunner({
-    db,
-    resolveCategoria: () => undefined,
-  });
-  await app.register(catalogoRoute(catalogoRunner));
   const marcaWriter = crearMarcaWriter(db, marcasReader);
   await app.register(marcasRoute(marcaWriter));
   const comerciosWriter = crearComerciosWriter(db);

@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import type { Db } from '../client.js';
 import {
   categorias,
-  reglasRegex,
   mccCatalogo,
   comerciosCatalogo,
   movimientos,
@@ -103,17 +102,13 @@ export function crearCategoriaWriter(
         .limit(1);
       if (cat.length === 0) return null;
       const id = cat[0]!.id;
-      const [m, r, c, mc] = await Promise.all([
+      const [m, c, mc] = await Promise.all([
         db
           .select({ c: sql<number>`count(*)::int` })
           .from(movimientos)
           .where(
             sql`${movimientos.categoriaPredichaId} = ${id} OR ${movimientos.categoriaConfirmadaId} = ${id}`,
           ),
-        db
-          .select({ c: sql<number>`count(*)::int` })
-          .from(reglasRegex)
-          .where(eq(reglasRegex.categoriaId, id)),
         db
           .select({ c: sql<number>`count(*)::int` })
           .from(comerciosCatalogo)
@@ -125,7 +120,7 @@ export function crearCategoriaWriter(
       ]);
       return {
         movimientos: Number(m[0]?.c ?? 0),
-        reglas: Number(r[0]?.c ?? 0),
+        reglas: 0,
         comercios: Number(c[0]?.c ?? 0),
         mcc: Number(mc[0]?.c ?? 0),
       };
