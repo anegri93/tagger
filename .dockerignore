@@ -10,9 +10,9 @@ coverage
 !.env.example
 *.log
 .DS_Store
-ui
 docs
-TASKS.md
+data
+postman
 README.md
-tasks.json
-scripts
+.tagger.log
+.tagger.pid

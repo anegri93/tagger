@@ -12,3 +12,4 @@ coverage
 .idea
 data/*
 !data/mcc-mapping.json
+!data/seed.sql

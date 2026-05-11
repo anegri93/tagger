@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  title: tagger API
+  description: |
+    Servicio de categorización automática de movimientos bancarios.
+    Pipeline en cascada: catálogo → patrones → MCC → IA fallback.
+  version: 1.0.0
+  contact:
+    name: Mango Apps Paraguay
+
+servers:
+  - url: http://localhost:3000
+    description: Local dev
+  - url: https://tagger.mango.internal
+    description: Producción (placeholder)
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe (DB + Ollama)
+      security: []
+      responses:
+        '200':
+          description: Estado servicios dependientes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  db: { type: boolean }
+                  ollama: { type: boolean }
+
+  /categorizar-movimiento:
+    post:
+      tags: [Categorización]
+      summary: Categoriza un movimiento (endpoint principal)
+      description: |
+        Cascada: catálogo (bancard_id+codigo) → patrones → MCC → IA fallback async.
+        Si todas las capas sync devuelven null, response inmediato es `categoria_id: null`
+        y se dispara Ollama en background. Cliente debe poll `/movimientos/:id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategorizarRequest'
+            examples:
+              completo:
+                value:
+                  descripcion: "BURGER KING SHOPPING DEL SOL"
+                  bancard_id: "12345"
+                  codigo_comercio: "999"
+                  mcc: "5812"
+                  monto: 45000
+                  origen: "mobile"
+              minimo:
+                value:
+                  descripcion: "PETROBRAS RUTA 2"
+      responses:
+        '200':
+          description: Movimiento categorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategorizarResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /movimientos/{id}:
+    get:
+      tags: [Categorización]
+      summary: Detalle movimiento (incluye resultado de IA si ya terminó)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovimientoDetalle'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /movimientos/{id}/correccion:
+    post:
+      tags: [Categorización]
+      summary: Corrige manualmente la categoría asignada
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categoria_slug]
+              properties:
+                categoria_slug:
+                  type: string
+                  example: "transporte"
+                motivo:
+                  type: string
+                  example: "era taxi, no restaurante"
+      responses:
+        '200':
+          description: Corrección aplicada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /categorias:
+    get:
+      tags: [Recursos]
+      summary: Lista categorías disponibles (para dropdowns UI)
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Categoria'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  schemas:
+    Fuente:
+      type: string
+      enum: [regex, bancard, nombre, mcc, ia, manual]
+      description: |
+        Capa que asignó la categoría.
+        - `regex` / `contiene` / `prefijo` / `literal`: patrón DB (0.85-0.95 confianza)
+        - `bancard` / `nombre`: catálogo de comercios
+        - `mcc`: código MCC mapeado (0.75)
+        - `ia`: Ollama fallback (0.70 max)
+        - `manual`: corrección de usuario (1.0)
+
+    CategorizarRequest:
+      type: object
+      description: |
+        Al menos uno de: `descripcion`, `nombre_comercio`, `nombre_bancard`, `mcc`.
+      properties:
+        descripcion:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Texto del movimiento (recomendado)
+        nombre_comercio:
+          type: string
+          minLength: 1
+          maxLength: 200
+        nombre_bancard:
+          type: string
+          minLength: 1
+          maxLength: 200
+        mcc:
+          type: string
+          pattern: '^\d{2,4}$'
+          description: Código MCC
+        bancard_id:
+          type: string
+          maxLength: 100
+          description: Habilita lookup directo en catálogo
+        codigo_comercio:
+          type: string
+          maxLength: 50
+        monto:
+          type: number
+          description: Solo persistido, no afecta categorización
+        origen:
+          type: string
+          maxLength: 50
+          example: mobile
+        batch_id:
+          type: string
+          maxLength: 100
+        bypass_catalogo:
+          type: boolean
+          description: Testing — salta capa 1
+
+    CategorizarResponse:
+      type: object
+      required: [movimiento_id, categoria_id, fuente, confianza, requiere_revision]
+      properties:
+        movimiento_id:
+          type: string
+          format: uuid
+        categoria_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: null → cascada agotada, IA corriendo async
+        fuente:
+          allOf:
+            - $ref: '#/components/schemas/Fuente'
+          nullable: true
+        confianza:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+        requiere_revision:
+          type: boolean
+          description: true si confianza < 0.7 o categoria null
+
+    MovimientoDetalle:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        descripcion: { type: string, nullable: true }
+        nombre_comercio: { type: string, nullable: true }
+        mcc: { type: string, nullable: true }
+        monto: { type: number, nullable: true }
+        categoria_id: { type: string, format: uuid, nullable: true }
+        categoria_slug: { type: string, nullable: true }
+        categoria_confirmada_id: { type: string, format: uuid, nullable: true }
+        fuente_categoria:
+          allOf: [{ $ref: '#/components/schemas/Fuente' }]
+          nullable: true
+        confianza: { type: number, nullable: true }
+        requiere_revision: { type: boolean }
+        evidencia:
+          type: object
+          additionalProperties: true
+          nullable: true
+        origen: { type: string, nullable: true }
+        batch_id: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Categoria:
+      type: object
+      required: [slug, nombre, activo]
+      properties:
+        slug:
+          type: string
+          example: transporte
+        nombre:
+          type: string
+          example: Transporte
+        descripcion:
+          type: string
+          nullable: true
+        activo:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        issues:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Validación falló
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: API key inválida o ausente
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: unauthorized }
+    NotFound:
+      description: Recurso no existe
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: no_existe }
