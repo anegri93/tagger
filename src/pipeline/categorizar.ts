@@ -7,7 +7,6 @@ export interface CapasSincrono {
       codigoComercio: string | null | undefined,
     ): Promise<ResultadoCapa | null>;
   };
-  comercio: { evaluar(texto: string | null | undefined): Promise<ResultadoCapa | null> };
   patrones?: { evaluar(texto: string): Promise<ResultadoCapa | null> };
   mcc: { evaluar(codMcc: string | null | undefined): Promise<ResultadoCapa | null> };
 }
@@ -27,7 +26,7 @@ function textoPara(input: MovimientoInput): string {
 export async function ejecutarCascada(
   input: MovimientoInput,
   capas: CapasSincrono,
-  opts: { bypassCatalogo?: boolean; bypassComercio?: boolean } = {},
+  opts: { bypassCatalogo?: boolean } = {},
 ): Promise<ResultadoPipeline> {
   const texto = textoPara(input);
 
@@ -41,9 +40,6 @@ export async function ejecutarCascada(
 
   const r4 = await capas.mcc.evaluar(input.mcc);
   if (r4) return { resultado: r4, requiereRevision: false, requiereIa: false };
-
-  const r3 = texto && !opts.bypassComercio ? await capas.comercio.evaluar(texto) : null;
-  if (r3) return { resultado: r3, requiereRevision: false, requiereIa: false };
 
   return { resultado: null, requiereRevision: true, requiereIa: true };
 }

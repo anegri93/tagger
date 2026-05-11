@@ -140,7 +140,7 @@ export async function recategorizarCatalogo(deps: RecategorizarDeps): Promise<Re
       const r = await ejecutarCascada(
         { descripcion: row.nombre, mcc: row.mcc ?? undefined },
         capas,
-        { bypassCatalogo: true, bypassComercio: true },
+        { bypassCatalogo: true },
       );
 
       const categoriaNuevaId = r.resultado?.categoriaId ?? null;

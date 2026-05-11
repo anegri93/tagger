@@ -191,7 +191,8 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### A9 Commit Fase A
 
-**Estado**: `[~]`
+**Estado**: `[x]` (completada 2026-05-11)
+**Resultado**: commit `2364de0` en main. 21 archivos, +1147 / −74. Fase A cerrada.
 
 **Detalle**:
 - Commit atómico con mensaje describiendo refactor.
@@ -208,7 +209,8 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### B1 Métricas exclusividad capa comercio
 
-**Estado**: `[ ]`
+**Estado**: `[x]` (completada 2026-05-11)
+**Resultado**: capa comercio aporta 0 hits en último recat (MCC y patrones cubren todo antes). Histórico catálogo: 491 (1.0%) fuente='nombre'. Movimientos: 6 (0.007%). **Decisión: ELIMINAR capa comercio**. Cero pérdida en flujo runtime con MCC presente. Script: `scripts/medir-aporte-comercio.ts`.
 
 **Detalle**:
 - Crear `scripts/medir-aporte-comercio.ts`.
@@ -226,7 +228,8 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### B2 Si eliminar: quitar capa comercio
 
-**Estado**: `[ ]` (condicional B1)
+**Estado**: `[x]` (completada 2026-05-11)
+**Resultado**: capa `comercio` removida de `CapasSincrono` + `ejecutarCascada()` + `main.ts`. Opción `bypassComercio` eliminada (era usada solo por recat catálogo, ya no aplica). Tests pipeline/e2e/categorizar route limpiados. Pipeline final 3 capas: catalogo → patrones → MCC (+ IA fallback async). 285 tests pass. 3 gates verdes.
 
 **Detalle**:
 - `categorizar.ts` quitar capa.
@@ -243,7 +246,8 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### B3 Recategorizar 49k post-Fase B
 
-**Estado**: `[ ]`
+**Estado**: `[x]` (completada 2026-05-11)
+**Resultado**: identico a post-A (match 73.9%, sin_cat 20.9%). Confirma B1: capa comercio aportaba 0. Eliminación sin pérdida. Ver `docs/baseline-final.md`.
 
 **Detalle**:
 - `/ui/recat` Run con pipeline final.
@@ -258,7 +262,7 @@ catalogo → patrones → MCC → [comercio] → IA
 
 ### B4 Commit Fase B
 
-**Estado**: `[ ]`
+**Estado**: `[~]`
 
 **Detalle**:
 - Commit atómico.

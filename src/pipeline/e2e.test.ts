@@ -6,7 +6,6 @@ import { ejecutarCascada } from './categorizar.js';
 import { persistirMovimiento } from './persistir.js';
 import { crearIaFallback } from './ia-fallback.js';
 import { crearCapaPatrones, type PatronCargado } from '../layers/patrones.js';
-import { crearCapaComercio } from '../layers/comercio.js';
 import { crearCapaMcc } from '../layers/mcc.js';
 import { crearCapaCatalogo, type CatalogoHit } from '../layers/catalogo.js';
 import { crearCapaIa } from '../layers/ia.js';
@@ -20,7 +19,6 @@ function flushImmediate() {
 
 function mkCapas(opts: {
   reglas?: Array<{ id: string; patron: string; categoriaId: string; prioridad: number }>;
-  comercio?: Array<{ id: string; nombreNormalizado: string; categoriaId: string }>;
   mcc?: Record<string, { codMcc: string; categoriaId: string | null; ambiguo: boolean }>;
   catalogo?: Record<string, CatalogoHit>;
 }) {
@@ -39,7 +37,6 @@ function mkCapas(opts: {
       },
     }),
     patrones: crearCapaPatrones({ cargar: async () => patronesAsPatrones }),
-    comercio: crearCapaComercio({ candidatosPorTexto: async () => opts.comercio ?? [] }),
     mcc: crearCapaMcc({ porCodigo: async (k) => opts.mcc?.[k] ?? null }),
   };
 }

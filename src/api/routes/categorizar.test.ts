@@ -19,7 +19,6 @@ const HIT: ResultadoCapa = {
 function stubCapas(hit: ResultadoCapa | null): CapasSincrono {
   return {
     patrones: { evaluar: vi.fn().mockResolvedValue(hit) },
-    comercio: { evaluar: vi.fn().mockResolvedValue(null) },
     mcc: { evaluar: vi.fn().mockResolvedValue(null) },
   };
 }
