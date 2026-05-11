@@ -10,7 +10,5 @@ coverage
 .tagger.log
 .vscode
 .idea
-data/comercios-bancard-raw.tsv
-data/comercios-bancard-staged.tsv
-data/mango-p2p.tsv
-data/test-results-*.ndjson
+data/*
+!data/mcc-mapping.json
