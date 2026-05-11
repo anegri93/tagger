@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "tagger",
-    "description": "Servicio categorización gastos. Cascada regex→Bancard→comercio→MCC→IA.",
+    "description": "Servicio categorización gastos. Cascada catalogo→patrones→MCC→IA(Gemma).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "11111111-1111-1111-1111-111111111111"
   },

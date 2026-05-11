@@ -94,7 +94,7 @@ curl http://localhost:3000/catalogo/importar/status -H "x-api-key: $API_KEY"
 Cuando usuario corrige una categoría en mobile, llamar:
 ```bash
 POST /movimientos/:id/correccion
-{"categoria_slug":"transporte","motivo":"era taxi"}
+{"categoria_id_nueva":"<uuid>","motivo":"era taxi"}
 ```
 
 Efecto:

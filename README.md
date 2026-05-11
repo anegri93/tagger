@@ -150,9 +150,11 @@ Datos iniciales (categorías, MCCs, patrones, catálogo de comercios) se cargan 
 ### Sugerencias / IA
 | Método | Path | Función |
 |--------|------|---------|
-| POST | `/patrones/sugerencias` | Genera sugerencias rule-based desde sin-cat |
-| POST | `/patrones/sugerencias-ia/run` | Genera sugerencias IA iterativas |
+| GET | `/patrones/sugerencias` | Lista sugerencias rule-based desde sin-cat (params: freq_min, pureza_min, longitud_min, impacto_min, categoria_slug) |
+| POST | `/patrones/sugerencias/aplicar` | Aplica sugerencias seleccionadas |
+| POST | `/patrones/sugerencias-ia/run` | Dispara run IA iterativo |
 | GET | `/patrones/sugerencias-ia/status` | Estado run IA |
+| POST | `/patrones/sugerencias-ia/aplicar` | Aplica sugerencias IA seleccionadas |
 | GET | `/datasets/marcas-candidatas` | Prefijos frecuentes candidatos a patrón |
 
 ### Test masivo
@@ -175,15 +177,20 @@ Datos iniciales (categorías, MCCs, patrones, catálogo de comercios) se cargan 
 
 ## Cascada categorización
 
-Confianzas asignadas por capa (constantes en `src/domain/confianza.ts`):
+Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 
-| Fuente | Confianza | Cuándo dispara |
-|--------|-----------|----------------|
-| `catalogo` | 1.00 | Hit exacto bancard_id + codigo_comercio en `comercios_catalogo` |
-| `regex` / `contiene` / `prefijo` / `literal` | 0.85–0.95 | Patrón DB matchea descripción |
-| `mcc` | 0.75 | MCC mapeado a categoría |
-| `ia` | 0.70 (cap) | Gemma fallback (techo 0.70) |
-| `manual` | 1.00 | Corrección usuario |
+| Capa pipeline | Fuente devuelta | Confianza | Cuándo dispara |
+|---------------|-----------------|-----------|----------------|
+| 1. catálogo | (hereda de la fila stored) | (hereda) | Hit exacto `bancard_id + codigo_comercio` |
+| 2. patrones | `regex` | 0.95 | Patrón tipo regex matchea |
+| 2. patrones | `literal` | 0.95 | Patrón tipo literal matchea |
+| 2. patrones | `contiene` | 0.90 | Patrón tipo contiene matchea |
+| 2. patrones | `prefijo` | 0.90 | Patrón tipo prefijo matchea |
+| 3. MCC | `mcc` | 0.75 | MCC mapeado a categoría |
+| 4. IA fallback | `ia` | 0.70 (cap) | Gemma async |
+| Corrección | `manual` | 1.00 | POST `/movimientos/:id/correccion` |
+
+Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 
 **Threshold revisión**: confianza < 0.70 → `requiere_revision=true`.
 
@@ -312,7 +319,7 @@ tagger/
 │   ├── recat/              (recat + diffs + sugerencias)
 │   └── test-monitor/       (dashboard masivo realtime)
 ├── scripts/                (utilidades + análisis)
-├── docs/                   (categorias-e2e, patrones, histórico)
+├── docs/                   (runbook, integration-guide, patrones, histórico)
 ├── data/                   (gitignore excepto mcc-mapping.json)
 ├── postman/                (colección API)
 ├── drizzle.config.ts

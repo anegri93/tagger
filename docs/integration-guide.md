@@ -45,7 +45,7 @@ Opcionales:
 {
   "movimiento_id": "uuid",
   "categoria_id": "uuid | null",
-  "fuente": "regex | bancard | nombre | mcc | ia | manual | null",
+  "fuente": "regex | literal | contiene | prefijo | mcc | ia | manual | bancard | nombre | patrones | null",
   "confianza": 0.95,
   "requiere_revision": false
 }
@@ -120,10 +120,12 @@ Content-Type: application/json
 x-api-key: <API_KEY>
 
 {
-  "categoria_slug": "transporte",
+  "categoria_id_nueva": "uuid-de-la-categoria-correcta",
   "motivo": "era taxi"
 }
 ```
+
+Mobile flow: tras `GET /categorias`, mapear slug elegido por usuario → `id` para enviar.
 
 Efecto:
 - `categoria_confirmada_id` actualizado
@@ -132,7 +134,14 @@ Efecto:
 
 Response `200 OK`:
 ```json
-{ "ok": true }
+{
+  "ok": true,
+  "correccion_id": "uuid",
+  "categoria_anterior_id": "uuid | null",
+  "categoria_anterior": "slug | null",
+  "categoria_nueva_id": "uuid",
+  "categoria_nueva": "slug"
+}
 ```
 
 ---
@@ -205,12 +214,18 @@ export interface CategorizarRequest {
 }
 
 export type Fuente =
+  // Pipeline actual
   | 'regex'
-  | 'bancard'
-  | 'nombre'
+  | 'literal'
+  | 'contiene'
+  | 'prefijo'
   | 'mcc'
   | 'ia'
-  | 'manual';
+  | 'manual'
+  // Legacy (movimientos antiguos en DB)
+  | 'bancard'
+  | 'nombre'
+  | 'patrones';
 
 export interface CategorizarResponse {
   movimiento_id: string;
@@ -221,8 +236,17 @@ export interface CategorizarResponse {
 }
 
 export interface CorreccionRequest {
-  categoria_slug: string;
+  categoria_id_nueva: string;  // UUID
   motivo?: string;
+}
+
+export interface CorreccionResponse {
+  ok: boolean;
+  correccion_id?: string;
+  categoria_anterior_id: string | null;
+  categoria_anterior: string | null;
+  categoria_nueva_id: string;
+  categoria_nueva: string;
 }
 
 export interface Categoria {
@@ -244,8 +268,9 @@ export interface Categoria {
 4. Si `categoria_id === null` y `requiere_revision === true` → poll `/movimientos/:id`
 
 ### Trust signals
-- Fuente `manual` o `catalogo` (confianza 1.0) → no mostrar "verificar"
-- Fuente `regex/contiene/literal/prefijo` (>=0.85) → confiable, sin verificación
+- Fuente `manual` (confianza 1.0) → no mostrar "verificar"
+- Fuente `regex` / `literal` (0.95) → muy alta confianza
+- Fuente `contiene` / `prefijo` (0.90) → alta confianza
 - Fuente `mcc` (0.75) → mostrar badge "auto-detectado"
 - Fuente `ia` (cap 0.70) → mostrar "sugerencia IA"
 

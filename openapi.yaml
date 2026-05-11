@@ -124,13 +124,15 @@ paths:
           application/json:
             schema:
               type: object
-              required: [categoria_slug]
+              required: [categoria_id_nueva]
               properties:
-                categoria_slug:
+                categoria_id_nueva:
                   type: string
-                  example: "transporte"
+                  format: uuid
+                  description: UUID de la categoría correcta (obtener via GET /categorias)
                 motivo:
                   type: string
+                  maxLength: 500
                   example: "era taxi, no restaurante"
       responses:
         '200':
@@ -141,6 +143,11 @@ paths:
                 type: object
                 properties:
                   ok: { type: boolean }
+                  correccion_id: { type: string, format: uuid }
+                  categoria_anterior_id: { type: string, format: uuid, nullable: true }
+                  categoria_anterior: { type: string, nullable: true }
+                  categoria_nueva_id: { type: string, format: uuid }
+                  categoria_nueva: { type: string }
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -171,14 +178,22 @@ components:
   schemas:
     Fuente:
       type: string
-      enum: [regex, bancard, nombre, mcc, ia, manual]
+      enum:
+        - regex       # patron tipo regex (0.95)
+        - literal     # patron tipo literal (0.95)
+        - contiene    # patron tipo contiene (0.90)
+        - prefijo    # patron tipo prefijo (0.90)
+        - mcc         # MCC mapeado (0.75)
+        - ia          # Ollama fallback (cap 0.70)
+        - manual      # corrección usuario (1.0)
+        - bancard     # legacy
+        - nombre      # legacy
+        - patrones    # legacy
       description: |
-        Capa que asignó la categoría.
-        - `regex` / `contiene` / `prefijo` / `literal`: patrón DB (0.85-0.95 confianza)
-        - `bancard` / `nombre`: catálogo de comercios
-        - `mcc`: código MCC mapeado (0.75)
-        - `ia`: Ollama fallback (0.70 max)
-        - `manual`: corrección de usuario (1.0)
+        Fuente que asignó la categoría.
+        Pipeline actual produce: `regex`, `literal`, `contiene`, `prefijo`, `mcc`, `ia`.
+        Capa catálogo (lookup directo) hereda la fuente almacenada en `comercios_catalogo`.
+        Valores legacy (`bancard`, `nombre`, `patrones`) aparecen solo en movimientos antiguos.
 
     CategorizarRequest:
       type: object
