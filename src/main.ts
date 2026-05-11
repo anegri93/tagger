@@ -22,14 +22,11 @@ import { db, pool } from './db/client.js';
 import { env } from './config/env.js';
 import { crearOllamaClient } from './lib/ollama.js';
 import { logger } from './lib/logger.js';
-import { crearCapaRegex } from './layers/regex.js';
-import { crearCapaBancard } from './layers/bancard.js';
 import { crearCapaComercio } from './layers/comercio.js';
 import { crearCapaCatalogo } from './layers/catalogo.js';
 import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
-import { crearReglasLoader } from './db/repos/reglas.js';
 import { crearReglaWriter } from './db/repos/reglas-writer.js';
 import { crearPatronesLoader, crearPatronWriter } from './db/repos/patrones.js';
 import { crearCapaPatrones } from './layers/patrones.js';
@@ -42,11 +39,7 @@ import { sugerenciasIaRoute } from './api/routes/sugerencias-ia.js';
 import { datasetsRoute } from './api/routes/datasets.js';
 import { marcasCandidatasRoute } from './api/routes/marcas-candidatas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
-import {
-  crearBancardLookup,
-  crearComercioLookup,
-  crearCatalogoLookup,
-} from './db/repos/comercios.js';
+import { crearComercioLookup, crearCatalogoLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
 import {
   crearMovimientoRepository,
@@ -81,9 +74,7 @@ async function main() {
     retries: 0,
   });
 
-  const reglasLoader = crearReglasLoader(db);
   const patronesLoader = crearPatronesLoader(db);
-  const bancardLookup = crearBancardLookup(db);
   const comercioLookup = crearComercioLookup(db);
   const catalogoLookup = crearCatalogoLookup(db);
   const mccLookup = crearMccLookup(db);
@@ -98,8 +89,6 @@ async function main() {
 
   const capas = {
     catalogo: crearCapaCatalogo(catalogoLookup),
-    regex: crearCapaRegex(reglasLoader),
-    bancard: crearCapaBancard(bancardLookup),
     comercio: crearCapaComercio(comercioLookup),
     patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
@@ -122,7 +111,9 @@ async function main() {
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
-  const reglaWriter = crearReglaWriter(db, () => capas.regex.invalidar());
+  const reglaWriter = crearReglaWriter(db, () => {
+    // capa regex eliminada del pipeline; writer mantenido para compat UI legacy
+  });
   await app.register(reglasRoute(reglaWriter));
   const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());
   await app.register(patronesRoute(patronWriter));

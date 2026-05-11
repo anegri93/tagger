@@ -26,6 +26,7 @@ export interface CapaCatalogo {
 export function crearCapaCatalogo(lookup: CatalogoLookup): CapaCatalogo {
   return {
     async evaluar(bancardId, codigoComercio) {
+      if (!bancardId || !codigoComercio) return null;
       const hit = await lookup.porBancardCodigo(bancardId, codigoComercio);
       if (!hit) return null;
       if (!hit.fuente || hit.confianza == null) return null;

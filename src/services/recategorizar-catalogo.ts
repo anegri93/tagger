@@ -26,6 +26,7 @@ export interface RecategorizarDeps {
 interface Row {
   id: string;
   nombre: string;
+  mcc: string | null;
   categoriaActual: string | null;
 }
 
@@ -51,13 +52,18 @@ async function fetchBatch(
       .select({
         id: comerciosCatalogo.id,
         nombre: comerciosCatalogo.nombre,
+        mcc: comerciosCatalogo.mccOriginal,
         categoriaActual: comerciosCatalogo.categoriaId,
       })
       .from(comerciosCatalogo)
       .orderBy(comerciosCatalogo.id)
       .limit(limit)
       .offset(offset);
-    return rows.map((r) => ({ ...r, categoriaActual: r.categoriaActual ?? null }));
+    return rows.map((r) => ({
+      ...r,
+      mcc: r.mcc ?? null,
+      categoriaActual: r.categoriaActual ?? null,
+    }));
   }
   const rows = await db
     .select({
@@ -70,7 +76,7 @@ async function fetchBatch(
     .orderBy(datasetComercios.id)
     .limit(limit)
     .offset(offset);
-  return rows.map((r) => ({ ...r, categoriaActual: r.categoriaActual ?? null }));
+  return rows.map((r) => ({ ...r, mcc: null, categoriaActual: r.categoriaActual ?? null }));
 }
 
 async function aplicarUpdate(
@@ -132,7 +138,7 @@ export async function recategorizarCatalogo(deps: RecategorizarDeps): Promise<Re
 
     for (const row of batch) {
       const r = await ejecutarCascada(
-        { descripcion: row.nombre },
+        { descripcion: row.nombre, mcc: row.mcc ?? undefined },
         capas,
         { bypassCatalogo: true, bypassComercio: true },
       );

@@ -12,14 +12,13 @@ beforeAll(() => {
 const HIT: ResultadoCapa = {
   categoriaId: '00000000-0000-0000-0000-000000000001',
   confianza: 0.95,
-  fuente: 'regex',
+  fuente: 'patrones',
   evidencia: { regla_id: 'r1', patron: 'X' },
 };
 
 function stubCapas(hit: ResultadoCapa | null): CapasSincrono {
   return {
-    regex: { evaluar: vi.fn().mockResolvedValue(hit) },
-    bancard: { evaluar: vi.fn().mockResolvedValue(null) },
+    patrones: { evaluar: vi.fn().mockResolvedValue(hit) },
     comercio: { evaluar: vi.fn().mockResolvedValue(null) },
     mcc: { evaluar: vi.fn().mockResolvedValue(null) },
   };
@@ -49,7 +48,7 @@ async function build(opts: { hit?: ResultadoCapa | null } = {}) {
 }
 
 describe('POST /categorizar-movimiento', () => {
-  it('200 con resultado regex hit', async () => {
+  it('200 con resultado patrones hit', async () => {
     const { app } = await build({ hit: HIT });
     const r = await app.inject({
       method: 'POST',
@@ -60,7 +59,7 @@ describe('POST /categorizar-movimiento', () => {
     expect(r.json()).toMatchObject({
       categoria_id: HIT.categoriaId,
       categoria: { id: HIT.categoriaId, slug: 'super', nombre: 'Supermercado' },
-      fuente: 'regex',
+      fuente: 'patrones',
       confianza: 0.95,
       requiere_revision: false,
     });

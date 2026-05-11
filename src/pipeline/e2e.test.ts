@@ -5,8 +5,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ejecutarCascada } from './categorizar.js';
 import { persistirMovimiento } from './persistir.js';
 import { crearIaFallback } from './ia-fallback.js';
-import { crearCapaRegex } from '../layers/regex.js';
-import { crearCapaBancard } from '../layers/bancard.js';
+import { crearCapaPatrones, type PatronCargado } from '../layers/patrones.js';
 import { crearCapaComercio } from '../layers/comercio.js';
 import { crearCapaMcc } from '../layers/mcc.js';
 import { crearCapaCatalogo, type CatalogoHit } from '../layers/catalogo.js';
@@ -21,11 +20,17 @@ function flushImmediate() {
 
 function mkCapas(opts: {
   reglas?: Array<{ id: string; patron: string; categoriaId: string; prioridad: number }>;
-  bancard?: Record<string, { id: string; nombreBancard: string; categoriaId: string }>;
   comercio?: Array<{ id: string; nombreNormalizado: string; categoriaId: string }>;
   mcc?: Record<string, { codMcc: string; categoriaId: string | null; ambiguo: boolean }>;
   catalogo?: Record<string, CatalogoHit>;
 }) {
+  const patronesAsPatrones: PatronCargado[] = (opts.reglas ?? []).map((r) => ({
+    id: r.id,
+    tipo: 'regex',
+    valor: r.patron,
+    categoriaId: r.categoriaId,
+    prioridad: r.prioridad,
+  }));
   return {
     catalogo: crearCapaCatalogo({
       porBancardCodigo: async (b, c) => {
@@ -33,8 +38,7 @@ function mkCapas(opts: {
         return opts.catalogo?.[`${b}|${c}`] ?? null;
       },
     }),
-    regex: crearCapaRegex({ cargar: async () => opts.reglas ?? [] }),
-    bancard: crearCapaBancard({ porNombreBancard: async (n) => opts.bancard?.[n] ?? null }),
+    patrones: crearCapaPatrones({ cargar: async () => patronesAsPatrones }),
     comercio: crearCapaComercio({ candidatosPorTexto: async () => opts.comercio ?? [] }),
     mcc: crearCapaMcc({ porCodigo: async (k) => opts.mcc?.[k] ?? null }),
   };

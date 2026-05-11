@@ -7,8 +7,6 @@ export interface CapasSincrono {
       codigoComercio: string | null | undefined,
     ): Promise<ResultadoCapa | null>;
   };
-  regex: { evaluar(texto: string): Promise<ResultadoCapa | null> };
-  bancard: { evaluar(nombreBancard: string | null | undefined): Promise<ResultadoCapa | null> };
   comercio: { evaluar(texto: string | null | undefined): Promise<ResultadoCapa | null> };
   patrones?: { evaluar(texto: string): Promise<ResultadoCapa | null> };
   mcc: { evaluar(codMcc: string | null | undefined): Promise<ResultadoCapa | null> };
@@ -41,17 +39,11 @@ export async function ejecutarCascada(
   const rp = texto && capas.patrones ? await capas.patrones.evaluar(texto) : null;
   if (rp) return { resultado: rp, requiereRevision: false, requiereIa: false };
 
-  const r1 = texto ? await capas.regex.evaluar(texto) : null;
-  if (r1) return { resultado: r1, requiereRevision: false, requiereIa: false };
-
-  const r2 = await capas.bancard.evaluar(input.nombreBancard);
-  if (r2) return { resultado: r2, requiereRevision: false, requiereIa: false };
+  const r4 = await capas.mcc.evaluar(input.mcc);
+  if (r4) return { resultado: r4, requiereRevision: false, requiereIa: false };
 
   const r3 = texto && !opts.bypassComercio ? await capas.comercio.evaluar(texto) : null;
   if (r3) return { resultado: r3, requiereRevision: false, requiereIa: false };
-
-  const r4 = await capas.mcc.evaluar(input.mcc);
-  if (r4) return { resultado: r4, requiereRevision: false, requiereIa: false };
 
   return { resultado: null, requiereRevision: true, requiereIa: true };
 }
