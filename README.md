@@ -87,35 +87,24 @@ Postgres 16 (Drizzle ORM) ─── tablas:
 ## Quick start
 
 ```bash
-# 1. Prerequisitos
-node --version                # >=20
-pnpm --version                # corepack enable pnpm
+# 0. Prerequisitos: node >=20, pnpm (corepack enable), docker
 
-# 2. Instalar deps
-pnpm install
+# 1. Configurar .env (primer run copia desde .env.example y aborta)
+bash start.sh                       # editá .env, especialmente API_KEY
 
-# 3. Levantar Postgres (+ opcional Ollama)
-docker compose up -d                      # Postgres
-docker compose --profile ai up -d ollama  # Ollama opcional
+# 2. Levantar todo
+bash start.sh                       # postgres + deps + migrate + seed + API
+# o con IA fallback:
+OLLAMA=1 bash start.sh              # + ollama (descarga modelo on demand)
 
-# 4. Configurar .env
-cp .env.example .env
-# editar API_KEY, DATABASE_URL, OLLAMA_URL
+# 3. Verificar
+curl http://localhost:3000/health   # → {"status":"ok"}
 
-# 5. Migrar schema
-pnpm db:migrate
-
-# 6. Levantar API
-pnpm dev                       # foreground hot-reload
-# o bash start.sh              # background con .tagger.pid
-
-# 7. Verificar
-curl http://localhost:3000/health
-# → {"status":"ok"}
-
-# 8. Abrir UI
+# 4. UI
 open http://localhost:3000/ui/
 ```
+
+`start.sh` es idempotente: levanta lo que falte (postgres, deps, migrations, seed), arranca API foreground. `stop.sh` baja todo. `restart.sh` = stop + start.
 
 Datos iniciales (categorías, MCCs, patrones, catálogo de comercios) se cargan vía importador UI en `/ui/importar/`.
 

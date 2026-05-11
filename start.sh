@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# start.sh — levanta postgres, instala deps, corre migración + seeds, arranca API en foreground (logs en consola).
+# start.sh — boot completo: postgres + deps + migración + seed + API foreground.
+# Uso:
+#   bash start.sh           # postgres + tagger
+#   OLLAMA=1 bash start.sh  # + ollama (IA fallback)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,9 +17,9 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   err "API ya corre (PID $(cat "$PID_FILE")). Usá restart.sh o stop.sh."
   exit 1
 fi
-# limpiar PID stale
 rm -f "$PID_FILE"
 
+# .env
 if [[ ! -f .env ]]; then
   if [[ -f .env.example ]]; then
     log ".env no existe, copiando desde .env.example"
@@ -29,6 +32,7 @@ if [[ ! -f .env ]]; then
   fi
 fi
 
+# prereqs
 if ! command -v docker >/dev/null 2>&1; then
   err "docker no encontrado en PATH"
   exit 1
@@ -38,7 +42,8 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-log "levantando postgres (docker compose)"
+# postgres
+log "levantando postgres"
 docker compose up -d postgres
 
 log "esperando postgres healthy"
@@ -55,16 +60,37 @@ for i in {1..30}; do
   sleep 2
 done
 
+# ollama opcional
+if [[ "${OLLAMA:-0}" == "1" ]]; then
+  log "levantando ollama (profile ai)"
+  docker compose --profile ai up -d ollama
+fi
+
+# deps
 log "instalando deps"
 pnpm install --silent
 
-log "aplicando migración"
+# migración
+log "aplicando migrations"
 pnpm db:migrate
 
-log "cargando catálogos (loaders)"
-pnpm db:load:all || log "loaders parciales (continúa)"
+# seed idempotente
+if [[ -f data/seed.sql ]]; then
+  log "cargando seed (idempotente)"
+  PG_CONTAINER=$(docker compose ps -q postgres)
+  if [[ -n "$PG_CONTAINER" ]]; then
+    docker exec -i "$PG_CONTAINER" psql -U tagger -d tagger -q < data/seed.sql >/dev/null
+    log "seed cargado"
+  else
+    err "no pude resolver contenedor postgres para seed"
+    exit 1
+  fi
+else
+  log "data/seed.sql no existe (skip seed)"
+fi
 
-log "arrancando API en foreground (Ctrl+C para detener)"
+# API
+log "arrancando API foreground (Ctrl+C para detener)"
 echo $$ > "$PID_FILE"
 trap 'rm -f "$PID_FILE"' EXIT
 exec pnpm dev
