@@ -19,17 +19,28 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
 fi
 rm -f "$PID_FILE"
 
-# .env
+# .env (auto-genera API_KEY si .env no existe)
 if [[ ! -f .env ]]; then
-  if [[ -f .env.example ]]; then
-    log ".env no existe, copiando desde .env.example"
-    cp .env.example .env
-    err "Editá .env (especialmente API_KEY) y volvé a correr start.sh"
-    exit 1
-  else
+  if [[ ! -f .env.example ]]; then
     err ".env y .env.example no existen"
     exit 1
   fi
+  log ".env no existe, generando desde .env.example"
+  cp .env.example .env
+  # generar API_KEY aleatoria (32 chars hex)
+  if command -v openssl >/dev/null 2>&1; then
+    NEW_KEY=$(openssl rand -hex 24)
+  else
+    NEW_KEY=$(head -c 24 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 32)
+  fi
+  # sustituir API_KEY en .env (portable mac/linux)
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sed -i '' "s|^API_KEY=.*|API_KEY=$NEW_KEY|" .env
+  else
+    sed -i "s|^API_KEY=.*|API_KEY=$NEW_KEY|" .env
+  fi
+  log "API_KEY generada y guardada en .env"
+  log "  → $NEW_KEY"
 fi
 
 # prereqs
