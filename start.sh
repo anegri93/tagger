@@ -91,6 +91,13 @@ fi
 
 # API
 log "arrancando API foreground (Ctrl+C para detener)"
-echo $$ > "$PID_FILE"
-trap 'rm -f "$PID_FILE"' EXIT
-exec pnpm dev
+pnpm dev &
+API_PID=$!
+echo $API_PID > "$PID_FILE"
+cleanup() {
+  rm -f "$PID_FILE"
+  kill -TERM $API_PID 2>/dev/null || true
+  wait $API_PID 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+wait $API_PID
