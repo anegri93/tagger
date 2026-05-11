@@ -22,8 +22,6 @@ export interface ProgresoIa {
   fase: 'preparando' | 'iterando' | 'finalizando';
 }
 
-export type IaTarget = { kind: 'catalogo' } | { kind: 'dataset'; datasetId: string };
-
 export interface SugerirIaOpts {
   loteSize?: number;
   ejemplosPorCategoria?: number;
@@ -31,7 +29,6 @@ export interface SugerirIaOpts {
   minSugerencias?: number;
   maxIteraciones?: number;
   onProgreso?: (p: ProgresoIa) => void;
-  target?: IaTarget;
 }
 
 export interface SugerirIaDeps {
@@ -174,12 +171,7 @@ export async function sugerirPatronesIa(
   const minSugerencias = opts.minSugerencias ?? 10;
   const maxIteraciones = opts.maxIteraciones ?? 5;
   const onProgreso = opts.onProgreso;
-  const target: IaTarget = opts.target ?? { kind: 'catalogo' };
-  // Subquery del universo "sin categorizar" según target
-  const sinCatFrom =
-    target.kind === 'catalogo'
-      ? sql`comercios_catalogo WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL`
-      : sql`dataset_comercios WHERE dataset_id = ${target.datasetId} AND recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL`;
+  const sinCatFrom = sql`comercios_catalogo WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL`;
   onProgreso?.({ iter: 0, maxIteraciones, acumuladas: 0, minSugerencias, fase: 'preparando' });
 
   // 1. Seed validado: top N por categoría

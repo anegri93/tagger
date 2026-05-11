@@ -2,26 +2,6 @@ const $ = (s) => document.querySelector(s);
 
 let pollTimer = null;
 
-function tablaActual() {
-  return $('#sel-tabla')?.value || 'catalogo';
-}
-
-async function cargarDatasets() {
-  try {
-    const r = await window.taggerApi('/datasets');
-    const sel = $('#sel-tabla');
-    if (!sel) return;
-    const items = r.items || [];
-    for (const ds of items) {
-      const opt = document.createElement('option');
-      opt.value = `datasets:${ds.slug}`;
-      opt.textContent = `${ds.nombre} (${ds.total})`;
-      sel.appendChild(opt);
-    }
-  } catch (e) {
-    console.warn('no pude cargar datasets', e);
-  }
-}
 
 function setStatus(t) {
   $('#status').textContent = t;
@@ -113,9 +93,7 @@ async function loadStatus() {
 
 async function loadComparacion() {
   try {
-    const c = await window.taggerApi(
-      `/catalogo/recategorizar/comparacion?tabla=${encodeURIComponent(tablaActual())}`,
-    );
+    const c = await window.taggerApi('/catalogo/recategorizar/comparacion');
     renderComparacion(c);
     setStatus('live');
   } catch (e) {
@@ -229,7 +207,7 @@ document.addEventListener('click', async (e) => {
       cont.textContent = 'cargando…';
       try {
         const r = await window.taggerApi(
-          `/catalogo/recategorizar/diff-detalle?actual=${encodeURIComponent(actual)}&nueva=${encodeURIComponent(nueva)}&limit=100&tabla=${encodeURIComponent(tablaActual())}`,
+          `/catalogo/recategorizar/diff-detalle?actual=${encodeURIComponent(actual)}&nueva=${encodeURIComponent(nueva)}&limit=100`,
         );
         if (!r.items.length) {
           cont.textContent = 'sin filas';
@@ -380,7 +358,7 @@ $('#btn-run').addEventListener('click', async () => {
   try {
     const r = await window.taggerApi('/catalogo/recategorizar', {
       method: 'POST',
-      body: JSON.stringify({ tabla: tablaActual() }),
+      body: JSON.stringify({}),
     });
     setStatus(`run iniciado ${r.run_id}`);
     schedulePoll();
@@ -451,7 +429,6 @@ $('#ia-run').addEventListener('click', async () => {
         confianza_min: Number($('#ia-conf').value),
         min_sugerencias: Number($('#ia-min-sug').value),
         max_iteraciones: Number($('#ia-max-iter').value),
-        tabla: tablaActual(),
       }),
     });
     $('#ia-status').textContent = `run iniciado ${r.run_id}`;
@@ -611,12 +588,7 @@ $('#sg-aplicar').addEventListener('click', async () => {
   }
 });
 
-cargarDatasets().then(() => {
-  $('#sel-tabla')?.addEventListener('change', () => {
-    loadComparacion();
-  });
-  loadStatus();
-});
+loadStatus();
 
 // ===== Marcas candidatas =====
 async function poblarCategoriasFiltro() {
@@ -636,11 +608,10 @@ async function cargarMarcasCandidatas() {
   await poblarCategoriasFiltro();
   const minFreq = Number($('#mc-min-freq').value) || 3;
   const limit = Number($('#mc-limit').value) || 50;
-  const tabla = tablaActual();
   const cat = $('#mc-categoria').value;
   $('#mc-status').textContent = 'cargando…';
   try {
-    const qs = new URLSearchParams({ tabla, min_freq: String(minFreq), limit: String(limit) });
+    const qs = new URLSearchParams({ min_freq: String(minFreq), limit: String(limit) });
     if (cat) qs.set('categoria', cat);
     const r = await window.taggerApi(`/datasets/marcas-candidatas?${qs.toString()}`);
     const items = r.items || [];

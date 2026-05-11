@@ -3,66 +3,29 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import { STOPWORDS_GEO } from '../../services/sugerir-patrones-ia.js';
 
-async function resolveScope(
-  db: Db,
-  tabla?: string,
-  categoriaSlug?: string,
-): Promise<{ from: ReturnType<typeof sql> } | null> {
-  const all = categoriaSlug === '__all__';
-  // catalogo
-  if (!tabla || tabla === 'catalogo' || tabla === 'comercios_catalogo') {
-    if (all) {
-      return {
-        from: sql`(SELECT id, nombre FROM comercios_catalogo
-          WHERE categoria_id IS NOT NULL) AS src`,
-      };
-    }
-    if (categoriaSlug) {
-      return {
-        from: sql`(SELECT cc.id, cc.nombre FROM comercios_catalogo cc
-          JOIN categorias cat ON cat.id = cc.categoria_id
-          WHERE cat.slug = ${categoriaSlug}) AS src`,
-      };
-    }
-    return {
-      from: sql`(SELECT id, nombre FROM comercios_catalogo
-        WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL) AS src`,
-    };
-  }
-  const m = tabla.match(/^datasets:(.+)$/);
-  if (!m) return null;
-  const r = await db.execute(sql`SELECT id FROM datasets WHERE slug = ${m[1]}`);
-  if (r.rows.length === 0) return null;
-  const datasetId = (r.rows[0] as { id: string }).id;
-  if (all) {
-    return {
-      from: sql`(SELECT id, nombre FROM dataset_comercios
-        WHERE dataset_id = ${datasetId} AND categoria_id IS NOT NULL) AS src`,
-    };
+function buildFrom(categoriaSlug?: string): ReturnType<typeof sql> {
+  if (categoriaSlug === '__all__') {
+    return sql`(SELECT id, nombre FROM comercios_catalogo
+      WHERE categoria_id IS NOT NULL) AS src`;
   }
   if (categoriaSlug) {
-    return {
-      from: sql`(SELECT dc.id, dc.nombre FROM dataset_comercios dc
-        JOIN categorias cat ON cat.id = dc.categoria_id
-        WHERE dc.dataset_id = ${datasetId} AND cat.slug = ${categoriaSlug}) AS src`,
-    };
+    return sql`(SELECT cc.id, cc.nombre FROM comercios_catalogo cc
+      JOIN categorias cat ON cat.id = cc.categoria_id
+      WHERE cat.slug = ${categoriaSlug}) AS src`;
   }
-  return {
-    from: sql`(SELECT id, nombre FROM dataset_comercios
-      WHERE dataset_id = ${datasetId} AND categoria_id IS NULL) AS src`,
-  };
+  return sql`(SELECT id, nombre FROM comercios_catalogo
+    WHERE recategorizado_at IS NOT NULL AND categoria_nueva_id IS NULL) AS src`;
 }
 
 export const marcasCandidatasRoute =
   (db: Db): FastifyPluginAsync =>
   async (app) => {
     app.get<{
-      Querystring: { tabla?: string; min_freq?: string; limit?: string; categoria?: string };
+      Querystring: { min_freq?: string; limit?: string; categoria?: string };
     }>(
       '/datasets/marcas-candidatas',
       async (req, reply) => {
-        const scope = await resolveScope(db, req.query.tabla, req.query.categoria);
-        if (!scope) return reply.code(400).send({ error: 'tabla_invalida' });
+        const from = buildFrom(req.query.categoria);
         const minFreq = Math.max(2, Number(req.query.min_freq ?? 3));
         const limit = Math.min(200, Number(req.query.limit ?? 50));
 
@@ -71,7 +34,6 @@ export const marcasCandidatasRoute =
           sql`, `,
         );
 
-        // Toma primeras 2 palabras (≥3 chars c/u). Stopword solo descarta si AMBOS lo son.
         const rows = await db.execute(sql`
           WITH base AS (
             SELECT id, nombre,
@@ -79,7 +41,7 @@ export const marcasCandidatasRoute =
                      upper(regexp_replace(nombre, '[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ ]', ' ', 'g')),
                      ' +'
                    ) AS toks
-            FROM ${scope.from}
+            FROM ${from}
           ),
           filtrado AS (
             SELECT b.id, b.nombre,

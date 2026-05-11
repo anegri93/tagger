@@ -27,7 +27,6 @@ export interface CategoriaWriter {
   eliminar(slug: string): Promise<boolean>;
   usage(slug: string): Promise<{
     movimientos: number;
-    reglas: number;
     mcc: number;
     comercios: number;
   } | null>;
@@ -120,7 +119,6 @@ export function crearCategoriaWriter(
       ]);
       return {
         movimientos: Number(m[0]?.c ?? 0),
-        reglas: 0,
         comercios: Number(c[0]?.c ?? 0),
         mcc: Number(mc[0]?.c ?? 0),
       };

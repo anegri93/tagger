@@ -281,20 +281,4 @@ $('btn-stop').addEventListener('click', stopRun);
 $('btn-monitor').addEventListener('click', monitorOnly);
 $('btn-pause').addEventListener('click', togglePause);
 
-async function cargarDatasetsSource() {
-  try {
-    const r = await api('/datasets');
-    const sel = $('sel-source');
-    if (!sel) return;
-    for (const ds of r.items || []) {
-      const opt = document.createElement('option');
-      opt.value = `datasets:${ds.slug}`;
-      opt.textContent = `dataset: ${ds.nombre} (${ds.total})`;
-      sel.appendChild(opt);
-    }
-  } catch (e) {
-    console.warn('no pude cargar datasets', e);
-  }
-}
-cargarDatasetsSource();
 loadCfg();

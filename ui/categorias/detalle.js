@@ -27,7 +27,6 @@ $$('.tab').forEach((t) =>
     $$('.tab-content').forEach((x) =>
       x.classList.toggle('active', x.dataset.tab === t.dataset.tab),
     );
-    if (t.dataset.tab === 'reglas') loadReglas();
     if (t.dataset.tab === 'mcc') loadMcc();
     if (t.dataset.tab === 'marcas') loadMarcas();
     if (t.dataset.tab === 'comercios') loadComercios();
@@ -47,7 +46,7 @@ async function loadInfo() {
       $('#info-desc').value = cat.descripcion ?? '';
     }
     const u = await window.taggerApi(`/categorias/${encodeURIComponent(SLUG)}/usage`);
-    $('#info-usage').textContent = `Movimientos: ${u.movimientos} | Reglas: ${u.reglas} | MCCs: ${u.mcc} | Comercios: ${u.comercios}`;
+    $('#info-usage').textContent = `Movimientos: ${u.movimientos} | MCCs: ${u.mcc} | Comercios: ${u.comercios}`;
     setStatus('live', 'live');
   } catch (e) {
     setStatus(`error: ${e.message}`, 'error');
@@ -77,85 +76,6 @@ $('#btn-delete-cat').addEventListener('click', async () => {
     if (e.body?.usage)
       alert(`No se puede eliminar: tiene refs ${JSON.stringify(e.body.usage)}`);
     else alert(e.message);
-  }
-});
-
-// Reglas
-async function loadReglas() {
-  try {
-    const { items } = await window.taggerApi(`/reglas?categoria=${encodeURIComponent(SLUG)}`);
-    const tbody = $('#reglas-tbl tbody');
-    tbody.innerHTML = items
-      .map(
-        (r) => `<tr data-id="${r.id}">
-          <td><code>${esc(r.patron)}</code></td>
-          <td>${r.prioridad}</td>
-          <td>${r.activo ? '✓' : '✗'}</td>
-          <td>${esc(r.descripcion)}</td>
-          <td>
-            <button class="action-btn" data-act="toggle" data-id="${r.id}" data-activo="${r.activo}">${r.activo ? 'Desact' : 'Act'}</button>
-            <button class="action-btn delete" data-act="del" data-id="${r.id}">Eliminar</button>
-          </td>
-        </tr>`,
-      )
-      .join('');
-  } catch (e) {
-    setStatus(`error reglas: ${e.message}`, 'error');
-  }
-}
-
-$('#r-add').addEventListener('click', async () => {
-  const patron = $('#r-patron').value.trim();
-  const prioridad = Number($('#r-prio').value) || 100;
-  const descripcion = $('#r-desc').value.trim() || undefined;
-  if (!patron) return alert('falta patrón');
-  try {
-    await window.taggerApi('/reglas', {
-      method: 'POST',
-      body: JSON.stringify({ patron, categoria_slug: SLUG, prioridad, descripcion }),
-    });
-    $('#r-patron').value = '';
-    $('#r-desc').value = '';
-    await loadReglas();
-  } catch (e) {
-    alert(e.message);
-  }
-});
-
-$('#r-test-btn').addEventListener('click', async () => {
-  const patron = $('#r-patron').value.trim();
-  const texto = $('#r-test-texto').value.trim();
-  if (!patron || !texto) return;
-  try {
-    const r = await window.taggerApi('/reglas/test', {
-      method: 'POST',
-      body: JSON.stringify({ patron, texto }),
-    });
-    const el = $('#r-test-result');
-    el.style.display = 'block';
-    el.className = `test-result ${r.match ? 'match' : 'no-match'}`;
-    el.textContent = r.match ? `✓ matchea` : `✗ no matchea`;
-  } catch (e) {
-    alert(e.message);
-  }
-});
-
-$('#reglas-tbl').addEventListener('click', async (e) => {
-  const btn = e.target.closest('.action-btn');
-  if (!btn) return;
-  const id = btn.dataset.id;
-  const act = btn.dataset.act;
-  try {
-    if (act === 'del') {
-      if (!confirm('Eliminar regla?')) return;
-      await window.taggerApi(`/reglas/${id}`, { method: 'DELETE' });
-    } else if (act === 'toggle') {
-      const activo = btn.dataset.activo !== 'true';
-      await window.taggerApi(`/reglas/${id}`, { method: 'PATCH', body: JSON.stringify({ activo }) });
-    }
-    await loadReglas();
-  } catch (err) {
-    alert(err.message);
   }
 });
 

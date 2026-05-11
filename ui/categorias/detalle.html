@@ -53,7 +53,6 @@
 
     <div class="tabs">
       <div class="tab active" data-tab="info">Info</div>
-      <div class="tab" data-tab="reglas">Reglas</div>
       <div class="tab" data-tab="mcc">MCCs</div>
       <div class="tab" data-tab="marcas">Marcas</div>
       <div class="tab" data-tab="comercios">Comercios</div>
@@ -73,25 +72,6 @@
       <div style="margin-top:16px">
         <button class="action-btn delete" id="btn-delete-cat">Eliminar categoría</button>
       </div>
-    </div>
-
-    <div class="tab-content" data-tab="reglas">
-      <h2>Reglas regex</h2>
-      <div class="form-row">
-        <label>Patrón<input id="r-patron" placeholder="\\bMASCOTA\\b" /></label>
-        <label>Prioridad<input id="r-prio" type="number" value="20" style="width:80px" /></label>
-        <label>Descripción<input id="r-desc" /></label>
-        <button id="r-add">+ Agregar</button>
-      </div>
-      <div class="form-row">
-        <label>Probar patrón vs texto<input id="r-test-texto" placeholder="VETERINARIA SAN ROQUE" /></label>
-        <button id="r-test-btn">Probar</button>
-      </div>
-      <div id="r-test-result" class="test-result" style="display:none"></div>
-      <table class="tbl" id="reglas-tbl">
-        <thead><tr><th>Patrón</th><th>Prio</th><th>Activo</th><th>Descripción</th><th>Acciones</th></tr></thead>
-        <tbody></tbody>
-      </table>
     </div>
 
     <div class="tab-content" data-tab="mcc">

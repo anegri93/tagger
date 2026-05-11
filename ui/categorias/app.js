@@ -22,7 +22,6 @@ async function loadList() {
           <td><a href="detalle.html?slug=${c.slug}">${esc(c.slug)}</a></td>
           <td>${esc(c.nombre)}</td>
           <td class="num"><span data-usage="movimientos">…</span></td>
-          <td class="num"><span data-usage="reglas">…</span></td>
           <td class="num"><span data-usage="mcc">…</span></td>
           <td class="num"><span data-usage="comercios">…</span></td>
           <td>
@@ -39,7 +38,6 @@ async function loadList() {
           const row = tbody.querySelector(`tr[data-slug="${c.slug}"]`);
           if (!row) return;
           row.querySelector('[data-usage="movimientos"]').textContent = u.movimientos;
-          row.querySelector('[data-usage="reglas"]').textContent = u.reglas;
           row.querySelector('[data-usage="mcc"]').textContent = u.mcc;
           row.querySelector('[data-usage="comercios"]').textContent = u.comercios;
         } catch {}
@@ -78,8 +76,8 @@ async function crear() {
 async function eliminar(slug) {
   try {
     const u = await window.taggerApi(`/categorias/${encodeURIComponent(slug)}/usage`);
-    if (u.movimientos > 0 || u.reglas > 0 || u.mcc > 0 || u.comercios > 0) {
-      alert(`No se puede eliminar: tiene refs\nmov:${u.movimientos} reglas:${u.reglas} mcc:${u.mcc} comercios:${u.comercios}`);
+    if (u.movimientos > 0 || u.mcc > 0 || u.comercios > 0) {
+      alert(`No se puede eliminar: tiene refs\nmov:${u.movimientos} mcc:${u.mcc} comercios:${u.comercios}`);
       return;
     }
     if (!confirm(`Eliminar categoría '${slug}'?`)) return;

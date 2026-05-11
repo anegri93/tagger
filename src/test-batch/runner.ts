@@ -15,7 +15,7 @@ export interface BatchOpts {
   limit?: number;
   concurrency?: number;
   bypassCatalogo?: boolean;
-  /** 'tsv' (default), 'catalogo', o 'datasets:<slug>' */
+  /** 'tsv' (default) o 'catalogo' */
   source?: string;
 }
 
@@ -46,7 +46,7 @@ interface RawRow extends Record<string, string> {
 interface SourceRow {
   raw: RawRow;
   /** Si la row viene de DB, su id + tabla destino para writeback */
-  writeback?: { table: 'comercios_catalogo' | 'dataset_comercios'; id: string };
+  writeback?: { table: 'comercios_catalogo'; id: string };
 }
 
 const DEFAULT_FILES = [
@@ -149,53 +149,7 @@ export class TestBatchRunner {
         offset += PAGE;
       }
     }
-    const m = src.match(/^datasets:(.+)$/);
-    if (!m) throw new Error(`source desconocido: ${src}`);
-    const slug = m[1];
-    const ds = await db.execute(sql`SELECT id FROM datasets WHERE slug = ${slug}`);
-    if (ds.rows.length === 0) throw new Error(`dataset no existe: ${slug}`);
-    const datasetId = (ds.rows[0] as { id: string }).id;
-    let offset = 0;
-    while (true) {
-      const r = await db.execute(
-        sql`SELECT id, nombre FROM dataset_comercios WHERE dataset_id = ${datasetId} ORDER BY id LIMIT ${PAGE} OFFSET ${offset}`,
-      );
-      if (r.rows.length === 0) return;
-      for (const row of r.rows as { id: string; nombre: string }[]) {
-        yield {
-          raw: { Nombre: row.nombre, BancardId: '', CodigoComercio: '', MCC: '' } as RawRow,
-          writeback: { table: 'dataset_comercios', id: row.id },
-        };
-      }
-      offset += PAGE;
-    }
-  }
-
-  private async escribirCategoriaEnSource(
-    wb: NonNullable<SourceRow['writeback']>,
-    categoriaId: string | null,
-    categoriaSlug: string | null,
-    fuenteNueva: string | null,
-    confianza: number | null,
-  ): Promise<void> {
-    const db = this.deps.db;
-    if (!db) return;
-    const conf = confianza !== null ? String(confianza) : null;
-    if (wb.table === 'comercios_catalogo') {
-      // catalogo ya tiene categoria_id baseline (NOT NULL); no sobreescribir desde test-monitor
-      void fuenteNueva;
-      void conf;
-      void categoriaId;
-      return;
-    }
-    // dataset_comercios: test-monitor escribe baseline (categoria_id/categoria_slug),
-    // recat escribe categoria_nueva_*
-    await db.execute(sql`
-      UPDATE dataset_comercios
-      SET categoria_id = ${categoriaId},
-          categoria_slug = ${categoriaSlug}
-      WHERE id = ${wb.id}
-    `);
+    throw new Error(`source desconocido: ${src}`);
   }
 
   private async run(batchId: string): Promise<void> {
@@ -211,15 +165,6 @@ export class TestBatchRunner {
 
     const concurrency = info.concurrency;
     const limit = info.limit;
-
-    // Mapa categoriaId → slug para writeback en datasets
-    const slugById = new Map<string, string>();
-    if (this.deps.db && info.source !== 'tsv') {
-      const cats = await this.deps.db.execute(sql`SELECT id, slug FROM categorias`);
-      for (const c of cats.rows as { id: string; slug: string }[]) {
-        slugById.set(c.id, c.slug);
-      }
-    }
 
     let active = 0;
     const queue: SourceRow[] = [];
@@ -252,13 +197,6 @@ export class TestBatchRunner {
           batchId,
           latencyMs,
         });
-        if (sr.writeback) {
-          const catId = pipeline.resultado?.categoriaId ?? null;
-          const fuente = pipeline.resultado?.fuente ?? null;
-          const conf = pipeline.resultado?.confianza ?? null;
-          const slug = catId ? slugById.get(catId) ?? null : null;
-          await this.escribirCategoriaEnSource(sr.writeback, catId, slug, fuente, conf);
-        }
         info.ok++;
       } catch {
         info.errors++;

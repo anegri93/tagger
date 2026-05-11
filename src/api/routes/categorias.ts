@@ -67,12 +67,7 @@ export const categoriasRoute =
       async (req, reply) => {
         const usage = await writer.usage(req.params.slug);
         if (!usage) return reply.code(404).send({ error: 'no_existe' });
-        if (
-          usage.movimientos > 0 ||
-          usage.reglas > 0 ||
-          usage.mcc > 0 ||
-          usage.comercios > 0
-        ) {
+        if (usage.movimientos > 0 || usage.mcc > 0 || usage.comercios > 0) {
           return reply.code(409).send({ error: 'tiene_referencias', usage });
         }
         const ok = await writer.eliminar(req.params.slug);

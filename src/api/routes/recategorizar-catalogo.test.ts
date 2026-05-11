@@ -65,22 +65,9 @@ describe('recategorizar-catalogo route', () => {
     // mockear servicio lento bloqueando la query select inicial
     const slowDb = {
       ...fakeDbVacia(),
-      select: () => ({
-        from: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              offset: () => new Promise((res) => setTimeout(() => res([]), 200)),
-            }),
-          }),
-          then: (resolve: (v: unknown[]) => unknown) =>
-            new Promise((res) =>
-              setTimeout(() => {
-                resolve([{ id: '1' }]);
-                res(undefined);
-              }, 100),
-            ),
-        }),
-      }),
+      execute: vi.fn(
+        () => new Promise((res) => setTimeout(() => res({ rows: [{ c: 5 }] }), 200)),
+      ),
     };
     await app.register(recategorizarCatalogoRoute(slowDb as never, stubCapas()));
     const r1 = await app.inject({ method: 'POST', url: '/catalogo/recategorizar' });
