@@ -43,6 +43,7 @@ interface XlsxRow {
   CommerceSector: string | null;
   CommerceCode: number | string | null;
   MCC: number | string | null;
+  'Combined MCC': number | string | null;
   Cantidad: number | null;
 }
 
@@ -85,6 +86,7 @@ async function main(): Promise<void> {
       bancardId: r.BancardId ? String(r.BancardId).trim() : null,
       codigoComercio: r.CommerceCode != null ? String(r.CommerceCode).trim() : null,
       mcc: r.MCC != null ? String(r.MCC).trim() : null,
+      combinedMcc: r['Combined MCC'] != null ? String(r['Combined MCC']).trim() : null,
       categoriaXlsx: r.Category ? String(r.Category).trim() : null,
       sectorXlsx: r.CommerceSector ? String(r.CommerceSector).trim() : null,
       cantidad: r.Cantidad != null ? Number(r.Cantidad) : null,

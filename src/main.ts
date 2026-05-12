@@ -15,6 +15,7 @@ import { marcasRoute } from './api/routes/marcas.js';
 import { crearMarcaWriter, crearMarcasReader } from './db/repos/marcas.js';
 import { testBatchStatsRoute } from './api/routes/test-batch-stats.js';
 import { groundTruthAgreementRoute } from './api/routes/ground-truth-agreement.js';
+import { analisisProfundoRoute } from './api/routes/analisis-profundo.js';
 import { testBatchControlRoute } from './api/routes/test-batch-control.js';
 import { TestBatchRunner } from './test-batch/runner.js';
 import { requestLog } from './api/plugins/request-log.js';
@@ -99,6 +100,7 @@ async function main() {
     capa: capaIa,
     updater: movUpdater,
     logger,
+    maxConcurrent: 4,
   });
 
   const app = await build();
@@ -139,6 +141,7 @@ async function main() {
   await app.register(comerciosRoute(comerciosWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
   await app.register(groundTruthAgreementRoute(db));
+  await app.register(analisisProfundoRoute(db));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo, db });
   await app.register(testBatchControlRoute(testRunner));
 

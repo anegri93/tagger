@@ -10,6 +10,7 @@ export const testGroundTruth = pgTable(
     bancardId: text('bancard_id'),
     codigoComercio: text('codigo_comercio'),
     mcc: text('mcc'),
+    combinedMcc: text('combined_mcc'),
     categoriaXlsx: text('categoria_xlsx'),
     sectorXlsx: text('sector_xlsx'),
     cantidad: integer('cantidad'),

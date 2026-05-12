@@ -151,19 +151,26 @@ export const groundTruthAgreementRoute =
 
     app.get<{
       Params: { batch_id: string };
-      Querystring: { ground_truth?: string; include_ambiguo?: string; include_generic?: string };
+      Querystring: {
+        ground_truth?: string;
+        include_ambiguo?: string;
+        include_generic?: string;
+        reference?: string;
+      };
     }>('/test-batch/:batch_id/agreement-mcc', async (req, reply) => {
       const batchId = req.params.batch_id?.trim();
       if (!batchId) return reply.code(400).send({ error: 'batch_id requerido' });
       const groundTruthBatch = req.query.ground_truth?.trim() ?? 'datamayo-2026-05';
       const includeAmbiguo = req.query.include_ambiguo === 'true';
       const includeGeneric = req.query.include_generic === 'true';
+      const useCombined = req.query.reference === 'combined_mcc';
+      const refColExpr = useCombined ? sql`gt.combined_mcc` : sql`gt.mcc`;
 
       const result = await db.execute(sql`
         SELECT
           gt.nombre,
           gt.cantidad,
-          gt.mcc,
+          ${refColExpr} AS mcc,
           mc.categoria_id AS mcc_categoria_id,
           mcat.nombre AS mcc_categoria_nombre,
           mc.descripcion AS mcc_descripcion,
@@ -174,7 +181,7 @@ export const groundTruthAgreementRoute =
           m.confianza,
           m.latency_ms
         FROM test_ground_truth gt
-        LEFT JOIN mcc_catalogo mc ON mc.cod_mcc = gt.mcc
+        LEFT JOIN mcc_catalogo mc ON mc.cod_mcc = ${refColExpr}
         LEFT JOIN categorias mcat ON mcat.id = mc.categoria_id
         LEFT JOIN movimientos m ON m.batch_id = ${batchId} AND m.nombre_bancard = gt.nombre
         LEFT JOIN categorias pcat ON pcat.id = m.categoria_predicha_id
