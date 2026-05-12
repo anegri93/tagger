@@ -109,6 +109,52 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /movimientos/{id}/reprocesar:
+    post:
+      tags: [Categorización]
+      summary: Re-ejecuta cascada + IA fallback sobre un movimiento existente
+      description: |
+        Útil para:
+        - Movimientos viejos sin categoría (creados antes de agregar patrones/MCCs).
+        - Movimientos donde IA falló al momento de POST inicial.
+        - Mobile permite "re-categorizar este movimiento".
+
+        Reconstruye `MovimientoInput` con los campos almacenados, ejecuta cascada,
+        actualiza prediccion + evidencia. Si cascada agotada, dispara IA async
+        (cliente debe poll `/movimientos/:id`).
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bypass_catalogo:
+                  type: boolean
+                  description: Testing — salta capa catálogo, fuerza cascada pura
+      responses:
+        '200':
+          description: Movimiento reprocesado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CategorizarResponse'
+                  - type: object
+                    properties:
+                      ia_disparada:
+                        type: boolean
+                        description: true si cascada agotada y se disparó IA async
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /movimientos/{id}/correccion:
     post:
       tags: [Categorización]

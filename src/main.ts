@@ -5,6 +5,7 @@ import { categorizarRoute } from './api/routes/categorizar.js';
 import { importarCatalogoRoute } from './api/routes/importar-catalogo.js';
 import { importarMovimientosRoute } from './api/routes/importar-movimientos.js';
 import { movimientoGetRoute } from './api/routes/movimiento-get.js';
+import { movimientoReprocesarRoute } from './api/routes/movimiento-reprocesar.js';
 import { correccionRoute } from './api/routes/correccion.js';
 import { categoriasRoute } from './api/routes/categorias.js';
 import { mccRoute } from './api/routes/mcc.js';
@@ -41,6 +42,8 @@ import {
   crearMovimientoRepository,
   crearMovimientoUpdater,
   crearMovimientoReader,
+  crearMovimientoInputReader,
+  crearMovimientoReprocesador,
 } from './db/repos/movimientos.js';
 import { crearCorreccionService } from './db/repos/correccion.js';
 import {
@@ -102,6 +105,15 @@ async function main() {
     categorizarRoute({ capas, repo: movRepo, iaFallback, categorias: categoriaResolver }),
   );
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
+  await app.register(
+    movimientoReprocesarRoute({
+      capas,
+      reader: crearMovimientoInputReader(db),
+      reprocesador: crearMovimientoReprocesador(db),
+      iaFallback,
+      categorias: categoriaResolver,
+    }),
+  );
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));

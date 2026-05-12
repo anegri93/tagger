@@ -118,6 +118,7 @@ Datos iniciales (categorías, MCCs, patrones, catálogo de comercios) se cargan 
 | POST | `/categorizar-movimiento` | Categoriza un movimiento. Body: `{descripcion, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?}` |
 | GET | `/movimientos/:id` | Detalle movimiento (incluye evidencia IA) |
 | POST | `/movimientos/:id/correccion` | Corrección manual usuario |
+| POST | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`. |
 
 ### CRUD recursos
 | Método | Path | Función |

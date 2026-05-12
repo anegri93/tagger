@@ -104,6 +104,31 @@ Efecto:
 
 ---
 
+## Reprocesar movimiento individual
+
+Re-ejecuta cascada + IA sobre un movimiento existente. Útil cuando:
+- Movimiento quedó con `categoria_id: null` (IA caída al momento del POST inicial)
+- Querés re-evaluar tras agregar patrones/MCCs nuevos
+- Mobile expone botón "re-categorizar"
+
+```bash
+curl -X POST http://localhost:3000/movimientos/<uuid>/reprocesar \
+  -H "x-api-key: $API_KEY" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+Response incluye `ia_disparada: bool`. Si `true`, cliente debe poll `/movimientos/:id` (igual que IA fallback inicial).
+
+### Reprocesar todos los movimientos sin categoría (one-shot)
+
+No hay endpoint masivo. Para limpiar backlog usar script:
+```bash
+# pseudo-código: iterar SELECT id FROM movimientos WHERE categoria_predicha_id IS NULL
+# y POST /movimientos/:id/reprocesar por cada uno
+```
+
+---
+
 ## Recategorización del catálogo
 
 Después de agregar patrones/MCCs nuevos, re-evaluar comercios existentes:

@@ -146,6 +146,42 @@ Response `200 OK`:
 
 ---
 
+## Reprocesar movimiento existente
+
+Cuando un movimiento quedó sin categoría (ej. IA falló al momento del POST inicial) o querés volver a evaluarlo tras agregar patrones nuevos:
+
+```
+POST /movimientos/:movimiento_id/reprocesar
+Content-Type: application/json
+x-api-key: <API_KEY>
+
+{}                              // body vacío, o:
+{"bypass_catalogo": true}       // opcional, testing
+```
+
+Comportamiento:
+- Lee campos del movimiento (descripcion, mcc, bancard_id, etc.)
+- Ejecuta cascada igual que `POST /categorizar-movimiento`
+- Actualiza prediccion + evidencia
+- Si cascada agotada → dispara IA async (mismo polling que original)
+
+Response `200 OK`:
+```json
+{
+  "movimiento_id": "uuid",
+  "categoria_id": "uuid | null",
+  "categoria": { "id": "...", "slug": "...", "nombre": "..." } | null,
+  "fuente": "regex | contiene | ... | null",
+  "confianza": 0.95,
+  "requiere_revision": false,
+  "ia_disparada": true
+}
+```
+
+**`ia_disparada: true`** → cliente debe poll `GET /movimientos/:id` para ver categoría final (mismo flow que IA fallback inicial).
+
+---
+
 ## Listar categorías disponibles
 
 Para poblar dropdown UI:
@@ -238,6 +274,15 @@ export interface CategorizarResponse {
 export interface CorreccionRequest {
   categoria_id_nueva: string;  // UUID
   motivo?: string;
+}
+
+export interface ReprocesarRequest {
+  bypass_catalogo?: boolean;
+}
+
+export interface ReprocesarResponse extends CategorizarResponse {
+  categoria: { id: string; slug: string; nombre: string } | null;
+  ia_disparada: boolean;
 }
 
 export interface CorreccionResponse {

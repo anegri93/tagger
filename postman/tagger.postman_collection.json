@@ -181,7 +181,7 @@
     },
     {
       "name": "movimientos",
-      "description": "Detalle y corrección de movimientos previamente categorizados.\n\n- **GET /movimientos/:id** — usado para polling de IA fallback. Devuelve evidencia completa (prompt IA, candidatos, etc.).\n- **POST /movimientos/:id/correccion** — usuario corrige categoría desde mobile. Audit trail en `correcciones_usuario`. NO retroalimenta patrones automáticamente (review manual via UI recat).",
+      "description": "Detalle, corrección y reprocesamiento de movimientos previamente categorizados.\n\n- **GET /movimientos/:id** — polling de IA fallback. Devuelve evidencia completa (prompt IA, response).\n- **POST /movimientos/:id/correccion** — usuario corrige categoría desde mobile. Audit trail en `correcciones_usuario`.\n- **POST /movimientos/:id/reprocesar** — re-ejecuta cascada + IA sobre movimiento existente. Útil para movimientos viejos sin categoría o cuando cambian patrones/MCCs.",
       "item": [
         {
           "name": "GET /movimientos/:id",
@@ -211,6 +211,23 @@
               "path": ["movimientos", "{{movimientoId}}", "correccion"]
             },
             "description": "Corrección manual desde mobile.\n\n**Body:**\n- `categoria_id_nueva` (UUID, required) — id de la categoría correcta. Cliente lo obtiene del cache de `GET /categorias`.\n- `motivo` (string, opcional) — feedback opcional.\n\n**Response 200:**\n```json\n{\n  \"ok\": true,\n  \"correccion_id\": \"uuid\",\n  \"categoria_anterior_id\": \"uuid|null\",\n  \"categoria_anterior\": \"slug|null\",\n  \"categoria_nueva_id\": \"uuid\",\n  \"categoria_nueva\": \"slug\"\n}\n```\n\nVariables: usa `{{categoriaId}}` (auto-seteada de GET /categorias) y `{{movimientoId}}` (auto-seteada de POST categorizar)."
+          }
+        },
+        {
+          "name": "POST /movimientos/:id/reprocesar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/reprocesar",
+              "host": ["{{baseUrl}}"],
+              "path": ["movimientos", "{{movimientoId}}", "reprocesar"]
+            },
+            "description": "Re-ejecuta cascada (catalogo → patrones → MCC) + IA fallback sobre un movimiento existente.\n\n**Casos de uso:**\n- Movimientos viejos creados antes de agregar patrones/MCCs nuevos\n- Movimientos que quedaron con `categoria_id: null` por IA fallida (ej. Ollama down al momento de POST inicial)\n- Cliente mobile permite \"re-categorizar este movimiento\"\n\n**Body (opcional):**\n```json\n{\n  \"bypass_catalogo\": false\n}\n```\n- `bypass_catalogo` (bool) — si true, salta capa 1 → fuerza cascada pura (testing).\n\n**Response 200:**\n```json\n{\n  \"movimiento_id\": \"uuid\",\n  \"categoria_id\": \"uuid | null\",\n  \"categoria\": { \"id\": \"...\", \"slug\": \"azar\", \"nombre\": \"Azar y apuestas\" } | null,\n  \"fuente\": \"regex | contiene | ... | null\",\n  \"confianza\": 0.95,\n  \"requiere_revision\": false,\n  \"ia_disparada\": true\n}\n```\n\n**`ia_disparada: true`** → cascada agotada, IA corriendo async. Cliente debe poll `GET /movimientos/:id` para ver categoría final.\n\n**Errores:**\n- 400 `invalid_id` — id no es UUID\n- 404 `no_existe` — movimiento no encontrado"
           }
         }
       ]

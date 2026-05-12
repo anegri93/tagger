@@ -54,6 +54,74 @@ export function crearMovimientoUpdater(db: Db): MovimientoUpdater {
   };
 }
 
+export interface MovimientoReprocesadorData {
+  categoriaPredichaId: string | null;
+  fuenteCategoria: FuenteCategoria | null;
+  confianza: string | null;
+  requiereRevision: boolean;
+  evidencia: Evidencia | null;
+}
+
+export interface MovimientoReprocesador {
+  reprocesar(id: string, data: MovimientoReprocesadorData): Promise<void>;
+}
+
+export function crearMovimientoReprocesador(db: Db): MovimientoReprocesador {
+  return {
+    async reprocesar(id, data) {
+      await db
+        .update(movimientos)
+        .set({
+          categoriaPredichaId: data.categoriaPredichaId,
+          fuenteCategoria: data.fuenteCategoria,
+          confianza: data.confianza,
+          requiereRevision: data.requiereRevision,
+          evidencia: data.evidencia,
+          updatedAt: new Date(),
+        })
+        .where(eq(movimientos.id, id));
+    },
+  };
+}
+
+export interface MovimientoInputReader {
+  porIdInput(id: string): Promise<
+    | {
+        descripcion: string | null;
+        nombreComercio: string | null;
+        nombreBancard: string | null;
+        mcc: string | null;
+        bancardId: string | null;
+        codigoComercio: string | null;
+        monto: string | null;
+        rawInput: unknown;
+      }
+    | null
+  >;
+}
+
+export function crearMovimientoInputReader(db: Db): MovimientoInputReader {
+  return {
+    async porIdInput(id) {
+      const rows = await db
+        .select({
+          descripcion: movimientos.descripcion,
+          nombreComercio: movimientos.nombreComercio,
+          nombreBancard: movimientos.nombreBancard,
+          mcc: movimientos.mcc,
+          bancardId: movimientos.bancardId,
+          codigoComercio: movimientos.codigoComercio,
+          monto: movimientos.monto,
+          rawInput: movimientos.rawInput,
+        })
+        .from(movimientos)
+        .where(eq(movimientos.id, id))
+        .limit(1);
+      return rows[0] ?? null;
+    },
+  };
+}
+
 export function crearMovimientoReader(db: Db): MovimientoReader {
   return {
     async porId(id): Promise<MovimientoGetData | null> {
