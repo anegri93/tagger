@@ -68,7 +68,7 @@
     <div class="container">
       <section class="hero">
         <h1>🏷️ tagger</h1>
-        <p>Servicio categorización movimientos bancarios — cascada catálogo→regex→bancard→comercio→MCC→IA.</p>
+        <p>Servicio categorización movimientos bancarios — cascada catálogo→patrones→MCC→IA.</p>
       </section>
 
       <section class="health-grid">
@@ -90,8 +90,8 @@
           <div class="value" id="h-cats">—</div>
         </div>
         <div class="health-card">
-          <div class="label">Reglas regex</div>
-          <div class="value" id="h-reglas">—</div>
+          <div class="label">Patrones</div>
+          <div class="value" id="h-patrones">—</div>
         </div>
         <div class="health-card">
           <div class="label">Marcas IA</div>
@@ -103,22 +103,22 @@
         <a class="nav-card" href="/ui/categorias/index.html">
           <div class="icon">📂</div>
           <h3>Categorías</h3>
-          <p>CRUD categorías, reglas regex, MCCs, marcas IA. Re-procesar catálogo masivo.</p>
+          <p>CRUD categorías, patrones, MCCs, marcas IA, comercios.</p>
         </a>
-        <a class="nav-card" href="/ui/tester/index.html">
-          <div class="icon">🧪</div>
-          <h3>Tester</h3>
-          <p>Probar movimientos uno a uno. Ver fuente, confianza, evidencia. Marcar correcciones.</p>
+        <a class="nav-card" href="/ui/importar/index.html">
+          <div class="icon">📥</div>
+          <h3>Importar</h3>
+          <p>Cargar XLSX/CSV a comercios_catalogo o movimientos con mapping de campos.</p>
+        </a>
+        <a class="nav-card" href="/ui/recat/index.html">
+          <div class="icon">🔁</div>
+          <h3>Recategorizar</h3>
+          <p>Recategorizar catálogo + diffs + sugerencias IA + marcas candidatas.</p>
         </a>
         <a class="nav-card" href="/ui/test-monitor/index.html">
           <div class="icon">📊</div>
           <h3>Test Monitor</h3>
-          <p>Dashboard realtime. Run/stop tests masivos 109k. Latencia, agreement, mismatches.</p>
-        </a>
-        <a class="nav-card" href="/ui/tasks/index.html">
-          <div class="icon">✅</div>
-          <h3>Tareas</h3>
-          <p>Dashboard de fases y tareas del proyecto. Estado, gates, dependencias.</p>
+          <p>Dashboard realtime de tests masivos. Latencia, agreement, mismatches.</p>
         </a>
       </section>
     </div>
@@ -160,10 +160,10 @@
           document.getElementById('h-cats').textContent = '—';
         }
         try {
-          const r = await window.taggerApi('/reglas');
-          document.getElementById('h-reglas').textContent = r.items?.length ?? 0;
+          const r = await window.taggerApi('/patrones');
+          document.getElementById('h-patrones').textContent = r.items?.length ?? 0;
         } catch {
-          document.getElementById('h-reglas').textContent = '—';
+          document.getElementById('h-patrones').textContent = '—';
         }
         try {
           const r = await window.taggerApi('/marcas');
