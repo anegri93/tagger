@@ -96,16 +96,24 @@ async function main() {
     mccPorNombre: mccPorNombreLookup,
   };
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
-  const iaFallback = crearIaFallback({
-    capa: capaIa,
-    updater: movUpdater,
-    logger,
-    maxConcurrent: env.OLLAMA_MAX_CONCURRENT,
-  });
+  const iaFallback = env.IA_ENABLED
+    ? crearIaFallback({
+        capa: capaIa,
+        updater: movUpdater,
+        logger,
+        maxConcurrent: env.OLLAMA_MAX_CONCURRENT,
+      })
+    : { schedule: () => undefined };
+  if (!env.IA_ENABLED) {
+    logger.info('IA_ENABLED=false — fallback IA deshabilitado, movimientos no resueltos quedan sin categoría');
+  }
 
   const app = await build();
   await app.register(requestLog);
-  await app.register(healthRoute({ pingDb, pingOllama: () => ollama.ping() }));
+  const healthDeps = env.IA_ENABLED
+    ? { pingDb, pingOllama: () => ollama.ping() }
+    : { pingDb };
+  await app.register(healthRoute(healthDeps));
   await app.register(apiKeyAuth, { apiKey: env.API_KEY });
   await app.register(
     categorizarRoute({ capas, repo: movRepo, iaFallback, categorias: categoriaResolver }),

@@ -10,6 +10,10 @@ const envSchema = z.object({
   OLLAMA_URL: z.string().url().default('http://localhost:11434'),
   OLLAMA_MODEL: z.string().default('gemma2:2b'),
   OLLAMA_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
+  IA_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
   API_KEY: z.string().min(16, 'API_KEY debe tener al menos 16 caracteres'),
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
