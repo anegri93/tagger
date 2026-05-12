@@ -1,11 +1,19 @@
 import pino from 'pino';
 import { env } from '../config/env.js';
 
-const isDev = env.NODE_ENV === 'development';
+let usePretty = false;
+if (env.NODE_ENV === 'development') {
+  try {
+    await import('pino-pretty');
+    usePretty = true;
+  } catch {
+    usePretty = false;
+  }
+}
 
 export const logger = pino({
   level: env.LOG_LEVEL,
-  ...(isDev
+  ...(usePretty
     ? {
         transport: {
           target: 'pino-pretty',
