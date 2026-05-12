@@ -37,11 +37,12 @@ Pipeline en cascada: catálogo precomputado → patrones (regex/contiene/prefijo
                        │ ejecutarCascada(input, capas)
                        ▼
        ┌───────────────────────────────────────────────┐
-       │ 1. CATÁLOGO  bancard_id+codigo (lookup exacto)│
-       │ 2. PATRONES  contiene/regex/prefijo/literal   │
-       │ 3. MCC       código mapeado a categoría       │
-       │ 4. RESPUESTA inmediata (puede ser null)       │
-       │ 5. IA        Gemma async (fire-and-forget)    │
+       │ 1. CATÁLOGO    bancard_id+codigo (lookup exacto)│
+       │ 2. PATRONES    contiene/regex/prefijo/literal   │
+       │ 3. MCC         código MCC del input             │
+       │ 4. MCC×NOMBRE  infiere MCC vía nombre normalizado│
+       │ 5. RESPUESTA   inmediata (puede ser null)       │
+       │ 6. IA          Gemma async (fire-and-forget)    │
        └─────────────────────┬─────────────────────────┘
                              ▼
        ┌─────────────────────────────────────────────┐
@@ -58,7 +59,8 @@ Postgres 16 (Drizzle ORM) ─── tablas:
   ├─ comercios_catalogo      (bancard_id+codigo, incluye recategorización shadow)
   ├─ marcas_conocidas        (IA hints dinámicos)
   ├─ movimientos             (histórico predicciones)
-  └─ correcciones_usuario    (correcciones manual cliente)
+  ├─ correcciones_usuario    (correcciones manual cliente)
+  └─ test_ground_truth       (ground truth para validación pipeline)
 ```
 
 ---
@@ -70,7 +72,7 @@ Postgres 16 (Drizzle ORM) ─── tablas:
 | Lenguaje | TypeScript strict (NodeNext, exactOptionalPropertyTypes) |
 | Runtime | Node.js ≥20 |
 | HTTP | Fastify 5 + @fastify/cors + @fastify/static + @fastify/sensible |
-| ORM | Drizzle ORM (postgres-js) |
+| ORM | Drizzle ORM (node-postgres) |
 | DB | Postgres 16 |
 | Migrations | drizzle-kit |
 | Tests | Vitest |
@@ -165,13 +167,16 @@ open http://localhost:3000/ui/      # UIs
 | POST | `/patrones/sugerencias-ia/aplicar` | Aplica sugerencias IA seleccionadas |
 | GET | `/datasets/marcas-candidatas` | Prefijos frecuentes candidatos a patrón |
 
-### Test masivo
+### Test masivo / Validación pipeline
 | Método | Path | Función |
 |--------|------|---------|
 | POST | `/test-batch/start` | Dispara worker test masivo in-process |
 | POST | `/test-batch/stop` | Cancela batch corriendo |
 | GET | `/test-batch/list` | Batches activos |
 | GET | `/test-batch/:batch_id/stats` | Stats agregadas (latencia, fuente, agreement, mismatches) |
+| GET | `/test-batch/:batch_id/agreement?ground_truth=<batch>` | Agreement pipeline vs `categoria_xlsx` de `test_ground_truth` |
+| GET | `/test-batch/:batch_id/agreement-mcc?reference=mcc\|combined_mcc&include_ambiguo=&include_generic=` | Agreement pipeline vs MCC catalog (proxy ground truth) |
+| GET | `/test-batch/:batch_id/analisis` | Análisis profundo: distribución por fuente/categoría, patrones más usados, top sin-predicción por volumen, latencia p50/p95/p99, cobertura por decil |
 
 ### Salud
 | Método | Path | Devuelve |
@@ -192,10 +197,11 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 | 1. catálogo | (hereda de la fila stored) | (hereda) | Hit exacto `bancard_id + codigo_comercio` |
 | 2. patrones | `regex` | 0.95 | Patrón tipo regex matchea |
 | 2. patrones | `literal` | 0.95 | Patrón tipo literal matchea |
-| 2. patrones | `contiene` | 0.90 | Patrón tipo contiene matchea |
+| 2. patrones | `contiene` | 0.80 | Patrón tipo contiene matchea |
 | 2. patrones | `prefijo` | 0.90 | Patrón tipo prefijo matchea |
-| 3. MCC | `mcc` | 0.75 | MCC mapeado a categoría |
-| 4. IA fallback | `ia` | 0.70 (cap) | Gemma async |
+| 3. MCC | `mcc` | 0.75 | MCC del input mapeado a categoría no-ambigua |
+| 4. MCC×NOMBRE | `mcc` | 0.75 | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth` |
+| 5. IA fallback | `ia` | 0.50 (cap) | Gemma async (concurrency 4) — `requiere_revision` siempre `true` |
 | Corrección | `manual` | 1.00 | POST `/movimientos/:id/correccion` |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
@@ -276,7 +282,6 @@ pnpm test:watch                 # Vitest watch
 pnpm lint                       # ESLint
 pnpm typecheck                  # tsc --noEmit
 pnpm format                     # Prettier write
-pnpm test:masivo                # Test masivo CLI
 ```
 
 ### Análisis / utilidades
@@ -289,6 +294,32 @@ pnpm tsx scripts/clean-db.ts                       # Limpia DB (idempotente)
 pnpm tsx scripts/sync-mcc-tufi.ts                  # Sync MCC desde TuFi
 pnpm tsx scripts/aplicar-recat.ts                  # Promueve recat shadow → live
 pnpm tsx scripts/dump-seed.ts                      # Dump seed.sql desde DB
+```
+
+### Validación pipeline con ground truth
+```bash
+# 1. Cargar XLSX de Bancard a test_ground_truth (idempotente por nombre)
+pnpm tsx scripts/load-ground-truth.ts \
+  --file /path/XLSX.xlsx --sheet DataMayo \
+  --batch-id datamayo-2026-05 [--top-n 5000]
+
+# 2. Categorizar contra ground truth (modo realista: solo nombre)
+pnpm tsx scripts/test-ground-truth.ts \
+  --ground-truth-batch datamayo-2026-05 \
+  --test-batch-id mi-test-2026-05 \
+  --solo-nombre --bypass-catalogo --concurrency 20
+
+# 3. Reprocesar movimientos pendientes (IA fallback)
+pnpm tsx scripts/reprocesar-pendientes.ts \
+  --batch-id mi-test-2026-05 --concurrency 4
+
+# 4. Ver agreement vs MCC proxy
+curl http://localhost:3000/test-batch/mi-test-2026-05/agreement-mcc \
+  -H "x-api-key: $API_KEY"
+
+# 5. Análisis profundo
+curl http://localhost:3000/test-batch/mi-test-2026-05/analisis \
+  -H "x-api-key: $API_KEY"
 ```
 
 ---

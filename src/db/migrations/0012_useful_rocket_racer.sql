@@ -1,3 +1,3 @@
-DROP TABLE "reglas_regex" CASCADE;--> statement-breakpoint
-DROP TABLE "dataset_comercios" CASCADE;--> statement-breakpoint
-DROP TABLE "datasets" CASCADE;
+DROP TABLE IF EXISTS "reglas_regex" CASCADE;--> statement-breakpoint
+DROP TABLE IF EXISTS "dataset_comercios" CASCADE;--> statement-breakpoint
+DROP TABLE IF EXISTS "datasets" CASCADE;
