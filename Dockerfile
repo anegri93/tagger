@@ -21,9 +21,16 @@ RUN pnpm install --frozen-lockfile --prod
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache wget
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY src/db/migrations ./dist/migrations
+COPY data/seed.sql ./data/seed.sql
 COPY package.json ./
 COPY ui ./ui
+COPY docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+ENTRYPOINT ["/entrypoint.sh"]
