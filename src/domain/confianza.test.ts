@@ -7,11 +7,11 @@ describe('confianza', () => {
     expect(CONFIANZA.bancard).toBe(0.9);
     expect(CONFIANZA.nombre).toBe(0.8);
     expect(CONFIANZA.mcc).toBe(0.75);
-    expect(CONFIANZA.ia_max).toBe(0.7);
+    expect(CONFIANZA.ia_max).toBe(0.5);
     expect(CONFIANZA.manual).toBe(1.0);
     expect(CONFIANZA.literal).toBe(0.95);
     expect(CONFIANZA.prefijo).toBe(0.9);
-    expect(CONFIANZA.contiene).toBe(0.9);
+    expect(CONFIANZA.contiene).toBe(0.8);
   });
 
   it('THRESHOLD_REVISION = 0.70', () => {
@@ -27,12 +27,12 @@ describe('confianza', () => {
     expect(confianzaPorFuente('bancard')).toBe(0.9);
     expect(confianzaPorFuente('nombre')).toBe(0.8);
     expect(confianzaPorFuente('mcc')).toBe(0.75);
-    expect(confianzaPorFuente('ia')).toBe(0.7);
+    expect(confianzaPorFuente('ia')).toBe(0.5);
     expect(confianzaPorFuente('manual')).toBe(1.0);
     expect(confianzaPorFuente('patrones')).toBe(0.9);
     expect(confianzaPorFuente('literal')).toBe(0.95);
     expect(confianzaPorFuente('prefijo')).toBe(0.9);
-    expect(confianzaPorFuente('contiene')).toBe(0.9);
+    expect(confianzaPorFuente('contiene')).toBe(0.8);
   });
 
   it('requiereRevision aplica threshold', () => {

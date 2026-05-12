@@ -27,16 +27,16 @@ describe('capa ia', () => {
     const r = await capa.evaluar({ descripcion: 'COMPRA SHELL' });
     expect(r?.categoriaId).toBe('c-comb');
     expect(r?.fuente).toBe('ia');
-    expect(r?.confianza).toBe(0.6);
+    expect(r?.confianza).toBe(0.5);
   });
 
-  it('confianza recortada a IA_MAX (0.70)', async () => {
+  it('confianza recortada a IA_MAX (0.50)', async () => {
     const capa = crearCapaIa(
       clientFijo('{"categoria_slug": "supermercado", "confianza": 0.99}'),
       loaderFijo(CATS),
     );
     const r = await capa.evaluar({ descripcion: 'X' });
-    expect(r?.confianza).toBe(0.7);
+    expect(r?.confianza).toBe(0.5);
   });
 
   it('slug inexistente devuelve null', async () => {

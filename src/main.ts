@@ -14,6 +14,7 @@ import { crearComerciosWriter } from './db/repos/comercios-writer.js';
 import { marcasRoute } from './api/routes/marcas.js';
 import { crearMarcaWriter, crearMarcasReader } from './db/repos/marcas.js';
 import { testBatchStatsRoute } from './api/routes/test-batch-stats.js';
+import { groundTruthAgreementRoute } from './api/routes/ground-truth-agreement.js';
 import { testBatchControlRoute } from './api/routes/test-batch-control.js';
 import { TestBatchRunner } from './test-batch/runner.js';
 import { requestLog } from './api/plugins/request-log.js';
@@ -38,6 +39,7 @@ import { marcasCandidatasRoute } from './api/routes/marcas-candidatas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearCatalogoLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
+import { crearMccPorNombreLookup } from './db/repos/mcc-por-nombre.js';
 import {
   crearMovimientoRepository,
   crearMovimientoUpdater,
@@ -76,6 +78,7 @@ async function main() {
   const patronesLoader = crearPatronesLoader(db);
   const catalogoLookup = crearCatalogoLookup(db);
   const mccLookup = crearMccLookup(db);
+  const mccPorNombreLookup = crearMccPorNombreLookup(db);
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
@@ -89,6 +92,7 @@ async function main() {
     catalogo: crearCapaCatalogo(catalogoLookup),
     patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
+    mccPorNombre: mccPorNombreLookup,
   };
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
   const iaFallback = crearIaFallback({
@@ -134,6 +138,7 @@ async function main() {
   const comerciosWriter = crearComerciosWriter(db);
   await app.register(comerciosRoute(comerciosWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
+  await app.register(groundTruthAgreementRoute(db));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo, db });
   await app.register(testBatchControlRoute(testRunner));
 

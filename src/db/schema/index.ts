@@ -5,3 +5,4 @@ export * from './movimientos.js';
 export * from './correcciones_usuario.js';
 export * from './marcas_conocidas.js';
 export * from './patrones.js';
+export * from './test_ground_truth.js';

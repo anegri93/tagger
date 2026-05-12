@@ -21,6 +21,7 @@ export type Evidencia = {
   match_score?: number;
   mcc_match?: string;
   mcc_inferido?: boolean;
+  mcc_inferido_por_nombre?: boolean;
   marca?: string;
   bypass_catalogo?: boolean;
   ia_prompt?: string;

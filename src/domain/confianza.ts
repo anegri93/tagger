@@ -5,12 +5,12 @@ export const CONFIANZA = Object.freeze({
   bancard: 0.9,
   nombre: 0.8,
   mcc: 0.75,
-  ia_max: 0.7,
+  ia_max: 0.5,
   manual: 1.0,
   patrones: 0.9,
   literal: 0.95,
   prefijo: 0.9,
-  contiene: 0.9,
+  contiene: 0.8,
 } as const);
 
 export const THRESHOLD_REVISION = 0.7;

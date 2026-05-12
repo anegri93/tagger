@@ -32,7 +32,10 @@ export async function persistirMovimiento(
   meta?: { origen?: string; batchId?: string | null; latencyMs?: number | null },
 ): Promise<MovimientoCategorizado> {
   const r = pipeline.resultado;
-  const requiereRevision = pipeline.requiereRevision || (r ? r.confianza < THRESHOLD_REVISION : true);
+  const requiereRevision =
+    pipeline.requiereRevision ||
+    r?.fuente === 'ia' ||
+    (r ? r.confianza < THRESHOLD_REVISION : true);
 
   const { id } = await repo.insertar({
     descripcion: input.descripcion ?? null,

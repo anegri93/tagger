@@ -9,6 +9,7 @@ export interface CapasSincrono {
   };
   patrones?: { evaluar(texto: string): Promise<ResultadoCapa | null> };
   mcc: { evaluar(codMcc: string | null | undefined): Promise<ResultadoCapa | null> };
+  mccPorNombre?: { inferir(nombre: string | null | undefined): Promise<string | null> };
 }
 
 export interface ResultadoPipeline {
@@ -40,6 +41,24 @@ export async function ejecutarCascada(
 
   const r4 = await capas.mcc.evaluar(input.mcc);
   if (r4) return { resultado: r4, requiereRevision: false, requiereIa: false };
+
+  if (capas.mccPorNombre) {
+    const nombre = input.nombreBancard ?? input.nombreComercio ?? null;
+    const mccInferido = await capas.mccPorNombre.inferir(nombre);
+    if (mccInferido) {
+      const r5 = await capas.mcc.evaluar(mccInferido);
+      if (r5) {
+        return {
+          resultado: {
+            ...r5,
+            evidencia: { ...(r5.evidencia ?? {}), mcc_inferido_por_nombre: true },
+          },
+          requiereRevision: false,
+          requiereIa: false,
+        };
+      }
+    }
+  }
 
   return { resultado: null, requiereRevision: true, requiereIa: true };
 }

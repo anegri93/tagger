@@ -20,7 +20,7 @@ describe('capa patrones', () => {
     const r = await capa.evaluar('CIAL.VIRGEN DEL ROSA');
     expect(r?.categoriaId).toBe('cat-super');
     expect(r?.fuente).toBe('contiene');
-    expect(r?.confianza).toBe(0.9);
+    expect(r?.confianza).toBe(0.8);
   });
 
   it('match tipo=literal → fuente=literal conf=0.95', async () => {
