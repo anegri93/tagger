@@ -87,26 +87,33 @@ Postgres 16 (Drizzle ORM) ─── tablas:
 ## Quick start
 
 ```bash
-# 0. Prerequisitos: node >=20, pnpm (corepack enable), docker
+# Prerequisitos: node >=20, pnpm (corepack enable), docker
 
-# 1. Configurar .env (primer run copia desde .env.example y aborta)
-bash start.sh                       # editá .env, especialmente API_KEY
+git clone <repo> tagger && cd tagger
+bash start.sh                       # genera .env con API_KEY aleatoria,
+                                    # levanta postgres + deps + migrate + seed + API
+```
 
-# 2. Levantar todo
-bash start.sh                       # postgres + deps + migrate + seed + API
-# o con IA fallback:
-OLLAMA=1 bash start.sh              # + ollama (descarga modelo on demand)
+Con IA fallback (Ollama, requiere ~5 GB modelo):
+```bash
+OLLAMA=1 bash start.sh
+```
 
-# 3. Verificar
+Verificar:
+```bash
 curl http://localhost:3000/health   # → {"status":"ok"}
-
-# 4. UI
-open http://localhost:3000/ui/
+open http://localhost:3000/ui/      # UIs
 ```
 
 `start.sh` es idempotente: levanta lo que falte (postgres, deps, migrations, seed), arranca API foreground. `stop.sh` baja todo. `restart.sh` = stop + start.
 
-Datos iniciales (categorías, MCCs, patrones, catálogo de comercios) se cargan vía importador UI en `/ui/importar/`.
+**Seed inicial** (cargado automático por `start.sh` desde `data/seed.sql`):
+- 35 categorías
+- 215 MCCs mapeados
+- 279 patrones
+- 76 marcas conocidas
+
+**Catálogo de comercios** (`comercios_catalogo`): se carga aparte via `/ui/importar/` (XLSX/CSV con `bancard_id + codigo_comercio`). Sin este catálogo, capa 1 nunca matchea — pipeline cae a patrones/MCC/IA igual.
 
 ---
 
@@ -258,6 +265,7 @@ API key se setea **una vez** en cualquier UI y persiste en localStorage.
 pnpm db:generate                # Drizzle migrations desde schema
 pnpm db:migrate                 # Aplicar migrations
 pnpm db:studio                  # Drizzle Studio (GUI)
+pnpm db:seed:dump               # Re-genera data/seed.sql desde DB actual
 ```
 
 ### Operación
@@ -277,12 +285,10 @@ node scripts/analyze-test-batch.mjs <batch_id>     # Stats de un batch
 node scripts/report-cobertura.mjs                  # Distribución catálogo
 node scripts/xlsx-to-tsv.mjs <ruta.xlsx>           # XLSX → TSV
 node scripts/export-mcc-mapping.mjs                # Exporta plantilla MCC
-node scripts/backfill-gates.mjs                    # Backfill gates
-node scripts/validate-phase.mjs                    # Validación fase
-node scripts/check-consistency.mjs                 # Consistency check
 pnpm tsx scripts/clean-db.ts                       # Limpia DB (idempotente)
 pnpm tsx scripts/sync-mcc-tufi.ts                  # Sync MCC desde TuFi
 pnpm tsx scripts/aplicar-recat.ts                  # Promueve recat shadow → live
+pnpm tsx scripts/dump-seed.ts                      # Dump seed.sql desde DB
 ```
 
 ---
@@ -320,7 +326,7 @@ tagger/
 │   ├── recat/              (recat + diffs + sugerencias)
 │   └── test-monitor/       (dashboard masivo realtime)
 ├── scripts/                (utilidades + análisis)
-├── docs/                   (runbook, integration-guide, patrones, histórico)
+├── docs/                   (runbook, integration-guide, decisiones, histórico)
 ├── data/                   (gitignore excepto mcc-mapping.json)
 ├── postman/                (colección API)
 ├── drizzle.config.ts
