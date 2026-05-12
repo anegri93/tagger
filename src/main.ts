@@ -108,7 +108,7 @@ async function main() {
     logger.info('IA_ENABLED=false — fallback IA deshabilitado, movimientos no resueltos quedan sin categoría');
   }
 
-  const app = await build();
+  const app = await build({ trustProxy: true });
   await app.register(requestLog);
   const healthDeps = env.IA_ENABLED
     ? { pingDb, pingOllama: () => ollama.ping() }
