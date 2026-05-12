@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: tagger
       POSTGRES_PASSWORD: tagger
       POSTGRES_DB: tagger
-    ports:
-      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,18 +28,20 @@ services:
       DATABASE_URL: postgres://tagger:tagger@postgres:5432/tagger
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma2:2b}
+      OLLAMA_MAX_CONCURRENT: ${OLLAMA_MAX_CONCURRENT:-4}
+      IA_ENABLED: ${IA_ENABLED:-true}
       API_KEY: ${API_KEY:?API_KEY required}
       CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-    ports:
-      - '${PORT:-3000}:3000'
+    expose:
+      - '3000'
 
   ollama:
     image: ollama/ollama:latest
     profiles: ['ai']
     restart: unless-stopped
-    ports:
-      - '11434:11434'
+    expose:
+      - '11434'
     volumes:
       - ollama_models:/root/.ollama
 
