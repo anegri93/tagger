@@ -38,7 +38,9 @@ export const marcasRoute =
       try {
         const upd = await writer.actualizar(req.params.id, {
           ...(parsed.data.marca !== undefined ? { marca: parsed.data.marca } : {}),
-          ...(parsed.data.descripcion !== undefined ? { descripcion: parsed.data.descripcion } : {}),
+          ...(parsed.data.descripcion !== undefined
+            ? { descripcion: parsed.data.descripcion }
+            : {}),
           ...(parsed.data.categoria_slug !== undefined
             ? { categoriaSlug: parsed.data.categoria_slug }
             : {}),

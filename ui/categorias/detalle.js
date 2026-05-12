@@ -17,7 +17,11 @@ function setStatus(t, c = '') {
 
 function esc(s) {
   if (s == null) return '—';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // Tabs
@@ -46,7 +50,8 @@ async function loadInfo() {
       $('#info-desc').value = cat.descripcion ?? '';
     }
     const u = await window.taggerApi(`/categorias/${encodeURIComponent(SLUG)}/usage`);
-    $('#info-usage').textContent = `Movimientos: ${u.movimientos} | MCCs: ${u.mcc} | Comercios: ${u.comercios}`;
+    $('#info-usage').textContent =
+      `Movimientos: ${u.movimientos} | MCCs: ${u.mcc} | Comercios: ${u.comercios}`;
     setStatus('live', 'live');
   } catch (e) {
     setStatus(`error: ${e.message}`, 'error');
@@ -73,8 +78,7 @@ $('#btn-delete-cat').addEventListener('click', async () => {
     await window.taggerApi(`/categorias/${encodeURIComponent(SLUG)}`, { method: 'DELETE' });
     window.location.href = 'index.html';
   } catch (e) {
-    if (e.body?.usage)
-      alert(`No se puede eliminar: tiene refs ${JSON.stringify(e.body.usage)}`);
+    if (e.body?.usage) alert(`No se puede eliminar: tiene refs ${JSON.stringify(e.body.usage)}`);
     else alert(e.message);
   }
 });
@@ -133,9 +137,15 @@ document.body.addEventListener('click', async (e) => {
   if (!cod) return;
   try {
     if (act === 'assign') {
-      await window.taggerApi(`/mcc/${cod}`, { method: 'PATCH', body: JSON.stringify({ categoria_slug: SLUG }) });
+      await window.taggerApi(`/mcc/${cod}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ categoria_slug: SLUG }),
+      });
     } else if (act === 'unassign') {
-      await window.taggerApi(`/mcc/${cod}`, { method: 'PATCH', body: JSON.stringify({ categoria_slug: null }) });
+      await window.taggerApi(`/mcc/${cod}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ categoria_slug: null }),
+      });
     } else return;
     await loadMcc();
   } catch (err) {
@@ -237,9 +247,8 @@ async function loadComercios() {
       .join('');
     const from = comerciosState.offset + 1;
     const to = Math.min(comerciosState.offset + r.items.length, comerciosState.total);
-    $('#cm-info').textContent = r.items.length === 0
-      ? 'sin resultados'
-      : `${from}-${to} de ${comerciosState.total}`;
+    $('#cm-info').textContent =
+      r.items.length === 0 ? 'sin resultados' : `${from}-${to} de ${comerciosState.total}`;
     $('#cm-prev').disabled = comerciosState.offset === 0;
     $('#cm-next').disabled = comerciosState.offset + comerciosState.limit >= comerciosState.total;
   } catch (e) {
@@ -301,9 +310,7 @@ $('#comercios-tbl').addEventListener('change', async (e) => {
 // Patrones
 async function loadPatrones() {
   try {
-    const { items } = await window.taggerApi(
-      `/patrones?categoria=${encodeURIComponent(SLUG)}`,
-    );
+    const { items } = await window.taggerApi(`/patrones?categoria=${encodeURIComponent(SLUG)}`);
     const tbody = $('#patrones-tbl tbody');
     tbody.innerHTML = items
       .map(

@@ -7,60 +7,60 @@
 
 ## Resumen
 
-| Métrica | Valor | % |
-|---|---|---|
-| Total comercios | 49,444 | 100% |
-| Procesados | 49,444 | 100% |
-| Match (mantiene cat) | 23,677 | 47.9% |
-| Diff (sugiere cambio) | 2,283 | 4.6% |
+| Métrica                  | Valor  | %     |
+| ------------------------ | ------ | ----- |
+| Total comercios          | 49,444 | 100%  |
+| Procesados               | 49,444 | 100%  |
+| Match (mantiene cat)     | 23,677 | 47.9% |
+| Diff (sugiere cambio)    | 2,283  | 4.6%  |
 | Sin categoría (cae a IA) | 23,484 | 47.5% |
-| Duración | ~21s | — |
+| Duración                 | ~21s   | —     |
 
 ## Distribución fuente_nueva (capas que resolvieron)
 
-| Fuente | Count |
-|---|---|
-| contiene (patrones) | 13,275 |
-| regex (capa regex) | 12,685 |
-| **total resuelto sin IA** | **25,960** |
-| sin_categoria (requiere IA) | 23,484 |
+| Fuente                      | Count      |
+| --------------------------- | ---------- |
+| contiene (patrones)         | 13,275     |
+| regex (capa regex)          | 12,685     |
+| **total resuelto sin IA**   | **25,960** |
+| sin_categoria (requiere IA) | 23,484     |
 
 **Observación clave**: 47.5% de comercios NO los resuelve la cascada síncrona — caen a IA. Tras refactor MCC pasará a resolver muchos de estos.
 
 ## Top 30 diffs (categoría actual → nueva)
 
-| # | actual | nueva | n |
-|---|---|---|---|
-| 1 | otros | servicios | 303 |
-| 2 | alimentacion | restaurante | 248 |
-| 3 | otros | financiero | 111 |
-| 4 | supermercado | hogar | 94 |
-| 5 | hogar | ropa | 89 |
-| 6 | servicios | salud | 72 |
-| 7 | otros | alimentacion | 58 |
-| 8 | supermercado | ropa | 49 |
-| 9 | hogar | entretenimiento | 49 |
-| 10 | restaurante | viajes | 44 |
-| 11 | hogar | supermercado | 43 |
-| 12 | cripto | entretenimiento | 38 |
-| 13 | servicios | entretenimiento | 35 |
-| 14 | otros | combustible | 34 |
-| 15 | otros | hogar | 33 |
-| 16 | otros | salud | 32 |
-| 17 | restaurante | supermercado | 31 |
-| 18 | combustible | servicios | 30 |
-| 19 | farmacia | ropa | 30 |
-| 20 | tecnologia | supermercado | 30 |
-| 21 | servicios | supermercado | 28 |
-| 22 | supermercado | combustible | 27 |
-| 23 | hogar | servicios | 26 |
-| 24 | otros | transporte | 25 |
-| 25 | servicios | hogar | 24 |
-| 26 | supermercado | financiero | 24 |
-| 27 | financiero | salud | 23 |
-| 28 | servicios | alimentacion | 22 |
-| 29 | hogar | restaurante | 22 |
-| 30 | ropa | entretenimiento | 22 |
+| #   | actual       | nueva           | n   |
+| --- | ------------ | --------------- | --- |
+| 1   | otros        | servicios       | 303 |
+| 2   | alimentacion | restaurante     | 248 |
+| 3   | otros        | financiero      | 111 |
+| 4   | supermercado | hogar           | 94  |
+| 5   | hogar        | ropa            | 89  |
+| 6   | servicios    | salud           | 72  |
+| 7   | otros        | alimentacion    | 58  |
+| 8   | supermercado | ropa            | 49  |
+| 9   | hogar        | entretenimiento | 49  |
+| 10  | restaurante  | viajes          | 44  |
+| 11  | hogar        | supermercado    | 43  |
+| 12  | cripto       | entretenimiento | 38  |
+| 13  | servicios    | entretenimiento | 35  |
+| 14  | otros        | combustible     | 34  |
+| 15  | otros        | hogar           | 33  |
+| 16  | otros        | salud           | 32  |
+| 17  | restaurante  | supermercado    | 31  |
+| 18  | combustible  | servicios       | 30  |
+| 19  | farmacia     | ropa            | 30  |
+| 20  | tecnologia   | supermercado    | 30  |
+| 21  | servicios    | supermercado    | 28  |
+| 22  | supermercado | combustible     | 27  |
+| 23  | hogar        | servicios       | 26  |
+| 24  | otros        | transporte      | 25  |
+| 25  | servicios    | hogar           | 24  |
+| 26  | supermercado | financiero      | 24  |
+| 27  | financiero   | salud           | 23  |
+| 28  | servicios    | alimentacion    | 22  |
+| 29  | hogar        | restaurante     | 22  |
+| 30  | ropa         | entretenimiento | 22  |
 
 ## Observaciones
 

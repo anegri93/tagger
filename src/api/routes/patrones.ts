@@ -1,9 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import {
-  createPatronSchema,
-  updatePatronSchema,
-  testPatronSchema,
-} from '../schemas/patrones.js';
+import { createPatronSchema, updatePatronSchema, testPatronSchema } from '../schemas/patrones.js';
 import type { PatronWriter, PatronTipo } from '../../db/repos/patrones.js';
 import { normalize } from '../../domain/normalize.js';
 

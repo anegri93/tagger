@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <link rel="stylesheet" href="styles.css" />
     <style>
-      .tabs { display: flex; gap: 4px; border-bottom: 1px solid #30363d; padding: 0 20px; }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid #30363d;
+        padding: 0 20px;
+      }
       .tab {
         padding: 10px 16px;
         background: #161b22;
@@ -18,24 +23,73 @@
         cursor: pointer;
         font-size: 13px;
       }
-      .tab.active { color: #e6edf3; background: #0d1117; }
-      .tab-content { padding: 20px; display: none; }
-      .tab-content.active { display: block; }
-      .form-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: flex-end; }
-      .form-row label { font-size: 11px; color: #8b949e; display: flex; flex-direction: column; gap: 4px; }
-      .form-row input, .form-row select, .form-row textarea {
-        background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
-        padding: 6px 10px; border-radius: 4px; font-size: 13px;
+      .tab.active {
+        color: #e6edf3;
+        background: #0d1117;
+      }
+      .tab-content {
+        padding: 20px;
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .form-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+      }
+      .form-row label {
+        font-size: 11px;
+        color: #8b949e;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .form-row input,
+      .form-row select,
+      .form-row textarea {
+        background: #0d1117;
+        color: #e6edf3;
+        border: 1px solid #30363d;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 13px;
         font-family: ui-monospace, monospace;
       }
       .form-row button {
-        background: #238636; color: white; border: none;
-        padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer;
+        background: #238636;
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
       }
-      .test-result { margin-top: 8px; padding: 8px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; }
-      .test-result.match { background: #1c4d23; color: #56d364; }
-      .test-result.no-match { background: #4f1a1a; color: #ff7b72; }
-      h2 { font-size: 14px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+      .test-result {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 4px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      .test-result.match {
+        background: #1c4d23;
+        color: #56d364;
+      }
+      .test-result.no-match {
+        background: #4f1a1a;
+        color: #ff7b72;
+      }
+      h2 {
+        font-size: 14px;
+        color: #8b949e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 12px;
+      }
     </style>
   </head>
   <body>
@@ -69,7 +123,7 @@
       </div>
       <h2>Uso</h2>
       <div id="info-usage" class="test-result">Cargando…</div>
-      <div style="margin-top:16px">
+      <div style="margin-top: 16px">
         <button class="action-btn delete" id="btn-delete-cat">Eliminar categoría</button>
       </div>
     </div>
@@ -77,16 +131,28 @@
     <div class="tab-content" data-tab="mcc">
       <h2>MCCs asignados</h2>
       <table class="tbl" id="mcc-asignados-tbl">
-        <thead><tr><th>Código</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
-      <h2 style="margin-top:24px">Asignar MCC sin categoría</h2>
+      <h2 style="margin-top: 24px">Asignar MCC sin categoría</h2>
       <div class="form-row">
         <label>Código MCC<input id="mcc-asignar-cod" /></label>
         <button id="mcc-asignar-btn">Asignar</button>
       </div>
       <table class="tbl" id="mcc-disponibles-tbl">
-        <thead><tr><th>Código</th><th>Descripción</th><th>Asignar</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Asignar</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
@@ -99,7 +165,13 @@
         <button id="m-add">+ Agregar</button>
       </div>
       <table class="tbl" id="marcas-tbl">
-        <thead><tr><th>Marca</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Marca</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
@@ -111,7 +183,16 @@
         <label>Solo revisión<input id="cm-rev" type="checkbox" /></label>
         <button id="cm-search">Buscar</button>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-family:var(--mono);font-size:12px;">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin: 8px 0;
+          font-family: var(--mono);
+          font-size: 12px;
+        "
+      >
         <span id="cm-info">—</span>
         <span>
           <button id="cm-prev" class="action-btn">← Anterior</button>
@@ -121,8 +202,14 @@
       <table class="tbl" id="comercios-tbl">
         <thead>
           <tr>
-            <th>Nombre</th><th>Bancard</th><th>Cód</th><th>MCC</th>
-            <th>Fuente</th><th>Conf</th><th>Rev</th><th>Cambiar a</th>
+            <th>Nombre</th>
+            <th>Bancard</th>
+            <th>Cód</th>
+            <th>MCC</th>
+            <th>Fuente</th>
+            <th>Conf</th>
+            <th>Rev</th>
+            <th>Cambiar a</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -135,8 +222,24 @@
         <button id="p-sugerir" type="button">🪄 Sugerir patrones</button>
         <span id="p-sugerir-status" class="t-small t-muted"></span>
       </div>
-      <div id="p-sugerir-panel" style="display:none;border:1px solid #30363d;padding:12px;border-radius:6px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div
+        id="p-sugerir-panel"
+        style="
+          display: none;
+          border: 1px solid #30363d;
+          padding: 12px;
+          border-radius: 6px;
+          margin-bottom: 12px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+          "
+        >
           <strong>Sugerencias auto</strong>
           <span>
             <button id="p-sug-aplicar" class="action-btn">Aplicar seleccionados</button>
@@ -144,16 +247,23 @@
           </span>
         </div>
         <table class="tbl" id="p-sug-tbl">
-          <thead><tr>
-            <th><input type="checkbox" id="p-sug-all" /></th>
-            <th>Token</th><th>Tipo</th><th>Valor</th>
-            <th>Freq</th><th>Pureza</th><th>Impacto sin-cat</th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="p-sug-all" /></th>
+              <th>Token</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+              <th>Freq</th>
+              <th>Pureza</th>
+              <th>Impacto sin-cat</th>
+            </tr>
+          </thead>
           <tbody></tbody>
         </table>
       </div>
       <div class="form-row">
-        <label>Tipo
+        <label
+          >Tipo
           <select id="p-tipo">
             <option value="contiene">contiene</option>
             <option value="literal">literal</option>
@@ -162,17 +272,28 @@
           </select>
         </label>
         <label>Valor<input id="p-valor" placeholder="CIAL" /></label>
-        <label>Prioridad<input id="p-prio" type="number" value="20" style="width:80px" /></label>
+        <label>Prioridad<input id="p-prio" type="number" value="20" style="width: 80px" /></label>
         <label>Descripción<input id="p-desc" /></label>
         <button id="p-add">+ Agregar</button>
       </div>
       <div class="form-row">
-        <label>Probar tipo+valor vs texto<input id="p-test-texto" placeholder="CIAL.VIRGEN DEL ROSA" /></label>
+        <label
+          >Probar tipo+valor vs texto<input id="p-test-texto" placeholder="CIAL.VIRGEN DEL ROSA"
+        /></label>
         <button id="p-test-btn">Probar</button>
       </div>
-      <div id="p-test-result" class="test-result" style="display:none"></div>
+      <div id="p-test-result" class="test-result" style="display: none"></div>
       <table class="tbl" id="patrones-tbl">
-        <thead><tr><th>Tipo</th><th>Valor</th><th>Prio</th><th>Activo</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Prio</th>
+            <th>Activo</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>

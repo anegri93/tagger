@@ -2,10 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { aplicarDiffRoute } from './aplicar-diff.js';
 
-function fakeDb(opts: {
-  slugs?: Record<string, string>;
-  updated?: number;
-}) {
+function fakeDb(opts: { slugs?: Record<string, string>; updated?: number }) {
   const slugs = opts.slugs ?? {};
   return {
     select: () => ({
@@ -25,7 +22,9 @@ function fakeDb(opts: {
       set: () => ({
         where: () => ({
           returning: () =>
-            Promise.resolve(Array.from({ length: opts.updated ?? 0 }, (_, i) => ({ id: String(i) }))),
+            Promise.resolve(
+              Array.from({ length: opts.updated ?? 0 }, (_, i) => ({ id: String(i) })),
+            ),
         }),
       }),
     }),

@@ -64,8 +64,8 @@ describe('categorizar request schema', () => {
   });
 
   it('monto debe ser finito', () => {
-    expect(
-      categorizarRequestSchema.safeParse({ descripcion: 'X', monto: Infinity }).success,
-    ).toBe(false);
+    expect(categorizarRequestSchema.safeParse({ descripcion: 'X', monto: Infinity }).success).toBe(
+      false,
+    );
   });
 });

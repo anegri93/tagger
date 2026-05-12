@@ -34,13 +34,17 @@ describe('health/ready', () => {
       pingDb: vi.fn().mockResolvedValue(true),
       pingOllama: vi.fn().mockResolvedValue(true),
     });
-    expect((await a.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({ ollama: 'ok' });
+    expect((await a.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({
+      ollama: 'ok',
+    });
 
     const b = await build({
       pingDb: vi.fn().mockResolvedValue(true),
       pingOllama: vi.fn().mockResolvedValue(false),
     });
-    expect((await b.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({ ollama: 'fail' });
+    expect((await b.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({
+      ollama: 'fail',
+    });
   });
 
   it('pingDb que throw → tratado como fail', async () => {

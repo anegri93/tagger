@@ -61,15 +61,12 @@ export interface TestBatchStats {
 export const testBatchStatsRoute =
   (reader: TestBatchStatsReader): FastifyPluginAsync =>
   async (app) => {
-    app.get<{ Params: { batch_id: string } }>(
-      '/test-batch/:batch_id/stats',
-      async (req, reply) => {
-        const batchId = req.params.batch_id?.trim();
-        if (!batchId) {
-          return reply.code(400).send({ error: 'batch_id requerido' });
-        }
-        const stats = await reader.stats(batchId);
-        return reply.send(stats);
-      },
-    );
+    app.get<{ Params: { batch_id: string } }>('/test-batch/:batch_id/stats', async (req, reply) => {
+      const batchId = req.params.batch_id?.trim();
+      if (!batchId) {
+        return reply.code(400).send({ error: 'batch_id requerido' });
+      }
+      const stats = await reader.stats(batchId);
+      return reply.send(stats);
+    });
   };

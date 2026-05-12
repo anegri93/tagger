@@ -69,15 +69,15 @@ paths:
             examples:
               completo:
                 value:
-                  descripcion: "BURGER KING SHOPPING DEL SOL"
-                  bancard_id: "12345"
-                  codigo_comercio: "999"
-                  mcc: "5812"
+                  descripcion: 'BURGER KING SHOPPING DEL SOL'
+                  bancard_id: '12345'
+                  codigo_comercio: '999'
+                  mcc: '5812'
                   monto: 45000
-                  origen: "mobile"
+                  origen: 'mobile'
               minimo:
                 value:
-                  descripcion: "PETROBRAS RUTA 2"
+                  descripcion: 'PETROBRAS RUTA 2'
       responses:
         '200':
           description: Movimiento categorizado
@@ -179,7 +179,7 @@ paths:
                 motivo:
                   type: string
                   maxLength: 500
-                  example: "era taxi, no restaurante"
+                  example: 'era taxi, no restaurante'
       responses:
         '200':
           description: Corrección aplicada
@@ -225,16 +225,16 @@ components:
     Fuente:
       type: string
       enum:
-        - regex       # patron tipo regex (0.95)
-        - literal     # patron tipo literal (0.95)
-        - contiene    # patron tipo contiene (0.90)
-        - prefijo    # patron tipo prefijo (0.90)
-        - mcc         # MCC mapeado (0.75)
-        - ia          # Ollama fallback (cap 0.70)
-        - manual      # corrección usuario (1.0)
-        - bancard     # legacy
-        - nombre      # legacy
-        - patrones    # legacy
+        - regex # patron tipo regex (0.95)
+        - literal # patron tipo literal (0.95)
+        - contiene # patron tipo contiene (0.90)
+        - prefijo # patron tipo prefijo (0.90)
+        - mcc # MCC mapeado (0.75)
+        - ia # Ollama fallback (cap 0.70)
+        - manual # corrección usuario (1.0)
+        - bancard # legacy
+        - nombre # legacy
+        - patrones # legacy
       description: |
         Fuente que asignó la categoría.
         Pipeline actual produce: `regex`, `literal`, `contiene`, `prefijo`, `mcc`, `ia`.

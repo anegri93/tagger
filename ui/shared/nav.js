@@ -2,8 +2,18 @@
 (function () {
   const SECTIONS = [
     { path: '/ui/index.html', label: 'Inicio', icon: '🏠', exact: ['/ui/', '/ui/index.html'] },
-    { path: '/ui/categorias/index.html', label: 'Categorías', icon: '📂', prefix: '/ui/categorias/' },
-    { path: '/ui/test-monitor/index.html', label: 'Monitor', icon: '📊', prefix: '/ui/test-monitor/' },
+    {
+      path: '/ui/categorias/index.html',
+      label: 'Categorías',
+      icon: '📂',
+      prefix: '/ui/categorias/',
+    },
+    {
+      path: '/ui/test-monitor/index.html',
+      label: 'Monitor',
+      icon: '📊',
+      prefix: '/ui/test-monitor/',
+    },
     { path: '/ui/importar/index.html', label: 'Importar', icon: '📥', prefix: '/ui/importar/' },
     { path: '/ui/recat/index.html', label: 'Recat', icon: '🔁', prefix: '/ui/recat/' },
   ];

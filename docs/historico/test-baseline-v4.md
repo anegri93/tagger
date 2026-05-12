@@ -10,18 +10,18 @@ baseline-v3 medía catálogo vs catálogo (100% tautológico). v4 mide cascada r
 
 ## KPIs vs v3
 
-| Métrica | v3 (catálogo) | v4 (cascada pura) | Δ |
-|---------|---------------|-------------------|---|
-| Tiempo total | 15.2s | **76s** | +5x |
-| Throughput | 9.148 req/s | **1.434 req/s** | -84% |
-| Latencia p50 | 1ms | **0ms** | igual |
-| Latencia p95 | 2ms | **45ms** | +22x |
-| Latencia p99 | 3ms | **49ms** | +16x |
-| Latencia avg | 1ms | **15ms** | +14x |
-| Cobertura sync | 100% | **99.8%** | -0.2pp |
-| Cae a IA fallback | 0 | **237** | nuevos |
-| **Agreement vs catálogo** | 100% (trampa) | **98.16%** | métrica real |
-| Mismatches | 0 | **1.999** | reales |
+| Métrica                   | v3 (catálogo) | v4 (cascada pura) | Δ            |
+| ------------------------- | ------------- | ----------------- | ------------ |
+| Tiempo total              | 15.2s         | **76s**           | +5x          |
+| Throughput                | 9.148 req/s   | **1.434 req/s**   | -84%         |
+| Latencia p50              | 1ms           | **0ms**           | igual        |
+| Latencia p95              | 2ms           | **45ms**          | +22x         |
+| Latencia p99              | 3ms           | **49ms**          | +16x         |
+| Latencia avg              | 1ms           | **15ms**          | +14x         |
+| Cobertura sync            | 100%          | **99.8%**         | -0.2pp       |
+| Cae a IA fallback         | 0             | **237**           | nuevos       |
+| **Agreement vs catálogo** | 100% (trampa) | **98.16%**        | métrica real |
+| Mismatches                | 0             | **1.999**         | reales       |
 
 ## Lectura
 
@@ -31,15 +31,16 @@ baseline-v3 medía catálogo vs catálogo (100% tautológico). v4 mide cascada r
 
 ## Distribución fuente con bypass
 
-| Fuente | Count | % | vs v3 |
-|--------|-------|---|-------|
-| regex | 67.997 | 62.4% | +6.294 (+10%) |
-| mcc | 40.099 | 36.8% | -5.595 (-12%) |
-| nombre | 642 | 0.6% | -943 (-60%) |
-| NULL (IA) | 237 | 0.2% | +237 |
-| bancard | 7 | 0.0% | +7 |
+| Fuente    | Count  | %     | vs v3         |
+| --------- | ------ | ----- | ------------- |
+| regex     | 67.997 | 62.4% | +6.294 (+10%) |
+| mcc       | 40.099 | 36.8% | -5.595 (-12%) |
+| nombre    | 642    | 0.6%  | -943 (-60%)   |
+| NULL (IA) | 237    | 0.2%  | +237          |
+| bancard   | 7      | 0.0%  | +7            |
 
 Sin catálogo:
+
 - Reglas regex capturan más (COMERC/HIPER/FARMA/etc agregadas en P16)
 - MCC layer hace más trabajo
 - Nombre LIKE casi inactivo (estricto post-P16)
@@ -48,18 +49,21 @@ Sin catálogo:
 ## Mismatches: patrones reales
 
 ### 1. Heladerías (~50 casos)
+
 - Runtime `regex → restaurante` (regla `HELADERIA` matchea)
 - Catálogo `mcc → alimentacion` (MCC original 5499/5441)
 - **Decisión correcta**: alimentacion (en PY heladería = alimento, no resto)
 - **Fix**: mover HELADERIA del patron restaurante a alimentacion
 
 ### 2. "X HERMANOS" / "X COMERCIAL" (~200 casos)
+
 - Runtime `regex → supermercado` (matchea COMERCIAL)
 - Catálogo varía: hogar/restaurante/otros/combustible
 - Catálogo más preciso (usó MCC real)
 - **Trade-off**: si quitamos regla COMERCIAL, perdemos otros casos
 
 ### 3. Comercios no clasificados por cascada (237 IA)
+
 - Sin catálogo, sin MCC, sin nombre matcheable, sin regex hit
 - En producción real → IA Gemma corre
 - Test masivo no espera IA → quedan NULL
@@ -67,6 +71,7 @@ Sin catálogo:
 ## Conclusiones
 
 **Cascada robusta** (98% accuracy sin catálogo) pero:
+
 - Catálogo da +1.84pp precisión
 - Catálogo da 6x throughput (lookup directo vs cascada completa)
 - Catálogo da 22x mejor latencia p95

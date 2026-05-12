@@ -7,31 +7,31 @@
 
 ## KPIs globales
 
-| Métrica | Valor |
-|---------|-------|
-| Total procesados | 108.982 |
-| Tiempo total | 53.5s |
-| Throughput promedio | 2038 req/s |
-| Errores HTTP | 0 |
-| IA fallback disparados | 0 |
+| Métrica                | Valor      |
+| ---------------------- | ---------- |
+| Total procesados       | 108.982    |
+| Tiempo total           | 53.5s      |
+| Throughput promedio    | 2038 req/s |
+| Errores HTTP           | 0          |
+| IA fallback disparados | 0          |
 
 ## Latencia (ms)
 
 | min | p50 | p95 | p99 | max | avg |
-|-----|-----|-----|-----|-----|-----|
-| 0 | 2 | 41 | 48 | 89 | 10 |
+| --- | --- | --- | --- | --- | --- |
+| 0   | 2   | 41  | 48  | 89  | 10  |
 
 p99 < 50ms cumple SLA holgado. p50=2ms = lookup catálogo directo en mayoría.
 
 ## Distribución por fuente_categoria
 
-| Fuente | Count | % |
-|--------|-------|---|
-| regex | ~60% (mayoría MANGO + AZAR + supers/farmas) |
-| mcc | ~35% |
-| nombre | ~3% |
-| bancard | ~0.5% |
-| ia | 0% |
+| Fuente  | Count                                       | %   |
+| ------- | ------------------------------------------- | --- |
+| regex   | ~60% (mayoría MANGO + AZAR + supers/farmas) |
+| mcc     | ~35%                                        |
+| nombre  | ~3%                                         |
+| bancard | ~0.5%                                       |
+| ia      | 0%                                          |
 
 (Ejecutar `node scripts/analyze-test-batch.mjs baseline-v1` pa números exactos.)
 
@@ -51,6 +51,7 @@ Catálogo precomputado por loader masivo (P11+P12) y runtime cascada coinciden e
 ### 1. Capa `nombre` LIKE muy laxo (mayoría de mismatches)
 
 Nombres cortos/genéricos matchean falsamente contra otros comercios:
+
 - `CABA` → falsa transferencia (LIKE matchea con "CABALLERIA")
 - `CIT`, `CM`, `COMED` → falsos matches con palabras parciales
 - `CASA` → matches falsos múltiples
@@ -85,6 +86,7 @@ Ej. `ENERGY-FELIX BOGADO`: catálogo asignó `combustible` por inferencia marca 
 ## Conclusión
 
 Baseline excelente:
+
 - Throughput 2038 req/s muy por encima de objetivo (~500)
 - Latencia p99 48ms, holgado vs SLA <200ms
 - Agreement 99.87% indica que runtime y catálogo precomputado están alineados

@@ -39,9 +39,7 @@ describe('sugerencias-ia route', () => {
 
   it('POST run dispara y devuelve 202', async () => {
     const app = Fastify();
-    await app.register(
-      sugerenciasIaRoute(fakeDb() as never, fakeOllama(), fakeWriter()),
-    );
+    await app.register(sugerenciasIaRoute(fakeDb() as never, fakeOllama(), fakeWriter()));
     const r = await app.inject({
       method: 'POST',
       url: '/patrones/sugerencias-ia/run',
@@ -65,9 +63,7 @@ describe('sugerencias-ia route', () => {
       }),
     };
     const ollamaLento: OllamaClient = {
-      generate: vi.fn(
-        () => new Promise((res) => setTimeout(() => res('{}'), 300)),
-      ),
+      generate: vi.fn(() => new Promise((res) => setTimeout(() => res('{}'), 300))),
       ping: vi.fn(async () => true),
     };
     await app.register(sugerenciasIaRoute(db as never, ollamaLento, fakeWriter()));
@@ -87,9 +83,7 @@ describe('sugerencias-ia route', () => {
 
   it('GET status sin run → null', async () => {
     const app = Fastify();
-    await app.register(
-      sugerenciasIaRoute(fakeDb() as never, fakeOllama(), fakeWriter()),
-    );
+    await app.register(sugerenciasIaRoute(fakeDb() as never, fakeOllama(), fakeWriter()));
     const r = await app.inject({ method: 'GET', url: '/patrones/sugerencias-ia/status' });
     expect(r.json().run).toBeNull();
   });

@@ -176,16 +176,19 @@ function render(stats) {
       : 'ETA —';
 
   $('kpi-cobertura').textContent = stats.cobertura.sync_ok_pct.toFixed(1);
-  $('kpi-cobertura-detail').textContent = `sync ${stats.cobertura.sync_ok} • rev ${stats.cobertura.revision} • sin ${stats.cobertura.sin_categoria}`;
+  $('kpi-cobertura-detail').textContent =
+    `sync ${stats.cobertura.sync_ok} • rev ${stats.cobertura.revision} • sin ${stats.cobertura.sin_categoria}`;
 
   $('kpi-agreement').textContent = stats.agreement.pct.toFixed(2);
-  const modoLabel = {
-    cascada_pura: '🧪 cascada pura (bypass)',
-    con_catalogo: '⚠️ con catálogo (tautológico)',
-    mixto: '🌀 mixto',
-    sin_datos: '—',
-  }[stats.modo] || '—';
-  $('kpi-agreement-detail').textContent = `${modoLabel} • match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin_cat ${stats.agreement.sin_catalogo}`;
+  const modoLabel =
+    {
+      cascada_pura: '🧪 cascada pura (bypass)',
+      con_catalogo: '⚠️ con catálogo (tautológico)',
+      mixto: '🌀 mixto',
+      sin_datos: '—',
+    }[stats.modo] || '—';
+  $('kpi-agreement-detail').textContent =
+    `${modoLabel} • match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin_cat ${stats.agreement.sin_catalogo}`;
 
   const l = stats.latencia;
   $('lat-min').textContent = l.min ?? '—';

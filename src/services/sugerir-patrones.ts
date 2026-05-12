@@ -23,17 +23,45 @@ export interface SugerirOpts {
 }
 
 const STOPWORDS = new Set([
-  'PARAGUAY', 'ASUNCION', 'CALLE', 'AVENIDA', 'AVDA', 'CENTRO', 'SUCURSAL', 'BRANCH',
-  'CIUDAD', 'BARRIO', 'NORTE', 'SUR', 'ESTE', 'OESTE', 'NUEVO', 'NUEVA', 'GRAN',
-  'PRINCIPAL', 'ZONA', 'ESQ', 'KILOMETRO', 'KM', 'ENTRE', 'PARA', 'COMO', 'SOBRE',
-  'DESDE', 'HASTA', 'SAN', 'SANTA', 'REPUBLICA', 'AMERICA', 'BRASIL', 'ARGENTINA',
+  'PARAGUAY',
+  'ASUNCION',
+  'CALLE',
+  'AVENIDA',
+  'AVDA',
+  'CENTRO',
+  'SUCURSAL',
+  'BRANCH',
+  'CIUDAD',
+  'BARRIO',
+  'NORTE',
+  'SUR',
+  'ESTE',
+  'OESTE',
+  'NUEVO',
+  'NUEVA',
+  'GRAN',
+  'PRINCIPAL',
+  'ZONA',
+  'ESQ',
+  'KILOMETRO',
+  'KM',
+  'ENTRE',
+  'PARA',
+  'COMO',
+  'SOBRE',
+  'DESDE',
+  'HASTA',
+  'SAN',
+  'SANTA',
+  'REPUBLICA',
+  'AMERICA',
+  'BRASIL',
+  'ARGENTINA',
 ]);
 
 export function tokenizar(nombre: string, longitudMin = 4): string[] {
   const norm = normalize(nombre);
-  return norm
-    .split(/\s+/)
-    .filter((t) => t.length >= longitudMin && !STOPWORDS.has(t));
+  return norm.split(/\s+/).filter((t) => t.length >= longitudMin && !STOPWORDS.has(t));
 }
 
 export async function sugerirPatrones(db: Db, opts: SugerirOpts = {}): Promise<PatronSugerido[]> {

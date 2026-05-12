@@ -48,9 +48,7 @@ describe('comercios route', () => {
     await app.register(comerciosRoute(w));
     const r = await app.inject({ method: 'GET', url: '/comercios?q=BIGGIE&limit=10' });
     expect(r.statusCode).toBe(200);
-    expect(w.listar).toHaveBeenCalledWith(
-      expect.objectContaining({ q: 'BIGGIE', limit: 10 }),
-    );
+    expect(w.listar).toHaveBeenCalledWith(expect.objectContaining({ q: 'BIGGIE', limit: 10 }));
   });
 
   it('GET rechaza limit fuera de rango', async () => {

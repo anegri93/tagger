@@ -8,11 +8,7 @@ const PUNCT_RE = /[.,;:*+!?¿¡"'`´()[\]{}<>@#$%^&=]/g;
 const MIN_CHARS = 4;
 
 function preNormalize(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(DIACRITICS_EXCEPT_TILDE_RE, '')
-    .normalize('NFC')
-    .toUpperCase();
+  return s.normalize('NFD').replace(DIACRITICS_EXCEPT_TILDE_RE, '').normalize('NFC').toUpperCase();
 }
 
 export function extractBrand(nombre: string | null | undefined): string | null {

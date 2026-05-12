@@ -12,10 +12,18 @@ export interface MarcaPublica {
 export interface MarcaWriter {
   listar(filterCategoriaSlug?: string): Promise<MarcaPublica[]>;
   porCategoria(): Promise<Map<string, MarcaPublica[]>>;
-  crear(input: { marca: string; descripcion?: string | null | undefined; categoriaSlug: string }): Promise<MarcaPublica>;
+  crear(input: {
+    marca: string;
+    descripcion?: string | null | undefined;
+    categoriaSlug: string;
+  }): Promise<MarcaPublica>;
   actualizar(
     id: string,
-    input: { marca?: string | undefined; descripcion?: string | null | undefined; categoriaSlug?: string | undefined },
+    input: {
+      marca?: string | undefined;
+      descripcion?: string | null | undefined;
+      categoriaSlug?: string | undefined;
+    },
   ): Promise<MarcaPublica | null>;
   eliminar(id: string): Promise<boolean>;
 }
@@ -117,7 +125,11 @@ export function crearMarcaWriter(db: Db, reader?: MarcasReader): MarcaWriter {
         if (cat.length === 0) throw new Error('categoria_inexistente');
         set.categoriaId = cat[0]!.id;
       }
-      const upd = await db.update(marcasConocidas).set(set).where(eq(marcasConocidas.id, id)).returning();
+      const upd = await db
+        .update(marcasConocidas)
+        .set(set)
+        .where(eq(marcasConocidas.id, id))
+        .returning();
       const r = upd[0];
       if (!r) return null;
       const slugRow = await db

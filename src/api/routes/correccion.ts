@@ -51,7 +51,7 @@ export const correccionRoute =
       return reply.send({
         correccion_id: r.correccionId,
         categoria_anterior_id: r.categoriaAnteriorId,
-        categoria_anterior: r.categoriaAnteriorId ? map.get(r.categoriaAnteriorId) ?? null : null,
+        categoria_anterior: r.categoriaAnteriorId ? (map.get(r.categoriaAnteriorId) ?? null) : null,
         categoria_nueva_id: body.data.categoria_id_nueva,
         categoria_nueva: map.get(body.data.categoria_id_nueva) ?? null,
       });

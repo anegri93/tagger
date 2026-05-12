@@ -1,9 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { Db } from '../client.js';
-import type {
-  TestBatchStatsReader,
-  TestBatchStats,
-} from '../../api/routes/test-batch-stats.js';
+import type { TestBatchStatsReader, TestBatchStats } from '../../api/routes/test-batch-stats.js';
 
 const CACHE_MS = 1000;
 

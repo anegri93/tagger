@@ -35,7 +35,11 @@ export interface MccWriter {
   eliminar(codMcc: string): Promise<boolean | { tieneRefs: true; comercios: number }>;
 }
 
-interface ExtraRow { cod_mcc: string; descripcion: string; categoria_slug: string }
+interface ExtraRow {
+  cod_mcc: string;
+  descripcion: string;
+  categoria_slug: string;
+}
 
 function readExtras(): Map<string, ExtraRow> {
   if (!existsSync(EXTRAS_PATH)) return new Map();
@@ -44,7 +48,12 @@ function readExtras(): Map<string, ExtraRow> {
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i]!.split('\t');
     const [cod_mcc, descripcion, categoria_slug] = cols;
-    if (cod_mcc) out.set(cod_mcc, { cod_mcc, descripcion: descripcion ?? '', categoria_slug: categoria_slug ?? '' });
+    if (cod_mcc)
+      out.set(cod_mcc, {
+        cod_mcc,
+        descripcion: descripcion ?? '',
+        categoria_slug: categoria_slug ?? '',
+      });
   }
   return out;
 }
@@ -173,10 +182,7 @@ export function crearMccWriter(db: Db, invalidar?: () => void): MccWriter {
         .where(eq(comerciosCatalogo.mcc, codMcc));
       const n = Number(refs[0]?.c ?? 0);
       if (n > 0) return { tieneRefs: true, comercios: n };
-      const del = await db
-        .delete(mccCatalogo)
-        .where(eq(mccCatalogo.codMcc, codMcc))
-        .returning();
+      const del = await db.delete(mccCatalogo).where(eq(mccCatalogo.codMcc, codMcc)).returning();
       if (del.length === 0) return false;
       removeExtra(codMcc);
       invalidar?.();

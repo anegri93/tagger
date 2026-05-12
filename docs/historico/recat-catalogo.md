@@ -6,12 +6,12 @@ comparar qué categorizaría hoy el sistema vs qué tiene almacenado.
 
 ## Columnas nuevas en `comercios_catalogo`
 
-| columna | tipo | nota |
-|---|---|---|
-| `categoria_nueva_id` | uuid? FK → categorias | null si pipeline no resuelve |
-| `fuente_nueva` | enum fuente_categoria | regex/literal/prefijo/contiene/mcc/... |
-| `confianza_nueva` | numeric(3,2) | confianza retornada por la capa ganadora |
-| `recategorizado_at` | timestamptz | marca temporal del último run |
+| columna              | tipo                  | nota                                     |
+| -------------------- | --------------------- | ---------------------------------------- |
+| `categoria_nueva_id` | uuid? FK → categorias | null si pipeline no resuelve             |
+| `fuente_nueva`       | enum fuente_categoria | regex/literal/prefijo/contiene/mcc/...   |
+| `confianza_nueva`    | numeric(3,2)          | confianza retornada por la capa ganadora |
+| `recategorizado_at`  | timestamptz           | marca temporal del último run            |
 
 Migración: `0008_fixed_shinko_yamashiro.sql`.
 
@@ -33,6 +33,7 @@ Capa IA queda **fuera**. Recategorización es síncrona y no debe tardar
 horas/costar tokens. IA es fallback async aparte.
 
 Pipeline efectivo en este flujo:
+
 ```
 patrones → regex → bancard (skip si no input) → mcc → null
 ```
@@ -41,11 +42,11 @@ Cualquier fila que el pipeline no resuelva queda con `categoria_nueva_id=null`.
 
 ## API
 
-| verbo | ruta | acción |
-|---|---|---|
-| POST | `/catalogo/recategorizar` | dispara run async, devuelve `{ run_id }` 202 |
-| GET | `/catalogo/recategorizar/status` | estado del último run, progreso, stats |
-| GET | `/catalogo/recategorizar/comparacion` | totales + top 30 diffs (actual→nueva) + pivot por fuente |
+| verbo | ruta                                  | acción                                                   |
+| ----- | ------------------------------------- | -------------------------------------------------------- |
+| POST  | `/catalogo/recategorizar`             | dispara run async, devuelve `{ run_id }` 202             |
+| GET   | `/catalogo/recategorizar/status`      | estado del último run, progreso, stats                   |
+| GET   | `/catalogo/recategorizar/comparacion` | totales + top 30 diffs (actual→nueva) + pivot por fuente |
 
 POST mientras hay un run corriendo → 409 `{ error: 'run_en_progreso' }`.
 
@@ -57,10 +58,12 @@ flag se pierde pero la DB queda consistente (cada update es atómico por fila).
 `/ui/recat/index.html`. Accesible desde nav (icono 🔁 "Recat").
 
 Acciones:
+
 - **▶ Correr recategorización**: dispara run, polling cada 2s a `/status`.
 - **↻ Refrescar comparación**: re-lee `/comparacion` sin re-correr.
 
 Vistas:
+
 - Estado run (estado, IDs, progreso, conteos)
 - Totales de comparación
 - Top 30 pares `(categoria_actual, categoria_nueva)` con más diffs

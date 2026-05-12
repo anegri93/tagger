@@ -22,18 +22,21 @@
       </div>
     </section>
 
-    <section id="reproc-status" class="reproc card" style="display:none;margin:0 20px 16px">
+    <section id="reproc-status" class="reproc card" style="display: none; margin: 0 20px 16px">
       <div><strong>Reproceso:</strong> <span id="rp-status">—</span></div>
       <div>Total: <span id="rp-total">—</span> | Revisión: <span id="rp-rev">—</span></div>
       <div>Por fuente: <span id="rp-fuente">—</span></div>
     </section>
 
-    <section class="list" style="padding:0 20px 20px">
+    <section class="list" style="padding: 0 20px 20px">
       <table class="tbl">
         <thead>
           <tr>
-            <th>Slug</th><th>Nombre</th>
-            <th>Movs</th><th>MCC</th><th>Comercios</th>
+            <th>Slug</th>
+            <th>Nombre</th>
+            <th>Movs</th>
+            <th>MCC</th>
+            <th>Comercios</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -41,10 +44,11 @@
       </table>
     </section>
 
-    <div id="modal-new" class="modal" style="display:none">
+    <div id="modal-new" class="modal" style="display: none">
       <div class="modal-content">
         <h3>Nueva categoría</h3>
-        <label>Slug <small>(a-z, 0-9, _, max 30)</small>
+        <label
+          >Slug <small>(a-z, 0-9, _, max 30)</small>
           <input id="new-slug" pattern="[a-z0-9_]+" required />
         </label>
         <label>Nombre <input id="new-nombre" required /></label>

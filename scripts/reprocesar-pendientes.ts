@@ -48,9 +48,7 @@ async function main(): Promise<void> {
   console.log(`bypass_catalogo: ${args.bypassCatalogo}`);
   console.log(`concurrency: ${args.concurrency}`);
 
-  const filterPendiente = args.soloPendientes
-    ? sql`AND fuente_categoria IS NULL`
-    : sql``;
+  const filterPendiente = args.soloPendientes ? sql`AND fuente_categoria IS NULL` : sql``;
   const limitClause = args.limit ? sql`LIMIT ${args.limit}` : sql``;
   const res = await db.execute(sql`
     SELECT id FROM movimientos

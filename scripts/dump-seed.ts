@@ -32,12 +32,8 @@ async function main() {
   `);
   const catCols = ['id', 'slug', 'nombre', 'descripcion', 'activo'];
   out.push(`-- categorias (${cats.rows.length})`);
-  out.push(
-    `INSERT INTO categorias (${catCols.join(', ')}) VALUES`,
-  );
-  out.push(
-    cats.rows.map((r) => values(r as Record<string, unknown>, catCols)).join(',\n'),
-  );
+  out.push(`INSERT INTO categorias (${catCols.join(', ')}) VALUES`);
+  out.push(cats.rows.map((r) => values(r as Record<string, unknown>, catCols)).join(',\n'));
   out.push(`ON CONFLICT (slug) DO NOTHING;`);
   out.push('');
 
@@ -50,9 +46,7 @@ async function main() {
   out.push(`-- mcc_catalogo (${mccs.rows.length})`);
   if (mccs.rows.length > 0) {
     out.push(`INSERT INTO mcc_catalogo (${mccCols.join(', ')}) VALUES`);
-    out.push(
-      mccs.rows.map((r) => values(r as Record<string, unknown>, mccCols)).join(',\n'),
-    );
+    out.push(mccs.rows.map((r) => values(r as Record<string, unknown>, mccCols)).join(',\n'));
     out.push(`ON CONFLICT (cod_mcc) DO NOTHING;`);
   }
   out.push('');
@@ -62,7 +56,16 @@ async function main() {
     SELECT id, tipo, valor, categoria_id, prioridad, descripcion, fuente, activo
     FROM patrones ORDER BY prioridad, valor
   `);
-  const patCols = ['id', 'tipo', 'valor', 'categoria_id', 'prioridad', 'descripcion', 'fuente', 'activo'];
+  const patCols = [
+    'id',
+    'tipo',
+    'valor',
+    'categoria_id',
+    'prioridad',
+    'descripcion',
+    'fuente',
+    'activo',
+  ];
   out.push(`-- patrones (${pats.rows.length})`);
   if (pats.rows.length > 0) {
     out.push(`INSERT INTO patrones (${patCols.join(', ')}) VALUES`);
@@ -100,9 +103,7 @@ async function main() {
   out.push(`-- marcas_conocidas (${marcas.rows.length})`);
   if (marcas.rows.length > 0) {
     out.push(`INSERT INTO marcas_conocidas (${marcaCols.join(', ')}) VALUES`);
-    out.push(
-      marcas.rows.map((r) => values(r as Record<string, unknown>, marcaCols)).join(',\n'),
-    );
+    out.push(marcas.rows.map((r) => values(r as Record<string, unknown>, marcaCols)).join(',\n'));
     out.push(`ON CONFLICT (marca) DO NOTHING;`);
   }
   out.push('');

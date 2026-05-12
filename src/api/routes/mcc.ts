@@ -44,7 +44,9 @@ export const mccRoute =
       }
       try {
         const upd = await writer.actualizar(req.params.cod_mcc, {
-          ...(parsed.data.descripcion !== undefined ? { descripcion: parsed.data.descripcion } : {}),
+          ...(parsed.data.descripcion !== undefined
+            ? { descripcion: parsed.data.descripcion }
+            : {}),
           ...(parsed.data.categoria_slug !== undefined
             ? { categoriaSlug: parsed.data.categoria_slug }
             : {}),
@@ -63,7 +65,9 @@ export const mccRoute =
       const r = await writer.eliminar(req.params.cod_mcc);
       if (r === false) return reply.code(404).send({ error: 'no_existe' });
       if (typeof r === 'object' && r.tieneRefs)
-        return reply.code(409).send({ error: 'tiene_referencias', usage: { comercios: r.comercios } });
+        return reply
+          .code(409)
+          .send({ error: 'tiene_referencias', usage: { comercios: r.comercios } });
       return reply.send({ ok: true });
     });
   };

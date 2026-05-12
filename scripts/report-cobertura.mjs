@@ -20,7 +20,8 @@ const fuente = await c.query(`
   GROUP BY fuente_categoria
   ORDER BY c DESC
 `);
-for (const r of fuente.rows) console.log(`  ${r.fuente.padEnd(12)} ${String(r.c).padStart(8)} (${r.pct}%)`);
+for (const r of fuente.rows)
+  console.log(`  ${r.fuente.padEnd(12)} ${String(r.c).padStart(8)} (${r.pct}%)`);
 
 console.log('\n--- Requiere revisión ---');
 const rev = await c.query(`
@@ -53,7 +54,8 @@ const sinMap = await c.query(`
   ORDER BY c DESC
   LIMIT 15
 `);
-for (const r of sinMap.rows) console.log(`  ${(r.mcc_original ?? 'NULL').padEnd(15)} ${String(r.c).padStart(8)}`);
+for (const r of sinMap.rows)
+  console.log(`  ${(r.mcc_original ?? 'NULL').padEnd(15)} ${String(r.c).padStart(8)}`);
 
 console.log('\n--- Inferencia por marca ---');
 const inf = await c.query(`
@@ -72,7 +74,8 @@ const topMarcas = await c.query(`
   LIMIT 10
 `);
 console.log('\n  Top 10 marcas con MCC inferido:');
-for (const r of topMarcas.rows) console.log(`    ${(r.marca ?? '').padEnd(30)} ${String(r.c).padStart(5)}`);
+for (const r of topMarcas.rows)
+  console.log(`    ${(r.marca ?? '').padEnd(30)} ${String(r.c).padStart(5)}`);
 
 console.log('\n--- Distribución confianza ---');
 const conf = await c.query(`

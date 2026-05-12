@@ -72,7 +72,9 @@ export const movimientos = pgTable(
   (t) => [
     index('movimientos_created_at_idx').on(t.createdAt),
     index('movimientos_requiere_revision_idx').on(t.requiereRevision),
-    index('movimientos_batch_id_idx').on(t.batchId).where(sql`${t.batchId} IS NOT NULL`),
+    index('movimientos_batch_id_idx')
+      .on(t.batchId)
+      .where(sql`${t.batchId} IS NOT NULL`),
     index('movimientos_origen_idx').on(t.origen),
   ],
 );

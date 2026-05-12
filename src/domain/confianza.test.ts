@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { CONFIANZA, THRESHOLD_REVISION, confianzaPorFuente, requiereRevision } from './confianza.js';
+import {
+  CONFIANZA,
+  THRESHOLD_REVISION,
+  confianzaPorFuente,
+  requiereRevision,
+} from './confianza.js';
 
 describe('confianza', () => {
   it('valores fijos por fuente', () => {

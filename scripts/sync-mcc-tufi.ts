@@ -44,7 +44,9 @@ async function main() {
   if (conflictos.length) {
     console.log(`\n⚠️  Conflictos descripción (${conflictos.length}):`);
     for (const c of conflictos.slice(0, 20)) {
-      console.log(`  ${c.mcc} (${c.count} filas): ${c.descs.map(d => JSON.stringify(d)).join(' | ')}`);
+      console.log(
+        `  ${c.mcc} (${c.count} filas): ${c.descs.map((d) => JSON.stringify(d)).join(' | ')}`,
+      );
     }
   }
 
@@ -53,13 +55,25 @@ async function main() {
     SELECT cod_mcc AS codigo, descripcion, categoria_id FROM mcc_catalogo
   `);
   const dbMap = new Map<string, { descripcion: string | null; categoria_id: string | null }>();
-  for (const r of dbRes.rows as Array<{ codigo: string; descripcion: string | null; categoria_id: string | null }>) {
-    dbMap.set(r.codigo.padStart(4, '0'), { descripcion: r.descripcion, categoria_id: r.categoria_id });
+  for (const r of dbRes.rows as Array<{
+    codigo: string;
+    descripcion: string | null;
+    categoria_id: string | null;
+  }>) {
+    dbMap.set(r.codigo.padStart(4, '0'), {
+      descripcion: r.descripcion,
+      categoria_id: r.categoria_id,
+    });
   }
 
   // 3) Diff
   const insertar: Array<{ mcc: string; desc: string; count: number }> = [];
-  const actualizarDesc: Array<{ mcc: string; descNueva: string; descVieja: string | null; count: number }> = [];
+  const actualizarDesc: Array<{
+    mcc: string;
+    descNueva: string;
+    descVieja: string | null;
+    count: number;
+  }> = [];
   const yaOk: number[] = [];
 
   for (const [k, v] of mccs) {
@@ -99,7 +113,9 @@ async function main() {
 
   console.log(`\n--- ACTUALIZAR DESCRIPCIÓN (${actualizarDesc.length}) ---`);
   for (const x of actualizarDesc.slice(0, 30))
-    console.log(`  ${x.mcc}  vieja=${JSON.stringify(x.descVieja)} → nueva=${JSON.stringify(x.descNueva)}`);
+    console.log(
+      `  ${x.mcc}  vieja=${JSON.stringify(x.descVieja)} → nueva=${JSON.stringify(x.descNueva)}`,
+    );
   if (actualizarDesc.length > 30) console.log(`  ... +${actualizarDesc.length - 30} más`);
 
   if (!apply) {
@@ -108,7 +124,8 @@ async function main() {
   }
 
   console.log(`\n>>> APLICANDO`);
-  let ins = 0, upd = 0;
+  let ins = 0,
+    upd = 0;
   for (const x of insertar) {
     await db.execute(sql`
       INSERT INTO mcc_catalogo (cod_mcc, descripcion, source, ambiguo)
@@ -132,4 +149,7 @@ async function main() {
   console.log(`total mcc_catalogo ahora: ${(total.rows[0] as { c: number }).c}`);
   process.exit(0);
 }
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

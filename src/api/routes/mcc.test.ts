@@ -6,7 +6,13 @@ import type { MccWriter } from '../../db/repos/mcc-writer.js';
 function fakeWriter(overrides: Partial<MccWriter> = {}): MccWriter {
   return {
     listar: vi.fn(async () => [
-      { codMcc: '5411', descripcion: 'SUPERMERCADOS', categoriaSlug: 'super', ambiguo: false, source: 'mcc-general' },
+      {
+        codMcc: '5411',
+        descripcion: 'SUPERMERCADOS',
+        categoriaSlug: 'super',
+        ambiguo: false,
+        source: 'mcc-general',
+      },
     ]),
     crear: vi.fn(async (input) => ({
       codMcc: input.codMcc,

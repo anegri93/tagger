@@ -67,22 +67,22 @@ Postgres 16 (Drizzle ORM) ─── tablas:
 
 ## Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Lenguaje | TypeScript strict (NodeNext, exactOptionalPropertyTypes) |
-| Runtime | Node.js ≥20 |
-| HTTP | Fastify 5 + @fastify/cors + @fastify/static + @fastify/sensible |
-| ORM | Drizzle ORM (node-postgres) |
-| DB | Postgres 16 |
-| Migrations | drizzle-kit |
-| Tests | Vitest |
-| Validación | Zod |
-| Logger | Pino + pino-pretty |
-| LLM | Ollama (Gemma) |
-| XLSX | xlsx (SheetJS) |
-| Build/Dev | tsx + tsc |
-| Lint | ESLint + Prettier |
-| Package mgr | pnpm 10 |
+| Capa        | Tecnología                                                      |
+| ----------- | --------------------------------------------------------------- |
+| Lenguaje    | TypeScript strict (NodeNext, exactOptionalPropertyTypes)        |
+| Runtime     | Node.js ≥20                                                     |
+| HTTP        | Fastify 5 + @fastify/cors + @fastify/static + @fastify/sensible |
+| ORM         | Drizzle ORM (node-postgres)                                     |
+| DB          | Postgres 16                                                     |
+| Migrations  | drizzle-kit                                                     |
+| Tests       | Vitest                                                          |
+| Validación  | Zod                                                             |
+| Logger      | Pino + pino-pretty                                              |
+| LLM         | Ollama (Gemma)                                                  |
+| XLSX        | xlsx (SheetJS)                                                  |
+| Build/Dev   | tsx + tsc                                                       |
+| Lint        | ESLint + Prettier                                               |
+| Package mgr | pnpm 10                                                         |
 
 ---
 
@@ -97,11 +97,13 @@ bash start.sh                       # genera .env con API_KEY aleatoria,
 ```
 
 Con IA fallback (Ollama, requiere ~5 GB modelo):
+
 ```bash
 OLLAMA=1 bash start.sh
 ```
 
 Verificar:
+
 ```bash
 curl http://localhost:3000/health   # → {"status":"ok"}
 open http://localhost:3000/ui/      # UIs
@@ -110,6 +112,7 @@ open http://localhost:3000/ui/      # UIs
 `start.sh` es idempotente: levanta lo que falte (postgres, deps, migrations, seed), arranca API foreground. `stop.sh` baja todo. `restart.sh` = stop + start.
 
 **Seed inicial** (cargado automático por `start.sh` desde `data/seed.sql`):
+
 - 35 categorías
 - 215 MCCs mapeados
 - 279 patrones
@@ -122,67 +125,74 @@ open http://localhost:3000/ui/      # UIs
 ## API endpoints
 
 ### Categorización
-| Método | Path | Descripción |
-|--------|------|-------------|
-| POST | `/categorizar-movimiento` | Categoriza un movimiento. Body: `{descripcion, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?}` |
-| GET | `/movimientos/:id` | Detalle movimiento (incluye evidencia IA) |
-| POST | `/movimientos/:id/correccion` | Corrección manual usuario |
-| POST | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`. |
+
+| Método | Path                          | Descripción                                                                                                                        |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?}` |
+| GET    | `/movimientos/:id`            | Detalle movimiento (incluye evidencia IA)                                                                                          |
+| POST   | `/movimientos/:id/correccion` | Corrección manual usuario                                                                                                          |
+| POST   | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`.  |
 
 ### CRUD recursos
-| Método | Path | Función |
-|--------|------|---------|
-| GET/POST/PATCH/DELETE | `/categorias` | CRUD categorías |
-| GET | `/categorias/:slug/usage` | Counts refs (movimientos/comercios/mcc) |
-| GET/POST/PATCH/DELETE | `/patrones` | CRUD patrones (contiene/regex/prefijo/literal) |
-| GET/POST/PATCH/DELETE | `/mcc` | CRUD MCC mapping |
-| GET/POST/PATCH/DELETE | `/marcas` | CRUD marcas conocidas IA |
-| GET/PATCH | `/comercios` | Listar paginado + cambio categoría individual |
+
+| Método                | Path                      | Función                                        |
+| --------------------- | ------------------------- | ---------------------------------------------- |
+| GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                |
+| GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/comercios/mcc)        |
+| GET/POST/PATCH/DELETE | `/patrones`               | CRUD patrones (contiene/regex/prefijo/literal) |
+| GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                               |
+| GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                       |
+| GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual  |
 
 ### Importación bulk
-| Método | Path | Función |
-|--------|------|---------|
-| POST | `/catalogo/importar` | Importa rows a `comercios_catalogo` (chunked, async). Body: `{rows, correr_cascada?}` |
-| GET | `/catalogo/importar/status` | Estado import |
-| POST | `/movimientos/importar` | Importa rows a `movimientos` ejecutando cascada (async). Body: `{rows, batch_id?}` |
-| GET | `/movimientos/importar/status` | Estado import |
+
+| Método | Path                           | Función                                                                               |
+| ------ | ------------------------------ | ------------------------------------------------------------------------------------- |
+| POST   | `/catalogo/importar`           | Importa rows a `comercios_catalogo` (chunked, async). Body: `{rows, correr_cascada?}` |
+| GET    | `/catalogo/importar/status`    | Estado import                                                                         |
+| POST   | `/movimientos/importar`        | Importa rows a `movimientos` ejecutando cascada (async). Body: `{rows, batch_id?}`    |
+| GET    | `/movimientos/importar/status` | Estado import                                                                         |
 
 ### Recategorización catálogo
-| Método | Path | Función |
-|--------|------|---------|
-| POST | `/catalogo/recategorizar` | Recategoriza `comercios_catalogo` con cascada actual a columnas shadow (`*_nueva`) |
-| GET | `/catalogo/recategorizar/status` | Progreso |
-| GET | `/catalogo/recategorizar/comparacion` | Totales: match / diff / sin_categoria + top diffs |
-| GET | `/catalogo/recategorizar/diff-detalle?actual=&nueva=&limit=` | Rows diff entre dos categorías |
-| POST | `/catalogo/aplicar-diff` | Aplica `categoria_nueva_id → categoria_id` |
-| POST | `/catalogo/aplicar-diff-patron` | Aplica diff filtrado por patrón |
+
+| Método | Path                                                         | Función                                                                            |
+| ------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| POST   | `/catalogo/recategorizar`                                    | Recategoriza `comercios_catalogo` con cascada actual a columnas shadow (`*_nueva`) |
+| GET    | `/catalogo/recategorizar/status`                             | Progreso                                                                           |
+| GET    | `/catalogo/recategorizar/comparacion`                        | Totales: match / diff / sin_categoria + top diffs                                  |
+| GET    | `/catalogo/recategorizar/diff-detalle?actual=&nueva=&limit=` | Rows diff entre dos categorías                                                     |
+| POST   | `/catalogo/aplicar-diff`                                     | Aplica `categoria_nueva_id → categoria_id`                                         |
+| POST   | `/catalogo/aplicar-diff-patron`                              | Aplica diff filtrado por patrón                                                    |
 
 ### Sugerencias / IA
-| Método | Path | Función |
-|--------|------|---------|
-| GET | `/patrones/sugerencias` | Lista sugerencias rule-based desde sin-cat (params: freq_min, pureza_min, longitud_min, impacto_min, categoria_slug) |
-| POST | `/patrones/sugerencias/aplicar` | Aplica sugerencias seleccionadas |
-| POST | `/patrones/sugerencias-ia/run` | Dispara run IA iterativo |
-| GET | `/patrones/sugerencias-ia/status` | Estado run IA |
-| POST | `/patrones/sugerencias-ia/aplicar` | Aplica sugerencias IA seleccionadas |
-| GET | `/datasets/marcas-candidatas` | Prefijos frecuentes candidatos a patrón |
+
+| Método | Path                               | Función                                                                                                              |
+| ------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/patrones/sugerencias`            | Lista sugerencias rule-based desde sin-cat (params: freq_min, pureza_min, longitud_min, impacto_min, categoria_slug) |
+| POST   | `/patrones/sugerencias/aplicar`    | Aplica sugerencias seleccionadas                                                                                     |
+| POST   | `/patrones/sugerencias-ia/run`     | Dispara run IA iterativo                                                                                             |
+| GET    | `/patrones/sugerencias-ia/status`  | Estado run IA                                                                                                        |
+| POST   | `/patrones/sugerencias-ia/aplicar` | Aplica sugerencias IA seleccionadas                                                                                  |
+| GET    | `/datasets/marcas-candidatas`      | Prefijos frecuentes candidatos a patrón                                                                              |
 
 ### Test masivo / Validación pipeline
-| Método | Path | Función |
-|--------|------|---------|
-| POST | `/test-batch/start` | Dispara worker test masivo in-process |
-| POST | `/test-batch/stop` | Cancela batch corriendo |
-| GET | `/test-batch/list` | Batches activos |
-| GET | `/test-batch/:batch_id/stats` | Stats agregadas (latencia, fuente, agreement, mismatches) |
-| GET | `/test-batch/:batch_id/agreement?ground_truth=<batch>` | Agreement pipeline vs `categoria_xlsx` de `test_ground_truth` |
-| GET | `/test-batch/:batch_id/agreement-mcc?reference=mcc\|combined_mcc&include_ambiguo=&include_generic=` | Agreement pipeline vs MCC catalog (proxy ground truth) |
-| GET | `/test-batch/:batch_id/analisis` | Análisis profundo: distribución por fuente/categoría, patrones más usados, top sin-predicción por volumen, latencia p50/p95/p99, cobertura por decil |
+
+| Método | Path                                                                                                | Función                                                                                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/test-batch/start`                                                                                 | Dispara worker test masivo in-process                                                                                                                |
+| POST   | `/test-batch/stop`                                                                                  | Cancela batch corriendo                                                                                                                              |
+| GET    | `/test-batch/list`                                                                                  | Batches activos                                                                                                                                      |
+| GET    | `/test-batch/:batch_id/stats`                                                                       | Stats agregadas (latencia, fuente, agreement, mismatches)                                                                                            |
+| GET    | `/test-batch/:batch_id/agreement?ground_truth=<batch>`                                              | Agreement pipeline vs `categoria_xlsx` de `test_ground_truth`                                                                                        |
+| GET    | `/test-batch/:batch_id/agreement-mcc?reference=mcc\|combined_mcc&include_ambiguo=&include_generic=` | Agreement pipeline vs MCC catalog (proxy ground truth)                                                                                               |
+| GET    | `/test-batch/:batch_id/analisis`                                                                    | Análisis profundo: distribución por fuente/categoría, patrones más usados, top sin-predicción por volumen, latencia p50/p95/p99, cobertura por decil |
 
 ### Salud
-| Método | Path | Devuelve |
-|--------|------|----------|
-| GET | `/health` | `{status:'ok'}` (no requiere auth) |
-| GET | `/health/ready` | `{status, db, ollama}` (no requiere auth) |
+
+| Método | Path            | Devuelve                                  |
+| ------ | --------------- | ----------------------------------------- |
+| GET    | `/health`       | `{status:'ok'}` (no requiere auth)        |
+| GET    | `/health/ready` | `{status, db, ollama}` (no requiere auth) |
 
 **Auth**: header `x-api-key: <API_KEY>` excepto `/health*`, `/ui/*`, `/favicon.ico`, `/`.
 
@@ -192,17 +202,17 @@ open http://localhost:3000/ui/      # UIs
 
 Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 
-| Capa pipeline | Fuente devuelta | Confianza | Cuándo dispara |
-|---------------|-----------------|-----------|----------------|
-| 1. catálogo | (hereda de la fila stored) | (hereda) | Hit exacto `bancard_id + codigo_comercio` |
-| 2. patrones | `regex` | 0.95 | Patrón tipo regex matchea |
-| 2. patrones | `literal` | 0.95 | Patrón tipo literal matchea |
-| 2. patrones | `contiene` | 0.80 | Patrón tipo contiene matchea |
-| 2. patrones | `prefijo` | 0.90 | Patrón tipo prefijo matchea |
-| 3. MCC | `mcc` | 0.75 | MCC del input mapeado a categoría no-ambigua |
-| 4. MCC×NOMBRE | `mcc` | 0.75 | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth` |
-| 5. IA fallback | `ia` | 0.50 (cap) | Gemma async (concurrency 4) — `requiere_revision` siempre `true` |
-| Corrección | `manual` | 1.00 | POST `/movimientos/:id/correccion` |
+| Capa pipeline  | Fuente devuelta            | Confianza  | Cuándo dispara                                                                      |
+| -------------- | -------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| 1. catálogo    | (hereda de la fila stored) | (hereda)   | Hit exacto `bancard_id + codigo_comercio`                                           |
+| 2. patrones    | `regex`                    | 0.95       | Patrón tipo regex matchea                                                           |
+| 2. patrones    | `literal`                  | 0.95       | Patrón tipo literal matchea                                                         |
+| 2. patrones    | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                        |
+| 2. patrones    | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                         |
+| 3. MCC         | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                        |
+| 4. MCC×NOMBRE  | `mcc`                      | 0.75       | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth` |
+| 5. IA fallback | `ia`                       | 0.50 (cap) | Gemma async (concurrency 4) — `requiere_revision` siempre `true`                    |
+| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`                                                  |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 
@@ -246,15 +256,16 @@ correcciones_usuario (id, movimiento_id FK, categoria_anterior_id, categoria_nue
 
 Todas servidas por mismo Fastify (mismo origen, sin CORS).
 
-| URL | Función |
-|-----|---------|
-| `/ui/` | Landing con health + counts |
-| `/ui/categorias/` | CRUD categorías + patrones + MCC + marcas + comercios |
-| `/ui/importar/` | Importa XLSX/CSV a `comercios_catalogo` o `movimientos` con mapping de campos |
-| `/ui/recat/` | Recategorizar catálogo + ver diffs + aplicar + sugerencias IA + marcas candidatas |
-| `/ui/test-monitor/` | Dashboard tests masivos realtime |
+| URL                 | Función                                                                           |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `/ui/`              | Landing con health + counts                                                       |
+| `/ui/categorias/`   | CRUD categorías + patrones + MCC + marcas + comercios                             |
+| `/ui/importar/`     | Importa XLSX/CSV a `comercios_catalogo` o `movimientos` con mapping de campos     |
+| `/ui/recat/`        | Recategorizar catálogo + ver diffs + aplicar + sugerencias IA + marcas candidatas |
+| `/ui/test-monitor/` | Dashboard tests masivos realtime                                                  |
 
 **Shared layout** (`ui/shared/`):
+
 - `theme.css` — CSS variables, dark theme
 - `state.js` — `window.tagger` singleton (apiKey, baseUrl)
 - `api.js` — `window.taggerApi(path, opts)` fetch wrapper unificado
@@ -267,6 +278,7 @@ API key se setea **una vez** en cualquier UI y persiste en localStorage.
 ## Scripts útiles
 
 ### DB
+
 ```bash
 pnpm db:generate                # Drizzle migrations desde schema
 pnpm db:migrate                 # Aplicar migrations
@@ -275,6 +287,7 @@ pnpm db:seed:dump               # Re-genera data/seed.sql desde DB actual
 ```
 
 ### Operación
+
 ```bash
 pnpm dev                        # Hot-reload foreground
 pnpm test                       # Vitest run
@@ -285,6 +298,7 @@ pnpm format                     # Prettier write
 ```
 
 ### Análisis / utilidades
+
 ```bash
 node scripts/analyze-test-batch.mjs <batch_id>     # Stats de un batch
 node scripts/report-cobertura.mjs                  # Distribución catálogo
@@ -297,6 +311,7 @@ pnpm tsx scripts/dump-seed.ts                      # Dump seed.sql desde DB
 ```
 
 ### Validación pipeline con ground truth
+
 ```bash
 # 1. Cargar XLSX de Bancard a test_ground_truth (idempotente por nombre)
 pnpm tsx scripts/load-ground-truth.ts \
@@ -376,6 +391,7 @@ docker compose --profile ai up -d          # + Ollama
 ```
 
 `docker-compose.yml`:
+
 - `postgres` con healthcheck + volumen
 - `ollama` con profile `ai` (opcional)
 

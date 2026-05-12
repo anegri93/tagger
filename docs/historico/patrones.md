@@ -5,18 +5,18 @@ Capa unificada de matching texto→categoría, aditiva sobre las capas legacy
 
 ## Tabla `patrones`
 
-| columna | tipo | nota |
-|---|---|---|
-| id | uuid PK | |
-| tipo | enum | `regex` \| `literal` \| `prefijo` \| `contiene` |
-| valor | text | patrón crudo (regex sin flags, o substring) |
-| categoria_id | uuid FK | ON DELETE RESTRICT |
-| prioridad | int | menor = primero, default 100 |
-| activo | bool | default true |
-| fuente | enum | `manual` \| `catalogo_bancard` \| `auto` |
-| descripcion | text? | |
-| UNIQUE | (tipo, valor, categoria_id) | evita duplicados |
-| INDEX | (activo, prioridad) | acelera loader |
+| columna      | tipo                        | nota                                            |
+| ------------ | --------------------------- | ----------------------------------------------- |
+| id           | uuid PK                     |                                                 |
+| tipo         | enum                        | `regex` \| `literal` \| `prefijo` \| `contiene` |
+| valor        | text                        | patrón crudo (regex sin flags, o substring)     |
+| categoria_id | uuid FK                     | ON DELETE RESTRICT                              |
+| prioridad    | int                         | menor = primero, default 100                    |
+| activo       | bool                        | default true                                    |
+| fuente       | enum                        | `manual` \| `catalogo_bancard` \| `auto`        |
+| descripcion  | text?                       |                                                 |
+| UNIQUE       | (tipo, valor, categoria_id) | evita duplicados                                |
+| INDEX        | (activo, prioridad)         | acelera loader                                  |
 
 ## Pipeline
 
@@ -44,11 +44,11 @@ usuario dominan capas legacy. Si la tabla está vacía → loader devuelve `[]`
 `comercios_catalogo` es **data para afinar**, no fuente de verdad. La capa
 solo propaga `fuentePrev` cacheada cuando es declarativa:
 
-| `fuentePrev` cacheada | Acción |
-|---|---|
+| `fuentePrev` cacheada                    | Acción                                    |
+| ---------------------------------------- | ----------------------------------------- |
 | `regex`, `manual`, `patrones`, `bancard` | propagar (categoría + confianza original) |
-| `mcc`, `ia`, `nombre` | descartar → null, sigue cascada |
-| `null` (entries legacy) | cae a `fuente=nombre, conf=0.8` |
+| `mcc`, `ia`, `nombre`                    | descartar → null, sigue cascada           |
+| `null` (entries legacy)                  | cae a `fuente=nombre, conf=0.8`           |
 
 Match parcial (no exacto) nunca propaga cache: usa lookup propio
 con `fuente=nombre, conf=0.8`.
@@ -63,21 +63,21 @@ puntos antes de palabra → espacio).
 
 Loop por prioridad ASC; primer match gana:
 
-| tipo | match |
-|---|---|
-| `regex` | `new RegExp(valor, 'i').test(texto)` (regex inválida ignorada) |
-| `literal` | `texto === normalize(valor)` |
-| `prefijo` | `texto.startsWith(normalize(valor))` |
-| `contiene` | `texto.includes(normalize(valor))` |
+| tipo       | match                                                          |
+| ---------- | -------------------------------------------------------------- |
+| `regex`    | `new RegExp(valor, 'i').test(texto)` (regex inválida ignorada) |
+| `literal`  | `texto === normalize(valor)`                                   |
+| `prefijo`  | `texto.startsWith(normalize(valor))`                           |
+| `contiene` | `texto.includes(normalize(valor))`                             |
 
 Resultado: `fuente` refleja el `tipo` del patrón. Confianza por tipo:
 
-| tipo | fuente | confianza |
-|---|---|---|
-| `regex` | `regex` | 0.95 |
-| `literal` | `literal` | 0.95 |
-| `prefijo` | `prefijo` | 0.9 |
-| `contiene` | `contiene` | 0.9 |
+| tipo       | fuente     | confianza |
+| ---------- | ---------- | --------- |
+| `regex`    | `regex`    | 0.95      |
+| `literal`  | `literal`  | 0.95      |
+| `prefijo`  | `prefijo`  | 0.9       |
+| `contiene` | `contiene` | 0.9       |
 
 ```ts
 {
@@ -97,16 +97,17 @@ Cache TTL 60s. `capa.invalidar()` se invoca tras POST/PATCH/DELETE de
 
 ## API
 
-| verbo | ruta | body |
-|---|---|---|
-| GET | `/patrones?categoria=&tipo=&activo=` | — |
-| GET | `/patrones/:id` | — |
-| POST | `/patrones` | `{ tipo, valor, categoria_slug, prioridad?, descripcion? }` |
-| PATCH | `/patrones/:id` | `{ valor?, prioridad?, activo?, descripcion?, categoria_slug? }` |
-| DELETE | `/patrones/:id` | — |
-| POST | `/patrones/test` | `{ tipo, valor, texto } → { match }` |
+| verbo  | ruta                                 | body                                                             |
+| ------ | ------------------------------------ | ---------------------------------------------------------------- |
+| GET    | `/patrones?categoria=&tipo=&activo=` | —                                                                |
+| GET    | `/patrones/:id`                      | —                                                                |
+| POST   | `/patrones`                          | `{ tipo, valor, categoria_slug, prioridad?, descripcion? }`      |
+| PATCH  | `/patrones/:id`                      | `{ valor?, prioridad?, activo?, descripcion?, categoria_slug? }` |
+| DELETE | `/patrones/:id`                      | —                                                                |
+| POST   | `/patrones/test`                     | `{ tipo, valor, texto } → { match }`                             |
 
 Códigos:
+
 - 400 input inválido / categoría inexistente
 - 404 id no existe
 - 409 violación UNIQUE (tipo+valor+categoria duplicado)
@@ -115,6 +116,7 @@ Códigos:
 ## UI
 
 Pestaña **Patrones** en `/ui/categorias/detalle.html?slug=…`:
+
 - alta con `tipo`, `valor`, `prioridad`, `descripcion`
 - probador `tipo+valor` vs `texto`
 - toggle activo / eliminar inline
@@ -136,12 +138,13 @@ duplicados.
 
 Validación (DB local, P23 ejecutado el 2026-05-05):
 
-| | count |
-|---|---|
-| `reglas_regex WHERE activo=true` | 42 |
-| `patrones WHERE tipo='regex' AND fuente='manual'` | 42 |
+|                                                   | count |
+| ------------------------------------------------- | ----- |
+| `reglas_regex WHERE activo=true`                  | 42    |
+| `patrones WHERE tipo='regex' AND fuente='manual'` | 42    |
 
 Comportamiento runtime tras migración:
+
 - Capa `patrones` corre antes que `regex` (P22) y matchea primero
 - Resultado: misma categoría, `fuente='patrones'` en vez de `'regex'`
 - Capa `regex` legacy sigue activa como red de seguridad

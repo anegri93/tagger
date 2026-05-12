@@ -49,47 +49,44 @@ export const sugerenciasIaRoute =
         min_sugerencias?: number;
         max_iteraciones?: number;
       };
-    }>(
-      '/patrones/sugerencias-ia/run',
-      async (req, reply) => {
-        if (currentRun?.estado === 'running') {
-          return reply.code(409).send({ error: 'run_en_progreso', run_id: currentRun.runId });
-        }
-        const runId = nuevoRunId();
-        currentRun = {
-          runId,
-          startedAt: new Date().toISOString(),
-          finishedAt: null,
-          estado: 'running',
-          sugerencias: [],
-          progreso: null,
-        };
-        const opts: Parameters<typeof sugerirPatronesIa>[1] = {};
-        if (req.body?.lote_size) opts.loteSize = Number(req.body.lote_size);
-        if (req.body?.confianza_min) opts.confianzaMin = Number(req.body.confianza_min);
-        if (req.body?.min_sugerencias) opts.minSugerencias = Number(req.body.min_sugerencias);
-        if (req.body?.max_iteraciones) opts.maxIteraciones = Number(req.body.max_iteraciones);
-        opts.onProgreso = (p) => {
-          if (currentRun) currentRun.progreso = p;
-        };
-        void sugerirPatronesIa({ db, ollama }, opts)
-          .then((sugs) => {
-            if (currentRun) {
-              currentRun.sugerencias = sugs;
-              currentRun.estado = 'done';
-              currentRun.finishedAt = new Date().toISOString();
-            }
-          })
-          .catch((err: unknown) => {
-            if (currentRun) {
-              currentRun.estado = 'error';
-              currentRun.error = err instanceof Error ? err.message : String(err);
-              currentRun.finishedAt = new Date().toISOString();
-            }
-          });
-        return reply.code(202).send({ run_id: runId });
-      },
-    );
+    }>('/patrones/sugerencias-ia/run', async (req, reply) => {
+      if (currentRun?.estado === 'running') {
+        return reply.code(409).send({ error: 'run_en_progreso', run_id: currentRun.runId });
+      }
+      const runId = nuevoRunId();
+      currentRun = {
+        runId,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+        estado: 'running',
+        sugerencias: [],
+        progreso: null,
+      };
+      const opts: Parameters<typeof sugerirPatronesIa>[1] = {};
+      if (req.body?.lote_size) opts.loteSize = Number(req.body.lote_size);
+      if (req.body?.confianza_min) opts.confianzaMin = Number(req.body.confianza_min);
+      if (req.body?.min_sugerencias) opts.minSugerencias = Number(req.body.min_sugerencias);
+      if (req.body?.max_iteraciones) opts.maxIteraciones = Number(req.body.max_iteraciones);
+      opts.onProgreso = (p) => {
+        if (currentRun) currentRun.progreso = p;
+      };
+      void sugerirPatronesIa({ db, ollama }, opts)
+        .then((sugs) => {
+          if (currentRun) {
+            currentRun.sugerencias = sugs;
+            currentRun.estado = 'done';
+            currentRun.finishedAt = new Date().toISOString();
+          }
+        })
+        .catch((err: unknown) => {
+          if (currentRun) {
+            currentRun.estado = 'error';
+            currentRun.error = err instanceof Error ? err.message : String(err);
+            currentRun.finishedAt = new Date().toISOString();
+          }
+        });
+      return reply.code(202).send({ run_id: runId });
+    });
 
     app.get('/patrones/sugerencias-ia/status', async (_req, reply) => {
       if (!currentRun) return reply.send({ run: null });

@@ -39,7 +39,9 @@ function toTsv(sheet, columns) {
   for (const r of rows) {
     const vals = columns.map((c) => {
       let v = r[c] ?? '';
-      v = String(v).replace(/[\t\r\n]+/g, ' ').trim();
+      v = String(v)
+        .replace(/[\t\r\n]+/g, ' ')
+        .trim();
       return v;
     });
     if (vals.every((v) => v === '')) continue;

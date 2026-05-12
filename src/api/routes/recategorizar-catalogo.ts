@@ -1,10 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
-import {
-  recategorizarCatalogo,
-  type RecatStats,
-} from '../../services/recategorizar-catalogo.js';
+import { recategorizarCatalogo, type RecatStats } from '../../services/recategorizar-catalogo.js';
 import type { CapasSincrono } from '../../pipeline/categorizar.js';
 
 interface RunState {

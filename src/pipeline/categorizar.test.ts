@@ -15,7 +15,9 @@ const HIT_PATRONES: ResultadoCapa = {
   evidencia: { regla_id: 'p1', patron: 'CIAL' },
 };
 
-function stubCapas(overrides: Partial<Record<keyof CapasSincrono, ResultadoCapa | null>> = {}): CapasSincrono {
+function stubCapas(
+  overrides: Partial<Record<keyof CapasSincrono, ResultadoCapa | null>> = {},
+): CapasSincrono {
   return {
     patrones: { evaluar: vi.fn().mockResolvedValue(overrides.patrones ?? null) },
     mcc: { evaluar: vi.fn().mockResolvedValue(overrides.mcc ?? null) },

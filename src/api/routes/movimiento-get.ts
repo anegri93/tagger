@@ -42,8 +42,10 @@ export const movimientoGetRoute =
       const m = await reader.porId(parsed.data.id);
       if (!m) return reply.code(404).send({ error: 'not_found' });
       const map = await categorias.porIds([m.categoriaPredichaId, m.categoriaConfirmadaId]);
-      const predicha = m.categoriaPredichaId ? map.get(m.categoriaPredichaId) ?? null : null;
-      const confirmada = m.categoriaConfirmadaId ? map.get(m.categoriaConfirmadaId) ?? null : null;
+      const predicha = m.categoriaPredichaId ? (map.get(m.categoriaPredichaId) ?? null) : null;
+      const confirmada = m.categoriaConfirmadaId
+        ? (map.get(m.categoriaConfirmadaId) ?? null)
+        : null;
       return reply.send({
         id: m.id,
         descripcion: m.descripcion,

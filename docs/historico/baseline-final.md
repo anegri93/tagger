@@ -7,21 +7,21 @@
 
 ## Resultados finales
 
-| Métrica | Valor |
-|---|---|
-| Total | 49,444 |
-| Match | 36,547 (73.9%) |
-| Diff | 2,534 (5.1%) |
+| Métrica       | Valor          |
+| ------------- | -------------- |
+| Total         | 49,444         |
+| Match         | 36,547 (73.9%) |
+| Diff          | 2,534 (5.1%)   |
 | Sin categoría | 10,363 (20.9%) |
 
 ## Evolución completa
 
-| Métrica | Pre-refactor | Post-A | Post-B (final) | Δ |
-|---|---|---|---|---|
-| Match | 47.9% | 73.9% | **73.9%** | +26% |
-| Sin_cat | 47.5% | 20.9% | **20.9%** | -26.6% |
-| Capas runtime | 7 | 5 | **3** | -57% |
-| Tests | 287 | 288 | 285 | −2 (cleanup) |
+| Métrica       | Pre-refactor | Post-A | Post-B (final) | Δ            |
+| ------------- | ------------ | ------ | -------------- | ------------ |
+| Match         | 47.9%        | 73.9%  | **73.9%**      | +26%         |
+| Sin_cat       | 47.5%        | 20.9%  | **20.9%**      | -26.6%       |
+| Capas runtime | 7            | 5      | **3**          | -57%         |
+| Tests         | 287          | 288    | 285            | −2 (cleanup) |
 
 ## Pipeline final
 
@@ -43,20 +43,20 @@ INPUT: { nombre, mcc, bancard_id?, codigo? }
 
 ## Distribución fuente_nueva (último recat)
 
-| Fuente | Count | % |
-|---|---|---|
+| Fuente              | Count  | %     |
+| ------------------- | ------ | ----- |
 | contiene (patrones) | 13,272 | 26.8% |
-| mcc | 13,129 | 26.6% |
-| regex (patrones) | 12,680 | 25.6% |
-| sin cat → IA async | 10,363 | 20.9% |
+| mcc                 | 13,129 | 26.6% |
+| regex (patrones)    | 12,680 | 25.6% |
+| sin cat → IA async  | 10,363 | 20.9% |
 
 ## Capas eliminadas
 
-| Capa | Razón |
-|---|---|
-| regex standalone | Duplicaba patrones tipo=regex |
-| bancard | 0.006% aporte histórico |
-| comercio | 0 hits en último recat con MCC presente |
+| Capa             | Razón                                   |
+| ---------------- | --------------------------------------- |
+| regex standalone | Duplicaba patrones tipo=regex           |
+| bancard          | 0.006% aporte histórico                 |
+| comercio         | 0 hits en último recat con MCC presente |
 
 ## Garantías cumplidas
 

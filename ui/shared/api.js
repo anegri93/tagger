@@ -24,9 +24,7 @@
       body = { _raw: text };
     }
     if (!res.ok) {
-      const err = new Error(
-        typeof body?.error === 'string' ? body.error : `http_${res.status}`,
-      );
+      const err = new Error(typeof body?.error === 'string' ? body.error : `http_${res.status}`);
       err.status = res.status;
       err.body = body;
       throw err;

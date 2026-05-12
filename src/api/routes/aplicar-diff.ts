@@ -107,47 +107,39 @@ export const aplicarDiffRoute =
       decision: z.enum(['aplicar', 'mantener']),
     });
 
-    app.post<{ Params: { id: string } }>(
-      '/catalogo/comercios/:id/decision',
-      async (req, reply) => {
-        const parsed = decisionSchema.safeParse(req.body);
-        if (!parsed.success) {
-          return reply.code(400).send({ error: 'invalid_input' });
-        }
-        const id = req.params.id;
-        if (parsed.data.decision === 'aplicar') {
-          // promover categoria_nueva_id → categoria_id, marcar manual
-          const upd = await db
-            .update(comerciosCatalogo)
-            .set({
-              categoriaId: sql`${comerciosCatalogo.categoriaNuevaId}`,
-              fuenteCategoria: 'manual',
-              confianza: '1.00',
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(comerciosCatalogo.id, id),
-                isNotNull(comerciosCatalogo.categoriaNuevaId),
-              ),
-            )
-            .returning({ id: comerciosCatalogo.id });
-          if (upd.length === 0) return reply.code(404).send({ error: 'no_aplicable' });
-          return reply.send({ ok: true, decision: 'aplicar' });
-        }
-        // mantener: alinear categoria_nueva_id con categoria_id (sale del diff)
+    app.post<{ Params: { id: string } }>('/catalogo/comercios/:id/decision', async (req, reply) => {
+      const parsed = decisionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_input' });
+      }
+      const id = req.params.id;
+      if (parsed.data.decision === 'aplicar') {
+        // promover categoria_nueva_id → categoria_id, marcar manual
         const upd = await db
           .update(comerciosCatalogo)
           .set({
-            categoriaNuevaId: sql`${comerciosCatalogo.categoriaId}`,
-            fuenteNueva: 'manual',
-            confianzaNueva: '1.00',
+            categoriaId: sql`${comerciosCatalogo.categoriaNuevaId}`,
+            fuenteCategoria: 'manual',
+            confianza: '1.00',
             updatedAt: new Date(),
           })
-          .where(eq(comerciosCatalogo.id, id))
+          .where(and(eq(comerciosCatalogo.id, id), isNotNull(comerciosCatalogo.categoriaNuevaId)))
           .returning({ id: comerciosCatalogo.id });
-        if (upd.length === 0) return reply.code(404).send({ error: 'no_existe' });
-        return reply.send({ ok: true, decision: 'mantener' });
-      },
-    );
+        if (upd.length === 0) return reply.code(404).send({ error: 'no_aplicable' });
+        return reply.send({ ok: true, decision: 'aplicar' });
+      }
+      // mantener: alinear categoria_nueva_id con categoria_id (sale del diff)
+      const upd = await db
+        .update(comerciosCatalogo)
+        .set({
+          categoriaNuevaId: sql`${comerciosCatalogo.categoriaId}`,
+          fuenteNueva: 'manual',
+          confianzaNueva: '1.00',
+          updatedAt: new Date(),
+        })
+        .where(eq(comerciosCatalogo.id, id))
+        .returning({ id: comerciosCatalogo.id });
+      if (upd.length === 0) return reply.code(404).send({ error: 'no_existe' });
+      return reply.send({ ok: true, decision: 'mantener' });
+    });
   };

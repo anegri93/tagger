@@ -62,9 +62,7 @@
         "categorias_slug_unique": {
           "name": "categorias_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -157,12 +155,8 @@
           "name": "reglas_regex_categoria_id_categorias_id_fk",
           "tableFrom": "reglas_regex",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -408,12 +402,8 @@
           "name": "comercios_catalogo_categoria_id_categorias_id_fk",
           "tableFrom": "comercios_catalogo",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -421,12 +411,8 @@
           "name": "comercios_catalogo_categoria_nueva_id_categorias_id_fk",
           "tableFrom": "comercios_catalogo",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_nueva_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_nueva_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -505,12 +491,8 @@
           "name": "mcc_catalogo_categoria_id_categorias_id_fk",
           "tableFrom": "mcc_catalogo",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -720,12 +702,8 @@
           "name": "movimientos_categoria_predicha_id_categorias_id_fk",
           "tableFrom": "movimientos",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_predicha_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_predicha_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -733,12 +711,8 @@
           "name": "movimientos_categoria_confirmada_id_categorias_id_fk",
           "tableFrom": "movimientos",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_confirmada_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_confirmada_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -820,12 +794,8 @@
           "name": "correcciones_usuario_movimiento_id_movimientos_id_fk",
           "tableFrom": "correcciones_usuario",
           "tableTo": "movimientos",
-          "columnsFrom": [
-            "movimiento_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["movimiento_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -833,12 +803,8 @@
           "name": "correcciones_usuario_categoria_anterior_id_categorias_id_fk",
           "tableFrom": "correcciones_usuario",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_anterior_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_anterior_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -846,12 +812,8 @@
           "name": "correcciones_usuario_categoria_nueva_id_categorias_id_fk",
           "tableFrom": "correcciones_usuario",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_nueva_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_nueva_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -943,12 +905,8 @@
           "name": "marcas_conocidas_categoria_id_categorias_id_fk",
           "tableFrom": "marcas_conocidas",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1087,12 +1045,8 @@
           "name": "patrones_categoria_id_categorias_id_fk",
           "tableFrom": "patrones",
           "tableTo": "categorias",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1124,21 +1078,12 @@
     "public.patron_fuente": {
       "name": "patron_fuente",
       "schema": "public",
-      "values": [
-        "manual",
-        "catalogo_bancard",
-        "auto"
-      ]
+      "values": ["manual", "catalogo_bancard", "auto"]
     },
     "public.patron_tipo": {
       "name": "patron_tipo",
       "schema": "public",
-      "values": [
-        "regex",
-        "literal",
-        "prefijo",
-        "contiene"
-      ]
+      "values": ["regex", "literal", "prefijo", "contiene"]
     }
   },
   "schemas": {},

@@ -95,7 +95,8 @@ async function ejecutarImport(
           if (result.resultado) {
             categoriaId = result.resultado.categoriaId;
             fuente = result.resultado.fuente;
-            confianza = result.resultado.confianza != null ? String(result.resultado.confianza) : null;
+            confianza =
+              result.resultado.confianza != null ? String(result.resultado.confianza) : null;
             evidencia = result.resultado.evidencia;
             revision = (result.resultado.confianza ?? 0) < 0.7;
             current.stats.con_categoria++;

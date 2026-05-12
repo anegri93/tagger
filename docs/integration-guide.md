@@ -7,6 +7,7 @@ Cómo consumir el servicio tagger desde la app mobile o backend.
 ## Auth
 
 Header obligatorio en todos los requests (salvo `/health*`):
+
 ```
 x-api-key: <API_KEY>
 ```
@@ -26,13 +27,16 @@ x-api-key: <API_KEY>
 ```
 
 ### Request body
+
 Al menos uno de los siguientes campos requerido:
+
 - `descripcion` (string, 1-500) — texto del movimiento (recomendado)
 - `nombre_comercio` (string, 1-200) — alias de descripcion
 - `nombre_bancard` (string, 1-200) — alias legacy
 - `mcc` (string, 2-4 digits)
 
 Opcionales:
+
 - `bancard_id` (string) — habilita lookup directo en `comercios_catalogo` (más rápido + 100% precisión)
 - `codigo_comercio` (string) — junto con `bancard_id`
 - `monto` (number) — solo persistido, no afecta categorización
@@ -41,6 +45,7 @@ Opcionales:
 - `bypass_catalogo` (bool) — testing: salta capa 1, fuerza cascada pura
 
 ### Response (200 OK)
+
 ```json
 {
   "movimiento_id": "uuid",
@@ -52,6 +57,7 @@ Opcionales:
 ```
 
 **Campos a leer en UI:**
+
 - `categoria_id === null` + `requiere_revision === true` → cascada agotada, IA fallback corriendo async. Re-fetchear `/movimientos/:id` después.
 - `confianza < 0.7` → mostrar UI sugerencia "¿es correcto?" en mobile.
 - `fuente === 'ia'` → categoría tentativa, conviene mostrar "verificar" badge.
@@ -95,6 +101,7 @@ GET /movimientos/:movimiento_id
 ```
 
 Response:
+
 ```json
 {
   "id": "uuid",
@@ -128,11 +135,13 @@ x-api-key: <API_KEY>
 Mobile flow: tras `GET /categorias`, mapear slug elegido por usuario → `id` para enviar.
 
 Efecto:
+
 - `categoria_confirmada_id` actualizado
 - Registro en `correcciones_usuario` (audit)
 - No retroalimenta patrones automáticamente — feedback se procesa periódicamente offline
 
 Response `200 OK`:
+
 ```json
 {
   "ok": true,
@@ -160,12 +169,14 @@ x-api-key: <API_KEY>
 ```
 
 Comportamiento:
+
 - Lee campos del movimiento (descripcion, mcc, bancard_id, etc.)
 - Ejecuta cascada igual que `POST /categorizar-movimiento`
 - Actualiza prediccion + evidencia
 - Si cascada agotada → dispara IA async (mismo polling que original)
 
 Response `200 OK`:
+
 ```json
 {
   "movimiento_id": "uuid",
@@ -185,12 +196,14 @@ Response `200 OK`:
 ## Listar categorías disponibles
 
 Para poblar dropdown UI:
+
 ```
 GET /categorias
 x-api-key: <API_KEY>
 ```
 
 Response:
+
 ```json
 {
   "items": [
@@ -206,17 +219,18 @@ Response:
 
 ## Códigos error
 
-| Código | Significado | Retry |
-|--------|------------|-------|
-| `200` | OK | — |
-| `400` | Validación falló (`{error, issues}`) | NO — fix request |
-| `401` | API key inválida | NO — fix config |
-| `404` | Movimiento no existe | NO |
-| `409` | Estado en conflicto (ej. import en progreso) | Esperar + reintentar |
-| `500` | Error interno | Sí, exponential backoff |
-| `503` | DB/Ollama down | Sí, exponential backoff |
+| Código | Significado                                  | Retry                   |
+| ------ | -------------------------------------------- | ----------------------- |
+| `200`  | OK                                           | —                       |
+| `400`  | Validación falló (`{error, issues}`)         | NO — fix request        |
+| `401`  | API key inválida                             | NO — fix config         |
+| `404`  | Movimiento no existe                         | NO                      |
+| `409`  | Estado en conflicto (ej. import en progreso) | Esperar + reintentar    |
+| `500`  | Error interno                                | Sí, exponential backoff |
+| `503`  | DB/Ollama down                               | Sí, exponential backoff |
 
 ### Retry strategy sugerida
+
 ```ts
 async function categorizar(input: CategorizarRequest, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
@@ -240,7 +254,7 @@ export interface CategorizarRequest {
   descripcion?: string;
   nombre_comercio?: string;
   nombre_bancard?: string;
-  mcc?: string;                  // 2-4 dígitos
+  mcc?: string; // 2-4 dígitos
   bancard_id?: string;
   codigo_comercio?: string;
   monto?: number;
@@ -267,12 +281,12 @@ export interface CategorizarResponse {
   movimiento_id: string;
   categoria_id: string | null;
   fuente: Fuente | null;
-  confianza: number | null;       // 0 a 1
+  confianza: number | null; // 0 a 1
   requiere_revision: boolean;
 }
 
 export interface CorreccionRequest {
-  categoria_id_nueva: string;  // UUID
+  categoria_id_nueva: string; // UUID
   motivo?: string;
 }
 
@@ -307,12 +321,14 @@ export interface Categoria {
 ## UX recomendaciones mobile
 
 ### Flujo categorización
+
 1. Submit movimiento → response inmediato
 2. Si `confianza >= 0.7` → render categoría con icon
 3. Si `confianza < 0.7` o `categoria_id === null` → badge "Verificar" + tap → modal de corrección
 4. Si `categoria_id === null` y `requiere_revision === true` → poll `/movimientos/:id`
 
 ### Trust signals
+
 - Fuente `manual` (confianza 1.0) → no mostrar "verificar"
 - Fuente `regex` / `literal` (0.95) → muy alta confianza
 - Fuente `contiene` / `prefijo` (0.90) → alta confianza
@@ -320,6 +336,7 @@ export interface Categoria {
 - Fuente `ia` (cap 0.70) → mostrar "sugerencia IA"
 
 ### Performance
+
 - Llamada típica: 5-50ms (cascada sync)
 - Con IA fallback: 1-5s (async, requiere polling)
 - Batch import: usar `/movimientos/importar` (200k rows max, chunked async)
@@ -329,6 +346,7 @@ export interface Categoria {
 ## Bulk operations (offline / batch)
 
 Si necesitan importar historial:
+
 ```
 POST /movimientos/importar
 {

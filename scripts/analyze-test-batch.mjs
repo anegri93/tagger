@@ -79,7 +79,9 @@ const lat = await c.query(
   [batchId],
 );
 summary.latencia = lat.rows[0];
-console.log(`  min ${lat.rows[0].min}, p50 ${lat.rows[0].p50}, p95 ${lat.rows[0].p95}, p99 ${lat.rows[0].p99}, max ${lat.rows[0].max}, avg ${lat.rows[0].avg}`);
+console.log(
+  `  min ${lat.rows[0].min}, p50 ${lat.rows[0].p50}, p95 ${lat.rows[0].p95}, p99 ${lat.rows[0].p99}, max ${lat.rows[0].max}, avg ${lat.rows[0].avg}`,
+);
 
 console.log('\n--- Top 10 categorías predichas ---');
 const top = await c.query(
@@ -93,7 +95,9 @@ const top = await c.query(
 summary.top_categorias = top.rows;
 for (const r of top.rows) console.log(`  ${r.slug.padEnd(20)} ${String(r.c).padStart(8)}`);
 
-console.log('\n--- Agreement vs catálogo (movimiento.categoria_predicha vs comercios_catalogo.categoria) ---');
+console.log(
+  '\n--- Agreement vs catálogo (movimiento.categoria_predicha vs comercios_catalogo.categoria) ---',
+);
 const agr = await c.query(
   `WITH joined AS (
      SELECT m.categoria_predicha_id AS pred,
@@ -145,7 +149,9 @@ const mis = await c.query(
 );
 summary.top_mismatches = mis.rows;
 for (const r of mis.rows) {
-  console.log(`  ${(r.nombre_bancard ?? '').slice(0, 30).padEnd(30)} | rt=${(r.rt_fuente ?? 'null').padEnd(7)} ${(r.rt_categoria ?? '-').padEnd(15)} cat=${(r.cat_fuente ?? 'null').padEnd(7)} ${r.cat_categoria ?? '-'}`);
+  console.log(
+    `  ${(r.nombre_bancard ?? '').slice(0, 30).padEnd(30)} | rt=${(r.rt_fuente ?? 'null').padEnd(7)} ${(r.rt_categoria ?? '-').padEnd(15)} cat=${(r.cat_fuente ?? 'null').padEnd(7)} ${r.cat_categoria ?? '-'}`,
+  );
 }
 
 const outPath = resolve(root, `data/test-summary-${batchId}.json`);

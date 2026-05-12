@@ -100,7 +100,7 @@ async function main() {
     capa: capaIa,
     updater: movUpdater,
     logger,
-    maxConcurrent: 4,
+    maxConcurrent: env.OLLAMA_MAX_CONCURRENT,
   });
 
   const app = await build();

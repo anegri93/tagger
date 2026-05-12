@@ -22,19 +22,17 @@ export const marcasCandidatasRoute =
   async (app) => {
     app.get<{
       Querystring: { min_freq?: string; limit?: string; categoria?: string };
-    }>(
-      '/datasets/marcas-candidatas',
-      async (req, reply) => {
-        const from = buildFrom(req.query.categoria);
-        const minFreq = Math.max(2, Number(req.query.min_freq ?? 3));
-        const limit = Math.min(200, Number(req.query.limit ?? 50));
+    }>('/datasets/marcas-candidatas', async (req, reply) => {
+      const from = buildFrom(req.query.categoria);
+      const minFreq = Math.max(2, Number(req.query.min_freq ?? 3));
+      const limit = Math.min(200, Number(req.query.limit ?? 50));
 
-        const stopwordsSql = sql.join(
-          STOPWORDS_GEO.map((w) => sql`${w}`),
-          sql`, `,
-        );
+      const stopwordsSql = sql.join(
+        STOPWORDS_GEO.map((w) => sql`${w}`),
+        sql`, `,
+      );
 
-        const rows = await db.execute(sql`
+      const rows = await db.execute(sql`
           WITH base AS (
             SELECT id, nombre,
                    regexp_split_to_array(
@@ -81,7 +79,6 @@ export const marcasCandidatasRoute =
           ORDER BY freq DESC
           LIMIT ${limit}
         `);
-        return reply.send({ items: rows.rows });
-      },
-    );
+      return reply.send({ items: rows.rows });
+    });
   };

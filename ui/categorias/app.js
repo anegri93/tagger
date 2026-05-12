@@ -8,7 +8,11 @@ function setStatus(t, c = '') {
 
 function esc(s) {
   if (s == null) return '—';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 async function loadList() {
@@ -77,7 +81,9 @@ async function eliminar(slug) {
   try {
     const u = await window.taggerApi(`/categorias/${encodeURIComponent(slug)}/usage`);
     if (u.movimientos > 0 || u.mcc > 0 || u.comercios > 0) {
-      alert(`No se puede eliminar: tiene refs\nmov:${u.movimientos} mcc:${u.mcc} comercios:${u.comercios}`);
+      alert(
+        `No se puede eliminar: tiene refs\nmov:${u.movimientos} mcc:${u.mcc} comercios:${u.comercios}`,
+      );
       return;
     }
     if (!confirm(`Eliminar categoría '${slug}'?`)) return;
@@ -103,8 +109,15 @@ async function editar(slug) {
 }
 
 async function reprocess() {
-  if (!confirm('Re-procesar catálogo masivo (49k comercios)?\nTarda ~30s.\n\nTRUNCAR comercios_catalogo antes?')) return;
-  const truncate = confirm('OK = TRUNCAR antes (limpio).\nCancelar = mantener existentes (upsert).');
+  if (
+    !confirm(
+      'Re-procesar catálogo masivo (49k comercios)?\nTarda ~30s.\n\nTRUNCAR comercios_catalogo antes?',
+    )
+  )
+    return;
+  const truncate = confirm(
+    'OK = TRUNCAR antes (limpio).\nCancelar = mantener existentes (upsert).',
+  );
   try {
     setStatus('reproceso disparado…', 'live');
     await window.taggerApi('/catalogo/reprocess', {
@@ -128,7 +141,9 @@ async function pollReprocess() {
       $('rp-total').textContent = s.total ?? '—';
       $('rp-rev').textContent = s.revision ?? '—';
       $('rp-fuente').textContent = s.porFuente
-        ? Object.entries(s.porFuente).map(([k, v]) => `${k}=${v}`).join(' ')
+        ? Object.entries(s.porFuente)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(' ')
         : '—';
       if (s.status === 'done' || s.status === 'error') {
         clearInterval(reprocInterval);

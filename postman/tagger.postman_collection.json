@@ -40,7 +40,11 @@
             "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] },
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
             "description": "Readiness probe. Verifica DB + Ollama.\n\n**Response:** `{\"status\":\"ok|degraded\", \"db\":bool, \"ollama\":bool}`\n\nOllama puede estar `false` (servicio igual operativo, IA fallback no disponible)."
           }
         }
@@ -70,7 +74,11 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] },
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias"]
+            },
             "description": "Lista todas las categorías activas.\n\n**Response 200:**\n```json\n{\"items\":[{\"id\":\"uuid\",\"slug\":\"transporte\",\"nombre\":\"Transporte\",\"descripcion\":\"...\",\"activo\":true}, ...]}\n```\n\nTest script: setea `categoriaId` con primer item (uso en correccion)."
           }
         }

@@ -40,39 +40,30 @@ export const categoriasRoute =
       }
     });
 
-    app.patch<{ Params: { slug: string } }>(
-      '/categorias/:slug',
-      async (req, reply) => {
-        const parsed = updateCategoriaSchema.safeParse(req.body);
-        if (!parsed.success) {
-          return reply.code(400).send({ error: 'invalid_input', issues: parsed.error.flatten() });
-        }
-        const upd = await writer.actualizar(req.params.slug, parsed.data);
-        if (!upd) return reply.code(404).send({ error: 'no_existe' });
-        return reply.send(upd);
-      },
-    );
+    app.patch<{ Params: { slug: string } }>('/categorias/:slug', async (req, reply) => {
+      const parsed = updateCategoriaSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_input', issues: parsed.error.flatten() });
+      }
+      const upd = await writer.actualizar(req.params.slug, parsed.data);
+      if (!upd) return reply.code(404).send({ error: 'no_existe' });
+      return reply.send(upd);
+    });
 
-    app.get<{ Params: { slug: string } }>(
-      '/categorias/:slug/usage',
-      async (req, reply) => {
-        const u = await writer.usage(req.params.slug);
-        if (!u) return reply.code(404).send({ error: 'no_existe' });
-        return reply.send(u);
-      },
-    );
+    app.get<{ Params: { slug: string } }>('/categorias/:slug/usage', async (req, reply) => {
+      const u = await writer.usage(req.params.slug);
+      if (!u) return reply.code(404).send({ error: 'no_existe' });
+      return reply.send(u);
+    });
 
-    app.delete<{ Params: { slug: string } }>(
-      '/categorias/:slug',
-      async (req, reply) => {
-        const usage = await writer.usage(req.params.slug);
-        if (!usage) return reply.code(404).send({ error: 'no_existe' });
-        if (usage.movimientos > 0 || usage.mcc > 0 || usage.comercios > 0) {
-          return reply.code(409).send({ error: 'tiene_referencias', usage });
-        }
-        const ok = await writer.eliminar(req.params.slug);
-        if (!ok) return reply.code(404).send({ error: 'no_existe' });
-        return reply.send({ ok: true });
-      },
-    );
+    app.delete<{ Params: { slug: string } }>('/categorias/:slug', async (req, reply) => {
+      const usage = await writer.usage(req.params.slug);
+      if (!usage) return reply.code(404).send({ error: 'no_existe' });
+      if (usage.movimientos > 0 || usage.mcc > 0 || usage.comercios > 0) {
+        return reply.code(409).send({ error: 'tiene_referencias', usage });
+      }
+      const ok = await writer.eliminar(req.params.slug);
+      if (!ok) return reply.code(404).send({ error: 'no_existe' });
+      return reply.send({ ok: true });
+    });
   };

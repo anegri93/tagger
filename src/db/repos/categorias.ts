@@ -2,12 +2,7 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Db } from '../client.js';
-import {
-  categorias,
-  mccCatalogo,
-  comerciosCatalogo,
-  movimientos,
-} from '../schema/index.js';
+import { categorias, mccCatalogo, comerciosCatalogo, movimientos } from '../schema/index.js';
 import type { CategoriasReader, CategoriaPublica } from '../../api/routes/categorias.js';
 import type { CategoriasLoader, CategoriaActiva } from '../../layers/ia.js';
 
@@ -55,10 +50,7 @@ function removeExtra(slug: string): void {
   writeFileSync(EXTRAS_PATH, filtered.join('\n') + '\n');
 }
 
-export function crearCategoriaWriter(
-  db: Db,
-  resolver?: { invalidar(): void },
-): CategoriaWriter {
+export function crearCategoriaWriter(db: Db, resolver?: { invalidar(): void }): CategoriaWriter {
   return {
     async crear({ slug, nombre, descripcion }) {
       const rows = await db

@@ -18,13 +18,17 @@
         <input id="batch-id" placeholder="batch_id" />
         <input id="limit" placeholder="limit" type="number" />
         <input id="concurrency" placeholder="conc" type="number" value="30" />
-        <label>Source:
-          <select id="sel-source" style="margin-left:4px">
+        <label
+          >Source:
+          <select id="sel-source" style="margin-left: 4px">
             <option value="tsv">tsv (data/*.tsv)</option>
             <option value="catalogo">comercios_catalogo</option>
           </select>
         </label>
-        <label class="cb" title="Skip capa catálogo. Cascada pura (regex+nombre+mcc+ia). Agreement honesto.">
+        <label
+          class="cb"
+          title="Skip capa catálogo. Cascada pura (regex+nombre+mcc+ia). Agreement honesto."
+        >
           <input id="bypass-cat" type="checkbox" />
           <span class="t-small">bypass</span>
         </label>
@@ -36,7 +40,7 @@
       </div>
     </section>
 
-    <section class="runner-status" id="runner-row" style="display:none">
+    <section class="runner-status" id="runner-row" style="display: none">
       <div class="rs-label">Worker:</div>
       <div class="rs-grid">
         <div><label>Status</label><span id="rs-status">—</span></div>
@@ -100,7 +104,13 @@
       <div class="panel">
         <h2>Top 10 categorías</h2>
         <table class="tbl" id="top-cats">
-          <thead><tr><th>Slug</th><th>Nombre</th><th>Count</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Slug</th>
+              <th>Nombre</th>
+              <th>Count</th>
+            </tr>
+          </thead>
           <tbody></tbody>
         </table>
       </div>
@@ -110,9 +120,13 @@
         <table class="tbl" id="mismatches">
           <thead>
             <tr>
-              <th>Nombre</th><th>BancardId</th><th>Codigo</th>
-              <th>Runtime fuente</th><th>Runtime cat</th>
-              <th>Catálogo fuente</th><th>Catálogo cat</th>
+              <th>Nombre</th>
+              <th>BancardId</th>
+              <th>Codigo</th>
+              <th>Runtime fuente</th>
+              <th>Runtime cat</th>
+              <th>Catálogo fuente</th>
+              <th>Catálogo cat</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -124,9 +138,13 @@
         <table class="tbl" id="recientes">
           <thead>
             <tr>
-              <th>Hora</th><th>Nombre</th><th>Fuente</th>
-              <th>Confianza</th><th>Categoría</th>
-              <th>Revisión</th><th>Latencia</th>
+              <th>Hora</th>
+              <th>Nombre</th>
+              <th>Fuente</th>
+              <th>Confianza</th>
+              <th>Categoría</th>
+              <th>Revisión</th>
+              <th>Latencia</th>
             </tr>
           </thead>
           <tbody></tbody>

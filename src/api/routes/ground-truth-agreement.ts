@@ -69,7 +69,10 @@ export const groundTruthAgreementRoute =
         let cantidadConGT = 0;
         let cantidadAgreement = 0;
 
-        const porFuente: Record<string, { count: number; agreement: number; cantidad: number; cantidadAgreement: number }> = {};
+        const porFuente: Record<
+          string,
+          { count: number; agreement: number; cantidad: number; cantidadAgreement: number }
+        > = {};
         const mismatches: Array<{
           nombre: string;
           cantidad: number | null;
@@ -86,7 +89,8 @@ export const groundTruthAgreementRoute =
           testeados++;
 
           const f = r.fuente_categoria;
-          if (!porFuente[f]) porFuente[f] = { count: 0, agreement: 0, cantidad: 0, cantidadAgreement: 0 };
+          if (!porFuente[f])
+            porFuente[f] = { count: 0, agreement: 0, cantidad: 0, cantidadAgreement: 0 };
           porFuente[f].count++;
           porFuente[f].cantidad += cantidad;
 
@@ -136,10 +140,13 @@ export const groundTruthAgreementRoute =
           ignored_categories: Array.from(IGNORE_CATS).filter((c) => c),
           agreement: {
             crudo: agreement,
-            crudo_pct: conGroundTruth > 0 ? Number(((agreement / conGroundTruth) * 100).toFixed(2)) : 0,
+            crudo_pct:
+              conGroundTruth > 0 ? Number(((agreement / conGroundTruth) * 100).toFixed(2)) : 0,
             ponderado_cantidad: cantidadAgreement,
             ponderado_cantidad_pct:
-              cantidadConGT > 0 ? Number(((cantidadAgreement / cantidadConGT) * 100).toFixed(2)) : 0,
+              cantidadConGT > 0
+                ? Number(((cantidadAgreement / cantidadConGT) * 100).toFixed(2))
+                : 0,
             cantidad_total_evaluada: cantidadConGT,
           },
           cantidad_total_dataset: cantidadTotal,
@@ -226,7 +233,8 @@ export const groundTruthAgreementRoute =
         testeados++;
 
         const f = r.fuente_categoria;
-        if (!porFuente[f]) porFuente[f] = { count: 0, agreement: 0, cantidad: 0, cantidadAgreement: 0 };
+        if (!porFuente[f])
+          porFuente[f] = { count: 0, agreement: 0, cantidad: 0, cantidadAgreement: 0 };
         porFuente[f].count++;
         porFuente[f].cantidad += cantidad;
 

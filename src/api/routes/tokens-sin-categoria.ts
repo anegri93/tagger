@@ -33,9 +33,7 @@ interface TokenRow {
 
 export function tokenizar(nombre: string): string[] {
   const norm = normalize(nombre);
-  return norm
-    .split(/\s+/)
-    .filter((t) => t.length >= 3 && !STOPWORDS.has(t));
+  return norm.split(/\s+/).filter((t) => t.length >= 3 && !STOPWORDS.has(t));
 }
 
 export const tokensSinCategoriaRoute =

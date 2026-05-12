@@ -56,7 +56,8 @@ async function main(): Promise<void> {
 
   const wb = XLSX.readFile(resolve(args.file));
   const sh = wb.Sheets[args.sheet];
-  if (!sh) throw new Error(`Sheet ${args.sheet} no existe. Disponibles: ${wb.SheetNames.join(', ')}`);
+  if (!sh)
+    throw new Error(`Sheet ${args.sheet} no existe. Disponibles: ${wb.SheetNames.join(', ')}`);
 
   let rows = XLSX.utils.sheet_to_json<XlsxRow>(sh, { defval: null });
   console.log(`rows xlsx: ${rows.length}`);
@@ -105,7 +106,9 @@ async function main(): Promise<void> {
   const countRows = await db.execute(
     sql`SELECT COUNT(*)::int AS n FROM test_ground_truth WHERE batch_id = ${args.batchId}`,
   );
-  console.log(`total en DB para batch_id=${args.batchId}: ${(countRows.rows[0] as { n: number }).n}`);
+  console.log(
+    `total en DB para batch_id=${args.batchId}: ${(countRows.rows[0] as { n: number }).n}`,
+  );
   await pool.end();
 }
 

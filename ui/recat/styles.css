@@ -19,14 +19,17 @@
   font-family: ui-monospace, monospace;
   font-size: 13px;
 }
-.grid div { color: #c9d1d9; }
+.grid div {
+  color: #c9d1d9;
+}
 .tbl {
   width: 100%;
   border-collapse: collapse;
   font-family: ui-monospace, monospace;
   font-size: 13px;
 }
-.tbl th, .tbl td {
+.tbl th,
+.tbl td {
   border-bottom: 1px solid #30363d;
   padding: 6px 8px;
   text-align: left;
@@ -181,5 +184,11 @@
   font-size: 11px;
   cursor: pointer;
 }
-.btn-aplicar-patron:hover, .btn-crear-patron:hover { opacity: 0.85; }
-.patrones-resumen td { background: var(--bg); padding: 0 !important; }
+.btn-aplicar-patron:hover,
+.btn-crear-patron:hover {
+  opacity: 0.85;
+}
+.patrones-resumen td {
+  background: var(--bg);
+  padding: 0 !important;
+}

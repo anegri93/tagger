@@ -1,10 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { readCsvStream } from '../db/loaders/csv.js';
 import { ejecutarCascada, type CapasSincrono } from '../pipeline/categorizar.js';
-import {
-  persistirMovimiento,
-  type MovimientoRepository,
-} from '../pipeline/persistir.js';
+import { persistirMovimiento, type MovimientoRepository } from '../pipeline/persistir.js';
 import type { MovimientoInput } from '../domain/types.js';
 import type { Db } from '../db/client.js';
 
@@ -49,10 +46,7 @@ interface SourceRow {
   writeback?: { table: 'comercios_catalogo'; id: string };
 }
 
-const DEFAULT_FILES = [
-  'data/comercios-bancard-staged.tsv',
-  'data/mango-p2p.tsv',
-];
+const DEFAULT_FILES = ['data/comercios-bancard-staged.tsv', 'data/mango-p2p.tsv'];
 const MCC_INVALID = new Set(['', 'SIN RUBRO', 'null', 'NULL', 'N/A', 'NA']);
 
 function cleanMcc(v: string): string | undefined {

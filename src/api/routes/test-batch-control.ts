@@ -1,8 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import {
-  startBatchRequestSchema,
-  stopBatchRequestSchema,
-} from '../schemas/test-batch.js';
+import { startBatchRequestSchema, stopBatchRequestSchema } from '../schemas/test-batch.js';
 import type { TestBatchRunner } from '../../test-batch/runner.js';
 
 export const testBatchControlRoute =
@@ -24,9 +21,7 @@ export const testBatchControlRoute =
         const info = await runner.start(body.batch_id, opts);
         return reply.send({ ok: true, batch: info });
       } catch (err) {
-        return reply
-          .code(409)
-          .send({ error: err instanceof Error ? err.message : 'start_failed' });
+        return reply.code(409).send({ error: err instanceof Error ? err.message : 'start_failed' });
       }
     });
 

@@ -18,20 +18,26 @@ Pregunta abierta: cuando una de estas fuentes cambia, ¿deberían recategorizars
 ## Opciones consideradas
 
 ### A — Snapshot (MVP, decisión actual)
+
 Categorización es un evento puntual. `categoria_predicha_id`, `fuente_categoria`, `confianza` y `evidencia` quedan congelados al momento de la inserción.
+
 - Pro: predecible, auditable, simple
 - Pro: el dato histórico refleja qué reglas existían en ese momento
 - Contra: errores antiguos no se corrigen automáticamente
 
 ### B — Recategorización automática on-change
+
 Trigger en cambios de reglas/comercios/mcc dispara reproceso de movimientos.
+
 - Pro: dataset siempre coherente con reglas vigentes
 - Contra: caro (recorre todos los movimientos)
 - Contra: rompe auditoría (`evidencia` ya no refleja la regla original)
 - Contra: impredecible para el usuario (un fix de regla cambia historial)
 
 ### C — Recategorización manual (job dedicado)
+
 CLI/endpoint admin que recorre movimientos y recategoriza con dry-run.
+
 - Pro: control explícito, dry-run previo
 - Pro: snapshot por defecto + escape hatch cuando se necesita
 - Contra: requiere disciplina operativa

@@ -5,7 +5,15 @@ describe('categorias schema', () => {
   it('expone columnas esperadas', () => {
     const cols = Object.keys(categorias);
     expect(cols).toEqual(
-      expect.arrayContaining(['id', 'slug', 'nombre', 'descripcion', 'activo', 'createdAt', 'updatedAt']),
+      expect.arrayContaining([
+        'id',
+        'slug',
+        'nombre',
+        'descripcion',
+        'activo',
+        'createdAt',
+        'updatedAt',
+      ]),
     );
   });
 

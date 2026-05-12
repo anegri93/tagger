@@ -122,7 +122,11 @@ describe('sugerirPatrones', () => {
   it('descarta si freq baja', async () => {
     const db = fakeDb({
       seed: [{ nombre: 'PIZZERIA UNO', cat_id: 'rest', cat_slug: 'restaurante' }],
-      sinCat: [{ nombre: 'PIZZERIA OTRA' }, { nombre: 'PIZZERIA TRES' }, { nombre: 'PIZZERIA CUATRO' }],
+      sinCat: [
+        { nombre: 'PIZZERIA OTRA' },
+        { nombre: 'PIZZERIA TRES' },
+        { nombre: 'PIZZERIA CUATRO' },
+      ],
     });
     const r = await sugerirPatrones(db as never, { freqMin: 5, impactoMin: 2 });
     expect(r.find((s) => s.token === 'PIZZERIA')).toBeUndefined();
@@ -131,12 +135,20 @@ describe('sugerirPatrones', () => {
   it('ordena por freqSeed desc', async () => {
     const db = fakeDb({
       seed: [
-        ...Array(10).fill(0).map((_, i) => ({ nombre: `FARMA ${i}`, cat_id: 'fc', cat_slug: 'farmacia' })),
-        ...Array(5).fill(0).map((_, i) => ({ nombre: `BURGER ${i}`, cat_id: 'rc', cat_slug: 'restaurante' })),
+        ...Array(10)
+          .fill(0)
+          .map((_, i) => ({ nombre: `FARMA ${i}`, cat_id: 'fc', cat_slug: 'farmacia' })),
+        ...Array(5)
+          .fill(0)
+          .map((_, i) => ({ nombre: `BURGER ${i}`, cat_id: 'rc', cat_slug: 'restaurante' })),
       ],
       sinCat: [
-        ...Array(2).fill(0).map((_, i) => ({ nombre: `FARMA SUC ${i}` })),
-        ...Array(10).fill(0).map((_, i) => ({ nombre: `BURGER X ${i}` })),
+        ...Array(2)
+          .fill(0)
+          .map((_, i) => ({ nombre: `FARMA SUC ${i}` })),
+        ...Array(10)
+          .fill(0)
+          .map((_, i) => ({ nombre: `BURGER X ${i}` })),
       ],
     });
     const r = await sugerirPatrones(db as never, { freqMin: 3, impactoMin: 1 });

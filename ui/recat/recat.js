@@ -2,7 +2,6 @@ const $ = (s) => document.querySelector(s);
 
 let pollTimer = null;
 
-
 function setStatus(t) {
   $('#status').textContent = t;
 }
@@ -301,10 +300,7 @@ document.addEventListener('click', async (e) => {
   const crearPatronBtn = e.target.closest('.btn-crear-patron');
   if (crearPatronBtn) {
     const { nueva, patron } = crearPatronBtn.dataset;
-    const sugerido = prompt(
-      `Crear patrón formal pa categoría '${nueva}'.\nValor (regex):`,
-      patron,
-    );
+    const sugerido = prompt(`Crear patrón formal pa categoría '${nueva}'.\nValor (regex):`, patron);
     if (!sugerido) return;
     try {
       await window.taggerApi('/patrones', {
@@ -412,9 +408,7 @@ function renderSugeridos(items) {
 }
 
 $('#sg-toggle-all').addEventListener('change', (e) => {
-  document
-    .querySelectorAll('.sg-chk')
-    .forEach((c) => (c.checked = e.target.checked));
+  document.querySelectorAll('.sg-chk').forEach((c) => (c.checked = e.target.checked));
 });
 
 // Sugerencias IA
@@ -616,9 +610,7 @@ async function cargarMarcasCandidatas() {
     const r = await window.taggerApi(`/datasets/marcas-candidatas?${qs.toString()}`);
     const items = r.items || [];
     const cats = await getCategorias();
-    const optsCat = cats
-      .map((c) => `<option value="${c.slug}">${esc(c.slug)}</option>`)
-      .join('');
+    const optsCat = cats.map((c) => `<option value="${c.slug}">${esc(c.slug)}</option>`).join('');
     const tbody = $('#tbl-marcas tbody');
     tbody.innerHTML = items
       .map((it, i) => {

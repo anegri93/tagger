@@ -9,9 +9,7 @@ beforeAll(() => {
 });
 
 const reader = {
-  activas: vi.fn(async () => [
-    { id: 'u1', slug: 'super', nombre: 'Super', descripcion: null },
-  ]),
+  activas: vi.fn(async () => [{ id: 'u1', slug: 'super', nombre: 'Super', descripcion: null }]),
 };
 
 function fakeWriter(overrides: Partial<CategoriaWriter> = {}): CategoriaWriter {

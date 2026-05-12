@@ -85,19 +85,16 @@ export function crearMovimientoReprocesador(db: Db): MovimientoReprocesador {
 }
 
 export interface MovimientoInputReader {
-  porIdInput(id: string): Promise<
-    | {
-        descripcion: string | null;
-        nombreComercio: string | null;
-        nombreBancard: string | null;
-        mcc: string | null;
-        bancardId: string | null;
-        codigoComercio: string | null;
-        monto: string | null;
-        rawInput: unknown;
-      }
-    | null
-  >;
+  porIdInput(id: string): Promise<{
+    descripcion: string | null;
+    nombreComercio: string | null;
+    nombreBancard: string | null;
+    mcc: string | null;
+    bancardId: string | null;
+    codigoComercio: string | null;
+    monto: string | null;
+    rawInput: unknown;
+  } | null>;
 }
 
 export function crearMovimientoInputReader(db: Db): MovimientoInputReader {

@@ -15,7 +15,12 @@ function fakeWriter(overrides: Partial<MarcaWriter> = {}): MarcaWriter {
       descripcion: input.descripcion ?? null,
       categoriaSlug: input.categoriaSlug,
     })),
-    actualizar: vi.fn(async (id) => ({ id, marca: 'X', descripcion: null, categoriaSlug: 'super' })),
+    actualizar: vi.fn(async (id) => ({
+      id,
+      marca: 'X',
+      descripcion: null,
+      categoriaSlug: 'super',
+    })),
     eliminar: vi.fn(async () => true),
     ...overrides,
   };
