@@ -3,86 +3,125 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tagger — memoria usuario</title>
+    <title>tagger — playground</title>
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
       .container {
-        max-width: 1100px;
+        max-width: 1200px;
         margin: 24px auto;
         padding: 0 20px;
       }
       .header {
-        display: flex;
-        gap: 12px;
-        align-items: flex-end;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
+        margin-bottom: 18px;
       }
       .header h1 {
-        margin: 0;
+        margin: 0 0 4px;
       }
       .header .desc {
         color: var(--text-3);
         font-size: 13px;
-        flex: 1;
-        min-width: 240px;
       }
-      .search-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 14px 16px;
+        padding: 18px;
         margin-bottom: 16px;
       }
-      .search-row label {
-        font-size: 12px;
-        color: var(--text-3);
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 15px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-3);
       }
-      .search-row input {
-        flex: 1;
-        max-width: 360px;
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 10px;
       }
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-      .stat {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--r-md);
-        padding: 10px 14px;
-      }
-      .stat .label {
+      .field label {
         font-size: 11px;
         text-transform: uppercase;
         color: var(--text-3);
         letter-spacing: 0.5px;
       }
-      .stat .value {
-        font-size: 20px;
-        font-weight: 600;
-        margin-top: 2px;
+      .field input,
+      .field select {
+        width: 100%;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+      .row .field {
+        flex: 1;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .result-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dashed var(--border);
+        font-size: 13px;
+      }
+      .result-line:last-child {
+        border-bottom: none;
+      }
+      .result-line .k {
+        color: var(--text-3);
+        font-size: 12px;
+      }
+      .result-line .v {
         font-family: var(--mono);
+        font-size: 12px;
+        text-align: right;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--r-sm);
+        font-size: 11px;
+        background: var(--bg-3);
+        font-family: var(--mono);
+      }
+      .pill.ok {
+        background: rgba(46, 160, 67, 0.2);
+        color: var(--success);
+      }
+      .pill.warn {
+        background: rgba(227, 179, 65, 0.2);
+        color: #e3b341;
+      }
+      .pill.err {
+        background: rgba(248, 81, 73, 0.2);
+        color: var(--danger);
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        overflow: hidden;
+        font-size: 13px;
       }
       th,
       td {
+        padding: 8px 10px;
         text-align: left;
-        padding: 10px 14px;
-        font-size: 13px;
         border-bottom: 1px solid var(--border);
       }
       th {
@@ -90,17 +129,12 @@
         text-transform: uppercase;
         color: var(--text-3);
         letter-spacing: 0.5px;
-        background: var(--bg-3);
       }
-      tr:last-child td {
-        border-bottom: none;
-      }
-      .cat-pill {
-        display: inline-block;
-        background: var(--bg-3);
-        padding: 2px 8px;
-        border-radius: var(--r-sm);
-        font-size: 12px;
+      .empty {
+        color: var(--text-3);
+        font-size: 13px;
+        text-align: center;
+        padding: 30px 10px;
       }
       .btn-danger {
         background: var(--danger);
@@ -111,18 +145,22 @@
         cursor: pointer;
         font-size: 12px;
       }
-      .btn-danger:hover {
-        opacity: 0.85;
-      }
-      .empty {
-        text-align: center;
-        color: var(--text-3);
-        padding: 40px 20px;
-        font-size: 14px;
-      }
-      .mono {
+      pre.raw {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        padding: 10px;
+        font-size: 11px;
         font-family: var(--mono);
+        max-height: 200px;
+        overflow: auto;
+        white-space: pre-wrap;
+        margin: 8px 0 0;
+      }
+      .hint {
         font-size: 12px;
+        color: var(--text-3);
+        margin-top: 8px;
       }
     </style>
   </head>
@@ -133,76 +171,245 @@
 
     <div class="container">
       <div class="header">
-        <h1>🧠 Memoria por usuario</h1>
+        <h1>🧪 Playground — categorizar + corregir + memoria</h1>
         <div class="desc">
-          Asociaciones <code>(usuario, destinatario)</code> → categoría aprendidas de correcciones
-          en transferencias <code>MANGO-*</code>.
+          Flujo end-to-end. Creá un movimiento, corregilo, mirá la memoria del usuario, repetí para
+          validar que aplica.
         </div>
       </div>
 
-      <div class="search-row">
-        <label for="usuario">Usuario</label>
-        <input
-          id="usuario"
-          type="text"
-          placeholder="ej: usuario_42 (= origen del movimiento)"
-          autocomplete="off"
-        />
-        <button id="btn-cargar" class="btn btn-primary">Cargar</button>
-      </div>
+      <div class="grid">
+        <!-- IZQUIERDA — Crear / Corregir -->
+        <div>
+          <div class="card">
+            <h2>1. Crear movimiento</h2>
+            <div class="field">
+              <label>nombre_bancard *</label>
+              <input id="m-nombre" type="text" placeholder="MANGO-PEREZ JUAN" />
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>monto</label>
+                <input id="m-monto" type="number" step="0.01" placeholder="2500000" />
+              </div>
+              <div class="field">
+                <label>mcc (opcional)</label>
+                <input id="m-mcc" type="text" placeholder="5411" />
+              </div>
+            </div>
+            <div class="field">
+              <label>origen (usuario) *</label>
+              <input id="m-origen" type="text" placeholder="usuario_42" value="usuario_42" />
+            </div>
+            <div class="actions">
+              <button id="btn-crear" class="btn btn-primary">▶ Categorizar</button>
+              <button id="btn-clear" class="btn btn-ghost">Limpiar resultado</button>
+            </div>
+            <div class="hint">
+              💡 Para activar memoria: <code>nombre_bancard</code> debe arrancar con
+              <code>MANGO-</code> y se necesita <code>origen</code>.
+            </div>
+          </div>
 
-      <div class="stats" id="stats" hidden>
-        <div class="stat">
-          <div class="label">Asociaciones</div>
-          <div class="value" id="stat-count">0</div>
+          <div class="card" id="card-resultado" hidden>
+            <h2>2. Resultado del pipeline</h2>
+            <div id="resultado"></div>
+            <pre class="raw" id="resultado-raw"></pre>
+          </div>
+
+          <div class="card" id="card-corregir" hidden>
+            <h2>3. Corregir categoría</h2>
+            <div class="field">
+              <label>nueva categoría</label>
+              <select id="c-categoria"></select>
+            </div>
+            <div class="field">
+              <label>motivo (opcional)</label>
+              <input id="c-motivo" type="text" placeholder="es alquiler mensual" />
+            </div>
+            <div class="actions">
+              <button id="btn-corregir" class="btn btn-primary">✓ Aplicar corrección</button>
+            </div>
+            <div class="hint">
+              Si el movimiento es transferencia (<code>MANGO-*</code>), la corrección se guarda en
+              memoria del usuario automáticamente.
+            </div>
+          </div>
         </div>
-        <div class="stat">
-          <div class="label">Total hits</div>
-          <div class="value" id="stat-hits">0</div>
+
+        <!-- DERECHA — Memoria -->
+        <div>
+          <div class="card">
+            <h2>4. Memoria del usuario</h2>
+            <div class="row">
+              <div class="field">
+                <label>usuario</label>
+                <input id="mem-usuario" type="text" placeholder="usuario_42" />
+              </div>
+              <div class="field" style="max-width: 140px">
+                <label>&nbsp;</label>
+                <button id="btn-cargar-memoria" class="btn btn-primary">Cargar</button>
+              </div>
+            </div>
+            <div id="memoria-result"></div>
+          </div>
+
+          <div class="card">
+            <h2>5. Acciones rápidas</h2>
+            <div class="hint" style="margin-top: 0">Probá el flujo completo en orden:</div>
+            <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px">
+              <li>Crear MANGO-PEREZ JUAN con origen <code>usuario_42</code></li>
+              <li>Pipeline devuelve <code>Transferencias P2P</code> (fuente=regex)</li>
+              <li>Corregir a "Alquiler"</li>
+              <li>Cargar memoria del <code>usuario_42</code> → ver asociación</li>
+              <li>
+                Volver a paso 1 con mismo nombre → ahora sale <code>Alquiler</code> con
+                fuente=manual y memoria_destinatario
+              </li>
+            </ol>
+            <div class="actions">
+              <button id="btn-demo" class="btn btn-ghost">⚡ Auto-rellenar demo</button>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div id="result"></div>
     </div>
 
     <script>
       const $ = (id) => document.getElementById(id);
-      const input = $('usuario');
-      const btn = $('btn-cargar');
+      let lastMovimientoId = null;
+      let lastNombreBancard = null;
+      let lastOrigen = null;
+      let categoriasCache = null;
 
-      btn.addEventListener('click', cargar);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') cargar();
-      });
+      async function cargarCategorias() {
+        if (categoriasCache) return categoriasCache;
+        const r = await window.taggerApi('/categorias');
+        categoriasCache = r.items || [];
+        const sel = $('c-categoria');
+        sel.innerHTML = categoriasCache
+          .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
+          .join('');
+        return categoriasCache;
+      }
 
-      async function cargar() {
-        const u = input.value.trim();
-        if (!u) {
-          $('result').innerHTML =
-            '<div class="empty">Ingresá un usuario para cargar su memoria.</div>';
-          $('stats').hidden = true;
+      $('btn-crear').addEventListener('click', async () => {
+        const nombre = $('m-nombre').value.trim();
+        const monto = $('m-monto').value.trim();
+        const mcc = $('m-mcc').value.trim();
+        const origen = $('m-origen').value.trim();
+        if (!nombre) {
+          alert('nombre_bancard requerido');
           return;
         }
-        $('result').innerHTML = '<div class="empty">Cargando...</div>';
+        const body = { nombre_bancard: nombre };
+        if (monto) body.monto = Number(monto);
+        if (mcc) body.mcc = mcc;
+        if (origen) body.origen = origen;
+        try {
+          const r = await window.taggerApi('/categorizar-movimiento', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: { 'content-type': 'application/json' },
+          });
+          lastMovimientoId = r.movimiento_id;
+          lastNombreBancard = nombre;
+          lastOrigen = origen;
+          renderResultado(r);
+          await cargarCategorias();
+          $('card-corregir').hidden = false;
+          if (origen) {
+            $('mem-usuario').value = origen;
+          }
+        } catch (e) {
+          alert('Error: ' + (e?.message || 'falló'));
+        }
+      });
+
+      $('btn-clear').addEventListener('click', () => {
+        $('card-resultado').hidden = true;
+        $('card-corregir').hidden = true;
+        lastMovimientoId = null;
+      });
+
+      function renderResultado(r) {
+        const cat = r.categoria;
+        const cls = !r.requiere_revision ? 'ok' : r.fuente === 'ia' ? 'warn' : 'err';
+        $('resultado').innerHTML = `
+          <div class="result-line">
+            <span class="k">movimiento_id</span>
+            <span class="v">${escapeHtml(r.movimiento_id || '')}</span>
+          </div>
+          <div class="result-line">
+            <span class="k">categoría</span>
+            <span class="v">${cat ? `<span class="pill">${escapeHtml(cat.nombre)}</span>` : '<i>—</i>'}</span>
+          </div>
+          <div class="result-line">
+            <span class="k">fuente</span>
+            <span class="v"><span class="pill ${cls}">${escapeHtml(r.fuente ?? 'pendiente_ia')}</span></span>
+          </div>
+          <div class="result-line">
+            <span class="k">confianza</span>
+            <span class="v">${r.confianza != null ? Number(r.confianza).toFixed(2) : '—'}</span>
+          </div>
+          <div class="result-line">
+            <span class="k">requiere_revision</span>
+            <span class="v">${r.requiere_revision ? '⚠️ true' : '✓ false'}</span>
+          </div>
+        `;
+        $('resultado-raw').textContent = JSON.stringify(r, null, 2);
+        $('card-resultado').hidden = false;
+      }
+
+      $('btn-corregir').addEventListener('click', async () => {
+        if (!lastMovimientoId) {
+          alert('Creá un movimiento primero');
+          return;
+        }
+        const categoria_id_nueva = $('c-categoria').value;
+        const motivo = $('c-motivo').value.trim();
+        const body = { categoria_id_nueva };
+        if (motivo) body.motivo = motivo;
+        if (lastOrigen) body.usuario = lastOrigen;
+        try {
+          const r = await window.taggerApi(`/movimientos/${lastMovimientoId}/correccion`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: { 'content-type': 'application/json' },
+          });
+          alert(
+            `✓ Corregido: ${r.categoria_anterior?.nombre ?? '—'} → ${r.categoria_nueva?.nombre ?? '—'}`,
+          );
+          if (lastOrigen) cargarMemoria(lastOrigen);
+        } catch (e) {
+          alert('Error: ' + (e?.message || 'falló'));
+        }
+      });
+
+      $('btn-cargar-memoria').addEventListener('click', () =>
+        cargarMemoria($('mem-usuario').value.trim()),
+      );
+
+      async function cargarMemoria(u) {
+        if (!u) {
+          $('memoria-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          return;
+        }
+        $('memoria-result').innerHTML = '<div class="empty">Cargando...</div>';
         try {
           const data = await window.taggerApi('/memoria/' + encodeURIComponent(u));
-          render(u, data);
+          renderMemoria(u, data);
         } catch (e) {
-          $('result').innerHTML =
-            '<div class="empty">Error: ' + (e?.message || 'falló la carga') + '</div>';
-          $('stats').hidden = true;
+          $('memoria-result').innerHTML =
+            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
         }
       }
 
-      function render(usuario, data) {
+      function renderMemoria(usuario, data) {
         const items = data.items || [];
-        $('stat-count').textContent = items.length;
-        $('stat-hits').textContent = items.reduce((s, it) => s + (it.hits || 0), 0);
-        $('stats').hidden = false;
-
         if (items.length === 0) {
-          $('result').innerHTML =
-            '<div class="empty">Este usuario no tiene memoria todavía. Corregí una transferencia para empezar.</div>';
+          $('memoria-result').innerHTML =
+            '<div class="empty">Sin memoria. Corregí una transferencia para empezar.</div>';
           return;
         }
         const rows = items
@@ -210,50 +417,48 @@
             (it) => `
               <tr data-dest="${escapeHtml(it.destinatario_normalizado)}">
                 <td>${escapeHtml(it.destinatario)}</td>
-                <td><span class="cat-pill">${escapeHtml(it.categoria_nombre)}</span></td>
-                <td class="mono">${it.hits}</td>
-                <td class="mono">${fmtDate(it.updated_at)}</td>
-                <td>
-                  <button class="btn-danger" data-action="olvidar">Olvidar</button>
-                </td>
+                <td><span class="pill">${escapeHtml(it.categoria_nombre)}</span></td>
+                <td>${it.hits}</td>
+                <td><button class="btn-danger" data-action="olvidar">Olvidar</button></td>
               </tr>`,
           )
           .join('');
-        $('result').innerHTML = `
+        $('memoria-result').innerHTML = `
           <table>
-            <thead>
-              <tr>
-                <th>Destinatario</th>
-                <th>Categoría</th>
-                <th>Hits</th>
-                <th>Última corrección</th>
-                <th></th>
-              </tr>
-            </thead>
+            <thead><tr><th>Destinatario</th><th>Categoría</th><th>Hits</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         `;
-        $('result')
+        $('memoria-result')
           .querySelectorAll('[data-action="olvidar"]')
           .forEach((btn) =>
             btn.addEventListener('click', async (e) => {
               const tr = e.target.closest('tr');
               const dest = tr.getAttribute('data-dest');
-              if (!confirm(`¿Olvidar asociación con "${dest}"?`)) return;
+              if (!confirm(`¿Olvidar "${dest}"?`)) return;
               try {
                 await window.taggerApi(
                   '/memoria/' + encodeURIComponent(usuario) + '/' + encodeURIComponent(dest),
                   { method: 'DELETE' },
                 );
                 tr.remove();
-                const newCount = $('result').querySelectorAll('tbody tr').length;
-                if (newCount === 0) $('result').innerHTML = '<div class="empty">Sin memoria.</div>';
+                if ($('memoria-result').querySelectorAll('tbody tr').length === 0) {
+                  $('memoria-result').innerHTML = '<div class="empty">Sin memoria.</div>';
+                }
               } catch (e2) {
-                alert('Error al borrar: ' + (e2?.message || 'fallo'));
+                alert('Error: ' + (e2?.message || 'falló'));
               }
             }),
           );
       }
+
+      $('btn-demo').addEventListener('click', () => {
+        $('m-nombre').value = 'MANGO-PEREZ JUAN';
+        $('m-monto').value = '2500000';
+        $('m-mcc').value = '';
+        $('m-origen').value = 'usuario_demo_' + Math.floor(Math.random() * 1000);
+        $('mem-usuario').value = $('m-origen').value;
+      });
 
       function escapeHtml(s) {
         return String(s ?? '').replace(
@@ -268,13 +473,9 @@
             })[c],
         );
       }
-      function fmtDate(iso) {
-        try {
-          return new Date(iso).toISOString().replace('T', ' ').slice(0, 16);
-        } catch {
-          return iso;
-        }
-      }
+
+      // Carga inicial categorias en background
+      cargarCategorias().catch(() => {});
     </script>
   </body>
 </html>

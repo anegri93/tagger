@@ -8,7 +8,7 @@
     { path: '/ui/importar/index.html', label: 'Importar', prefix: '/ui/importar/' },
     { path: '/ui/recat/index.html', label: 'Recategorizar', prefix: '/ui/recat/' },
     { path: '/ui/test-monitor/index.html', label: 'Monitor', prefix: '/ui/test-monitor/' },
-    { path: '/ui/memoria/index.html', label: 'Memoria', prefix: '/ui/memoria/' },
+    { path: '/ui/memoria/index.html', label: 'Playground', prefix: '/ui/memoria/' },
     { path: '/ui/api/index.html', label: 'API', prefix: '/ui/api/' },
   ];
 
