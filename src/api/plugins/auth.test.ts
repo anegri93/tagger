@@ -50,4 +50,16 @@ describe('auth api-key', () => {
     const r = await app.inject({ method: 'GET', url: '/health' });
     expect(r.statusCode).toBe(200);
   });
+
+  it.each(['/openapi.yaml', '/version', '/postman/x.json', '/docs/runbook.md', '/ui/algo'])(
+    'skip %s sin header',
+    async (url) => {
+      const app = Fastify();
+      await app.register(apiKeyAuth, { apiKey: KEY });
+      app.get(url, async () => 'ok');
+      await app.ready();
+      const r = await app.inject({ method: 'GET', url });
+      expect(r.statusCode).toBe(200);
+    },
+  );
 });
