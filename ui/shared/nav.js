@@ -13,7 +13,11 @@
 
   const RESOURCES = [
     { label: 'GitHub repo', href: REPO_URL, external: true },
-    { label: 'Postman collection', href: '/postman/tagger.postman_collection.json', download: true },
+    {
+      label: 'Postman collection',
+      href: '/postman/tagger.postman_collection.json',
+      download: true,
+    },
     { label: 'OpenAPI spec', href: '/openapi.yaml', external: false },
     { label: 'Runbook', href: '/docs/runbook.md', external: false },
     { label: 'Integration guide', href: '/docs/integration-guide.md', external: false },
@@ -23,8 +27,7 @@
   function getTheme() {
     const stored = localStorage.getItem(THEME_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
-    return window.matchMedia &&
-      window.matchMedia('(prefers-color-scheme: light)').matches
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
       ? 'light'
       : 'dark';
   }
@@ -127,10 +130,11 @@
   function render() {
     const nav = el('nav', { class: 'tagger-nav', role: 'navigation', 'aria-label': 'Principal' });
 
-    const brand = el('a', { class: 'brand', href: '/ui/index.html', 'aria-label': 'tagger inicio' }, [
-      el('span', { class: 'brand-mark' }, ['◆']),
-      'tagger',
-    ]);
+    const brand = el(
+      'a',
+      { class: 'brand', href: '/ui/index.html', 'aria-label': 'tagger inicio' },
+      [el('span', { class: 'brand-mark' }, ['◆']), 'tagger'],
+    );
 
     const links = el('div', { class: 'tagger-nav-links' });
     for (const s of SECTIONS) {

@@ -85,7 +85,9 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        transition: transform 0.15s, border-color 0.15s;
+        transition:
+          transform 0.15s,
+          border-color 0.15s;
       }
       .doc-card:hover {
         border-color: var(--primary);
@@ -317,14 +319,12 @@
           <h1>tagger</h1>
           <p>
             Categorización automática de movimientos bancarios con cascada
-            <strong>catálogo → patrones → MCC → IA</strong>. Cada nivel atrapa lo que el anterior
-            no resolvió.
+            <strong>catálogo → patrones → MCC → IA</strong>. Cada nivel atrapa lo que el anterior no
+            resolvió.
           </p>
         </div>
         <div class="cta">
-          <a class="btn btn-primary" href="/docs/integration-guide.md"
-            >Integrar como developer →</a
-          >
+          <a class="btn btn-primary" href="/docs/integration-guide.md">Integrar como developer →</a>
           <a class="btn btn-ghost" href="/docs/runbook.md">Operar el servicio →</a>
         </div>
       </section>
@@ -349,10 +349,7 @@
           <div class="doc-actions">
             <span class="btn btn-primary btn-sm">Leer guía</span>
             <a class="btn btn-ghost btn-sm" href="/ui/api/index.html">Probar API</a>
-            <a
-              class="btn btn-ghost btn-sm"
-              href="/postman/tagger.postman_collection.json"
-              download
+            <a class="btn btn-ghost btn-sm" href="/postman/tagger.postman_collection.json" download
               >Postman</a
             >
           </div>
@@ -436,9 +433,7 @@
                 <a href="/postman/tagger.postman_collection.json" download
                   >Importar colección Postman</a
                 >
-                <span class="step-meta"
-                  >o ver <a href="/openapi.yaml">OpenAPI spec</a></span
-                >
+                <span class="step-meta">o ver <a href="/openapi.yaml">OpenAPI spec</a></span>
               </div>
             </li>
           </ol>

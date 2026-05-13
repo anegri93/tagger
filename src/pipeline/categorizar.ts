@@ -1,6 +1,9 @@
 import type { MovimientoInput, ResultadoCapa } from '../domain/types.js';
 
 export interface CapasSincrono {
+  memoria?: {
+    evaluar(input: MovimientoInput, usuario: string | null): Promise<ResultadoCapa | null>;
+  };
   catalogo?: {
     evaluar(
       bancardId: string | null | undefined,
@@ -27,9 +30,14 @@ function textoPara(input: MovimientoInput): string {
 export async function ejecutarCascada(
   input: MovimientoInput,
   capas: CapasSincrono,
-  opts: { bypassCatalogo?: boolean } = {},
+  opts: { bypassCatalogo?: boolean; usuario?: string | null } = {},
 ): Promise<ResultadoPipeline> {
   const texto = textoPara(input);
+
+  if (capas.memoria) {
+    const rm = await capas.memoria.evaluar(input, opts.usuario ?? null);
+    if (rm) return { resultado: rm, requiereRevision: false, requiereIa: false };
+  }
 
   if (capas.catalogo && !opts.bypassCatalogo) {
     const r0 = await capas.catalogo.evaluar(input.bancardId, input.codigoComercio);

@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm';
 import type { Db } from '../client.js';
 import { movimientos, correccionesUsuario, categorias } from '../schema/index.js';
 import type { CorreccionService } from '../../api/routes/correccion.js';
+import type { MemoriaUsuarioWriter } from './memoria-usuario.js';
+import { extraerDestinatarioTransferencia } from '../../layers/memoria.js';
 
-export function crearCorreccionService(db: Db): CorreccionService {
+export function crearCorreccionService(db: Db, memoria?: MemoriaUsuarioWriter): CorreccionService {
   return {
     async aplicar(input) {
       const movRows = await db
@@ -11,6 +13,8 @@ export function crearCorreccionService(db: Db): CorreccionService {
           id: movimientos.id,
           categoriaPredichaId: movimientos.categoriaPredichaId,
           categoriaConfirmadaId: movimientos.categoriaConfirmadaId,
+          nombreBancard: movimientos.nombreBancard,
+          origen: movimientos.origen,
         })
         .from(movimientos)
         .where(eq(movimientos.id, input.movimientoId))
@@ -27,7 +31,7 @@ export function crearCorreccionService(db: Db): CorreccionService {
 
       const anterior = mov.categoriaConfirmadaId ?? mov.categoriaPredichaId;
 
-      return await db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         await tx
           .update(movimientos)
           .set({
@@ -53,6 +57,26 @@ export function crearCorreccionService(db: Db): CorreccionService {
 
         return { ok: true as const, correccionId, categoriaAnteriorId: anterior };
       });
+
+      // Hook: si es transferencia y tenemos usuario, guardar en memoria.
+      if (memoria) {
+        const usuario = input.usuario ?? mov.origen;
+        const dest = extraerDestinatarioTransferencia(mov.nombreBancard);
+        if (usuario && dest) {
+          try {
+            await memoria.upsert({
+              usuario,
+              destinatario: dest.raw,
+              categoriaId: input.categoriaIdNueva,
+              origen: 'correccion',
+            });
+          } catch {
+            // No bloquear correccion si falla memoria.
+          }
+        }
+      }
+
+      return result;
     },
   };
 }

@@ -247,8 +247,7 @@
         for (const req of allRequests) {
           const path = req.request?.url?.path?.join('/') || '';
           const m = (req.request?.method || 'GET').toUpperCase();
-          if (filter && !(req.name + ' ' + path + ' ' + m).toLowerCase().includes(filter))
-            continue;
+          if (filter && !(req.name + ' ' + path + ' ' + m).toLowerCase().includes(filter)) continue;
           (grouped[req._folder] = grouped[req._folder] || []).push(req);
         }
         root.innerHTML = '';
@@ -281,15 +280,14 @@
       function escapeHtml(s) {
         return String(s).replace(
           /[&<>"']/g,
-          (c) =>
-            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
         );
       }
 
       function resolveUrl(urlObj) {
         if (!urlObj) return '';
         const raw =
-          typeof urlObj === 'string' ? urlObj : urlObj.raw || ('/' + (urlObj.path || []).join('/'));
+          typeof urlObj === 'string' ? urlObj : urlObj.raw || '/' + (urlObj.path || []).join('/');
         return raw
           .replace(/\{\{baseUrl\}\}/g, window.tagger.baseUrl || 'http://localhost:3000')
           .replace(/\{\{apiKey\}\}/g, window.tagger.apiKey || '');
@@ -313,7 +311,9 @@
         const desc = req.request?.description || '';
         const bodyMode = req.request?.body?.mode;
         const bodyRaw =
-          bodyMode === 'raw' ? req.request?.body?.raw || '' : JSON.stringify(req.request?.body || {}, null, 2);
+          bodyMode === 'raw'
+            ? req.request?.body?.raw || ''
+            : JSON.stringify(req.request?.body || {}, null, 2);
 
         panel.innerHTML = `
           <div class="req-head">

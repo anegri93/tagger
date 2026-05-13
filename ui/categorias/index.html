@@ -96,8 +96,7 @@
         }
         apply(localStorage.getItem(KEY) || 'normal');
         btn?.addEventListener('click', () => {
-          const next =
-            (localStorage.getItem(KEY) || 'normal') === 'normal' ? 'compact' : 'normal';
+          const next = (localStorage.getItem(KEY) || 'normal') === 'normal' ? 'compact' : 'normal';
           localStorage.setItem(KEY, next);
           apply(next);
         });

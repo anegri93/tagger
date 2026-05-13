@@ -43,6 +43,7 @@ export const categorizarRoute =
         const t0 = Date.now();
         const pipeline = await ejecutarCascada(input, deps.capas, {
           bypassCatalogo: body.bypass_catalogo === true,
+          usuario: body.origen ?? null,
         });
         const latencyMs = Date.now() - t0;
         if (pipeline.resultado && body.bypass_catalogo === true) {

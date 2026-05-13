@@ -87,14 +87,10 @@
 
     body.appendChild(
       el('div', { class: 'tagger-modal-footer' }, [
-        el('a', { class: 'btn btn-ghost', href: POSTMAN_URL, download: '' }, [
-          'Descargar Postman',
+        el('a', { class: 'btn btn-ghost', href: POSTMAN_URL, download: '' }, ['Descargar Postman']),
+        el('a', { class: 'btn btn-ghost', href: REPO_URL, target: '_blank', rel: 'noopener' }, [
+          'GitHub repo ↗',
         ]),
-        el(
-          'a',
-          { class: 'btn btn-ghost', href: REPO_URL, target: '_blank', rel: 'noopener' },
-          ['GitHub repo ↗'],
-        ),
         el('a', { class: 'btn btn-ghost', href: '/openapi.yaml' }, ['OpenAPI']),
       ]),
     );

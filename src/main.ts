@@ -50,6 +50,12 @@ import {
 } from './db/repos/movimientos.js';
 import { crearCorreccionService } from './db/repos/correccion.js';
 import {
+  crearMemoriaUsuarioLookup,
+  crearMemoriaUsuarioWriter,
+} from './db/repos/memoria-usuario.js';
+import { crearCapaMemoria } from './layers/memoria.js';
+import { memoriaRoute } from './api/routes/memoria.js';
+import {
   crearCategoriasReader,
   crearCategoriasLoader,
   crearCategoriaResolver,
@@ -83,13 +89,16 @@ async function main() {
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
-  const correccionSvc = crearCorreccionService(db);
+  const memoriaUsuarioLookup = crearMemoriaUsuarioLookup(db);
+  const memoriaUsuarioWriter = crearMemoriaUsuarioWriter(db);
+  const correccionSvc = crearCorreccionService(db, memoriaUsuarioWriter);
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
   const marcasReader = crearMarcasReader(db);
 
   const capas = {
+    memoria: crearCapaMemoria(memoriaUsuarioLookup),
     catalogo: crearCapaCatalogo(catalogoLookup),
     patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
@@ -105,14 +114,14 @@ async function main() {
       })
     : { schedule: () => undefined };
   if (!env.IA_ENABLED) {
-    logger.info('IA_ENABLED=false — fallback IA deshabilitado, movimientos no resueltos quedan sin categoría');
+    logger.info(
+      'IA_ENABLED=false — fallback IA deshabilitado, movimientos no resueltos quedan sin categoría',
+    );
   }
 
   const app = await build({ trustProxy: true });
   await app.register(requestLog);
-  const healthDeps = env.IA_ENABLED
-    ? { pingDb, pingOllama: () => ollama.ping() }
-    : { pingDb };
+  const healthDeps = env.IA_ENABLED ? { pingDb, pingOllama: () => ollama.ping() } : { pingDb };
   await app.register(healthRoute(healthDeps));
   await app.register(apiKeyAuth, { apiKey: env.API_KEY });
   await app.register(
@@ -129,6 +138,7 @@ async function main() {
     }),
   );
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
+  await app.register(memoriaRoute(memoriaUsuarioWriter));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
   const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());

@@ -37,6 +37,8 @@ Pipeline en cascada: catálogo precomputado → patrones (regex/contiene/prefijo
                        │ ejecutarCascada(input, capas)
                        ▼
        ┌───────────────────────────────────────────────┐
+       │ 0. MEMORIA     (usuario, destinatario) → cat   │
+       │                (solo transferencias MANGO-)    │
        │ 1. CATÁLOGO    bancard_id+codigo (lookup exacto)│
        │ 2. PATRONES    contiene/regex/prefijo/literal   │
        │ 3. MCC         código MCC del input             │
@@ -60,7 +62,8 @@ Postgres 16 (Drizzle ORM) ─── tablas:
   ├─ marcas_conocidas        (IA hints dinámicos)
   ├─ movimientos             (histórico predicciones)
   ├─ correcciones_usuario    (correcciones manual cliente)
-  └─ test_ground_truth       (ground truth para validación pipeline)
+  ├─ test_ground_truth       (ground truth para validación pipeline)
+  └─ memoria_usuario_destinatario  (memoria por usuario para transferencias P2P)
 ```
 
 ---
@@ -135,14 +138,15 @@ open http://localhost:3000/ui/      # UIs
 
 ### CRUD recursos
 
-| Método                | Path                      | Función                                        |
-| --------------------- | ------------------------- | ---------------------------------------------- |
-| GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                |
-| GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/comercios/mcc)        |
-| GET/POST/PATCH/DELETE | `/patrones`               | CRUD patrones (contiene/regex/prefijo/literal) |
-| GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                               |
-| GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                       |
-| GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual  |
+| Método                | Path                      | Función                                                                                                                    |
+| --------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                                                                                            |
+| GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/comercios/mcc)                                                                                    |
+| GET/POST/PATCH/DELETE | `/patrones`               | CRUD patrones (contiene/regex/prefijo/literal)                                                                             |
+| GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                                                                                                           |
+| GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                                                                                                   |
+| GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual                                                                              |
+| GET/DELETE            | `/memoria/:usuario`       | Memoria por usuario (transferencias auto-aprendidas). DELETE `/memoria/:usuario/:destinatario` para olvidar una asociación |
 
 ### Importación bulk
 
