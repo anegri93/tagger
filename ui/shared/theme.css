@@ -472,6 +472,112 @@ textarea:focus {
   border-color: var(--primary);
 }
 
+.tagger-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1500;
+  max-width: 360px;
+}
+.tagger-toast {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  animation: tagger-toast-in 0.18s ease-out;
+}
+@keyframes tagger-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tagger-toast.out {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.18s;
+}
+.tagger-toast-success {
+  border-left-color: var(--success);
+}
+.tagger-toast-error {
+  border-left-color: var(--danger);
+}
+.tagger-toast-warn {
+  border-left-color: var(--warn);
+}
+.tagger-toast-info {
+  border-left-color: var(--primary);
+}
+.tagger-toast-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.tagger-toast-action {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--primary);
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.tagger-toast-action:hover {
+  background: var(--bg-3);
+}
+.tagger-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tagger-toast-close:hover {
+  color: var(--text);
+}
+
+.tagger-skel-bar {
+  display: inline-block;
+  width: 80%;
+  height: 12px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--bg-3) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  background-size: 200% 100%;
+  animation: tagger-skel 1.2s infinite;
+}
+.tagger-skel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+.tagger-skel-row td {
+  vertical-align: middle;
+}
+@keyframes tagger-skel {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 table.tbl {
   width: 100%;
   border-collapse: collapse;

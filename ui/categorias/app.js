@@ -17,6 +17,10 @@ function esc(s) {
 
 async function loadList() {
   setStatus('cargando…');
+  const tbodySkel = $('lista-cats');
+  if (tbodySkel && window.taggerSkeleton) {
+    window.taggerSkeleton.rows(tbodySkel, { rows: 5, cols: 6 });
+  }
   try {
     const { items } = await window.taggerApi('/categorias');
     const tbody = $('lista-cats');
@@ -65,6 +69,10 @@ async function loadList() {
     setStatus(`${items.length} categorías`, 'live');
   } catch (e) {
     setStatus(`error: ${e.message}`, 'error');
+    if (window.toast)
+      window.toast.error(e.userMessage || e.message, {
+        action: { label: 'Reintentar', onClick: () => loadList() },
+      });
   }
 }
 
@@ -87,8 +95,10 @@ async function crear() {
     $('new-nombre').value = '';
     $('new-desc').value = '';
     await loadList();
+    if (window.toast) window.toast.success(`Categoría "${slug}" creada`);
   } catch (e) {
     $('new-error').textContent = e.message;
+    if (window.toast) window.toast.error(e.userMessage || e.message);
   }
 }
 

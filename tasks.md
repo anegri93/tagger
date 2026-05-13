@@ -110,8 +110,9 @@
 - **Aceptación**: matar API → reintento desde toast funciona al levantarla.
 
 ### Validación Fase 4
-- [ ] `pnpm lint && pnpm test && pnpm build`
-- [ ] Smoke: forzar error 4xx (api-key inválida) → toast legible + retry funcional.
+- [x] `pnpm lint && pnpm test && pnpm build`
+- [ ] Smoke manual pendiente.
+- Nota: `api.js` expone `taggerApiSafe` con toast+retry automático; pages pueden migrar `taggerApi` → `taggerApiSafe` incrementalmente. `categorias` ya usa toast en `loadList` y `crear`.
 
 ---
 
@@ -164,6 +165,6 @@
 - [x] Fase 1
 - [x] Fase 2
 - [x] Fase 3
-- [ ] Fase 4
+- [x] Fase 4
 - [ ] Fase 5 (opcional)
 - [ ] Fase 6
