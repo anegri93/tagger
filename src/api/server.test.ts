@@ -20,4 +20,34 @@ describe('server', () => {
     expect(r.statusCode).toBe(200);
     expect(r.json()).toEqual({ status: 'ok' });
   });
+
+  it('GET /version retorna shape esperado', async () => {
+    const r = await app.inject({ method: 'GET', url: '/version' });
+    expect(r.statusCode).toBe(200);
+    const body = r.json();
+    expect(body.name).toBe('tagger');
+    expect(typeof body.version).toBe('string');
+    expect(body.repo).toBe('https://github.com/anegri93/tagger');
+  });
+
+  it('GET /postman/tagger.postman_collection.json sirve estático', async () => {
+    const r = await app.inject({
+      method: 'GET',
+      url: '/postman/tagger.postman_collection.json',
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['content-type']).toMatch(/json/);
+  });
+
+  it('GET /openapi.yaml sirve spec', async () => {
+    const r = await app.inject({ method: 'GET', url: '/openapi.yaml' });
+    expect(r.statusCode).toBe(200);
+    expect(r.body.length).toBeGreaterThan(0);
+  });
+
+  it('GET /docs/runbook.md sirve docs', async () => {
+    const r = await app.inject({ method: 'GET', url: '/docs/runbook.md' });
+    expect(r.statusCode).toBe(200);
+    expect(r.body.length).toBeGreaterThan(0);
+  });
 });

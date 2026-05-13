@@ -133,6 +133,8 @@
     <script src="/ui/shared/state.js"></script>
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <section class="page-actions">
@@ -411,5 +413,6 @@
         return s.replace(/"/g, '&quot;');
       }
     </script>
+    <script>window.taggerBreadcrumbs && window.taggerBreadcrumbs([{label:"Inicio",href:"/ui/index.html"},{label:"Importar"}]);</script>
   </body>
 </html>

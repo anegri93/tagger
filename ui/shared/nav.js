@@ -1,21 +1,21 @@
-// Inyecta navbar unificado. Requiere window.tagger (state.js).
+// Inyecta navbar unificado (topbar). Requiere window.tagger (state.js).
 (function () {
+  const REPO_URL = 'https://github.com/anegri93/tagger';
+
   const SECTIONS = [
-    { path: '/ui/index.html', label: 'Inicio', icon: '🏠', exact: ['/ui/', '/ui/index.html'] },
-    {
-      path: '/ui/categorias/index.html',
-      label: 'Categorías',
-      icon: '📂',
-      prefix: '/ui/categorias/',
-    },
-    {
-      path: '/ui/test-monitor/index.html',
-      label: 'Monitor',
-      icon: '📊',
-      prefix: '/ui/test-monitor/',
-    },
-    { path: '/ui/importar/index.html', label: 'Importar', icon: '📥', prefix: '/ui/importar/' },
-    { path: '/ui/recat/index.html', label: 'Recat', icon: '🔁', prefix: '/ui/recat/' },
+    { path: '/ui/index.html', label: 'Inicio', exact: ['/ui/', '/ui/index.html', '/ui'] },
+    { path: '/ui/categorias/index.html', label: 'Categorías', prefix: '/ui/categorias/' },
+    { path: '/ui/importar/index.html', label: 'Importar', prefix: '/ui/importar/' },
+    { path: '/ui/recat/index.html', label: 'Recategorizar', prefix: '/ui/recat/' },
+    { path: '/ui/test-monitor/index.html', label: 'Monitor', prefix: '/ui/test-monitor/' },
+  ];
+
+  const RESOURCES = [
+    { label: 'GitHub repo', href: REPO_URL, external: true },
+    { label: 'Postman collection', href: '/postman/tagger.postman_collection.json', download: true },
+    { label: 'OpenAPI spec', href: '/openapi.yaml', external: false },
+    { label: 'Runbook', href: '/docs/runbook.md', external: false },
+    { label: 'Integration guide', href: '/docs/integration-guide.md', external: false },
   ];
 
   function isActive(section) {
@@ -25,22 +25,125 @@
     return false;
   }
 
+  function el(tag, attrs = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') node.className = v;
+      else if (k === 'html') node.innerHTML = v;
+      else if (k.startsWith('on') && typeof v === 'function')
+        node.addEventListener(k.slice(2).toLowerCase(), v);
+      else if (v !== undefined && v !== null) node.setAttribute(k, v);
+    }
+    for (const c of [].concat(children)) {
+      if (c == null) continue;
+      node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return node;
+  }
+
+  function renderResourcesDropdown() {
+    const wrap = el('div', { class: 'tagger-nav-dd' });
+    const btn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'tagger-nav-dd-btn',
+        'aria-haspopup': 'true',
+        'aria-expanded': 'false',
+        'aria-label': 'Recursos del proyecto',
+      },
+      ['Recursos ▾'],
+    );
+    const menu = el('div', { class: 'tagger-nav-dd-menu', role: 'menu', hidden: '' });
+
+    for (const r of RESOURCES) {
+      const a = el(
+        'a',
+        {
+          href: r.href,
+          role: 'menuitem',
+          ...(r.external ? { target: '_blank', rel: 'noopener noreferrer' } : {}),
+          ...(r.download ? { download: '' } : {}),
+        },
+        [r.label + (r.external ? ' ↗' : '')],
+      );
+      menu.appendChild(a);
+    }
+
+    function close() {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function open() {
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+    }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.hidden ? open() : close();
+    });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        menu.hidden ? open() : close();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+
+    wrap.append(btn, menu);
+    return wrap;
+  }
+
+  function renderHealthBadge() {
+    return el('span', {
+      class: 'tagger-nav-health',
+      id: 'tagger-nav-health',
+      title: 'Estado API',
+      'aria-live': 'polite',
+    });
+  }
+
   function render() {
-    const nav = document.createElement('nav');
-    nav.className = 'tagger-nav';
-    nav.innerHTML = `
-      <div class="brand"><span class="brand-icon">🏷️</span>tagger</div>
-      <div class="tagger-nav-links">
-        ${SECTIONS.map(
-          (s) =>
-            `<a href="${s.path}" class="${isActive(s) ? 'active' : ''}">${s.icon} ${s.label}</a>`,
-        ).join('')}
-      </div>
-      <div class="tagger-nav-config">
-        <input id="tagger-nav-apikey" type="password" placeholder="x-api-key" autocomplete="off" />
-        <span class="tagger-nav-status" id="tagger-nav-status">—</span>
-      </div>
-    `;
+    const nav = el('nav', { class: 'tagger-nav', role: 'navigation', 'aria-label': 'Principal' });
+
+    const brand = el('a', { class: 'brand', href: '/ui/index.html', 'aria-label': 'tagger inicio' }, [
+      el('span', { class: 'brand-mark' }, ['◆']),
+      'tagger',
+    ]);
+
+    const links = el('div', { class: 'tagger-nav-links' });
+    for (const s of SECTIONS) {
+      links.appendChild(
+        el(
+          'a',
+          {
+            href: s.path,
+            class: isActive(s) ? 'active' : '',
+            'aria-current': isActive(s) ? 'page' : null,
+          },
+          [s.label],
+        ),
+      );
+    }
+
+    const config = el('div', { class: 'tagger-nav-config' }, [
+      renderHealthBadge(),
+      renderResourcesDropdown(),
+      el('input', {
+        id: 'tagger-nav-apikey',
+        type: 'password',
+        placeholder: 'x-api-key',
+        autocomplete: 'off',
+        'aria-label': 'API key',
+      }),
+    ]);
+
+    nav.append(brand, links, config);
     return nav;
   }
 
@@ -60,24 +163,31 @@
     });
 
     pingHealth();
-    setInterval(pingHealth, 10000);
+    setInterval(pingHealth, 30000);
   }
 
   async function pingHealth() {
-    const el = document.getElementById('tagger-nav-status');
+    const el = document.getElementById('tagger-nav-health');
     if (!el) return;
     try {
-      const r = await fetch((window.tagger.baseUrl ?? '') + '/health');
+      const r = await fetch((window.tagger.baseUrl ?? '') + '/health/ready');
       if (r.ok) {
-        el.textContent = '● API ok';
-        el.className = 'tagger-nav-status ok';
+        const body = await r.json().catch(() => ({}));
+        const dbOk = body?.db === 'ok';
+        if (dbOk) {
+          el.textContent = '● API ok';
+          el.className = 'tagger-nav-health ok';
+        } else {
+          el.textContent = '● degraded';
+          el.className = 'tagger-nav-health warn';
+        }
       } else {
         el.textContent = `● HTTP ${r.status}`;
-        el.className = 'tagger-nav-status err';
+        el.className = 'tagger-nav-health err';
       }
     } catch {
       el.textContent = '● API down';
-      el.className = 'tagger-nav-status err';
+      el.className = 'tagger-nav-health err';
     }
   }
 
