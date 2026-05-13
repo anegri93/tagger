@@ -255,7 +255,21 @@
           </div>
 
           <div class="card">
-            <h2>5. Acciones rápidas</h2>
+            <h2>5. Historial — movimientos creados en esta sesión</h2>
+            <div class="hint" style="margin-top: 0">
+              Click en una fila → carga ese movimiento en las secciones 2 y 3 para verlo o
+              corregirlo.
+            </div>
+            <div id="historial-result" style="margin-top: 10px">
+              <div class="empty">Todavía no creaste ningún movimiento.</div>
+            </div>
+            <div class="actions">
+              <button id="btn-historial-clear" class="btn btn-ghost">🗑 Limpiar historial</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>6. Acciones rápidas</h2>
             <div class="hint" style="margin-top: 0">Probá el flujo completo en orden:</div>
             <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px">
               <li>Crear MANGO-PEREZ JUAN con origen <code>usuario_42</code></li>
@@ -277,10 +291,27 @@
 
     <script>
       const $ = (id) => document.getElementById(id);
+      const HISTORIAL_KEY = 'tagger:playground:historial';
       let lastMovimientoId = null;
       let lastNombreBancard = null;
       let lastOrigen = null;
       let categoriasCache = null;
+      let historial = loadHistorial();
+
+      function loadHistorial() {
+        try {
+          return JSON.parse(localStorage.getItem(HISTORIAL_KEY) || '[]');
+        } catch {
+          return [];
+        }
+      }
+      function saveHistorial() {
+        try {
+          localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial.slice(0, 50)));
+        } catch {
+          /* ignore */
+        }
+      }
 
       async function cargarCategorias() {
         if (categoriasCache) return categoriasCache;
@@ -316,6 +347,20 @@
           lastNombreBancard = nombre;
           lastOrigen = origen;
           renderResultado(r);
+          historial.unshift({
+            ts: Date.now(),
+            movimiento_id: r.movimiento_id,
+            nombre_bancard: nombre,
+            monto: monto || null,
+            origen: origen || null,
+            categoria_nombre: r.categoria?.nombre ?? null,
+            categoria_id: r.categoria_id ?? null,
+            fuente: r.fuente ?? null,
+            confianza: r.confianza ?? null,
+            requiere_revision: r.requiere_revision === true,
+          });
+          saveHistorial();
+          renderHistorial();
           await cargarCategorias();
           $('card-corregir').hidden = false;
           if (origen) {
@@ -325,6 +370,69 @@
           alert('Error: ' + (e?.message || 'falló'));
         }
       });
+
+      $('btn-historial-clear').addEventListener('click', () => {
+        if (historial.length === 0) return;
+        if (!confirm('¿Limpiar historial local?')) return;
+        historial = [];
+        saveHistorial();
+        renderHistorial();
+      });
+
+      function renderHistorial() {
+        const el = $('historial-result');
+        if (!historial.length) {
+          el.innerHTML = '<div class="empty">Todavía no creaste ningún movimiento.</div>';
+          return;
+        }
+        const rows = historial
+          .map((it, idx) => {
+            const cls = !it.requiere_revision
+              ? 'ok'
+              : it.fuente === 'ia'
+                ? 'warn'
+                : it.fuente
+                  ? 'warn'
+                  : 'err';
+            const when = new Date(it.ts).toLocaleTimeString();
+            return `
+              <tr data-idx="${idx}" style="cursor: pointer">
+                <td><span class="mono" style="font-size: 11px">${when}</span></td>
+                <td>${escapeHtml(it.nombre_bancard)}</td>
+                <td>${it.categoria_nombre ? `<span class="pill">${escapeHtml(it.categoria_nombre)}</span>` : '<i>—</i>'}</td>
+                <td><span class="pill ${cls}">${escapeHtml(it.fuente ?? 'pendiente_ia')}</span></td>
+                <td><span class="mono" style="font-size: 11px">${it.origen ?? '—'}</span></td>
+              </tr>`;
+          })
+          .join('');
+        el.innerHTML = `
+          <table>
+            <thead><tr><th>Hora</th><th>Nombre</th><th>Categoría</th><th>Fuente</th><th>Origen</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+        el.querySelectorAll('tbody tr').forEach((tr) =>
+          tr.addEventListener('click', () => {
+            const idx = Number(tr.getAttribute('data-idx'));
+            const it = historial[idx];
+            if (!it) return;
+            lastMovimientoId = it.movimiento_id;
+            lastNombreBancard = it.nombre_bancard;
+            lastOrigen = it.origen;
+            renderResultado({
+              movimiento_id: it.movimiento_id,
+              categoria_id: it.categoria_id,
+              categoria: it.categoria_nombre ? { nombre: it.categoria_nombre } : null,
+              fuente: it.fuente,
+              confianza: it.confianza,
+              requiere_revision: it.requiere_revision,
+            });
+            $('card-corregir').hidden = false;
+            if (it.origen) $('mem-usuario').value = it.origen;
+          }),
+        );
+      }
+      renderHistorial();
 
       $('btn-clear').addEventListener('click', () => {
         $('card-resultado').hidden = true;
