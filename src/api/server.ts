@@ -37,9 +37,24 @@ export async function build(opts: BuildOptions = {}) {
   await app.register(cors, {
     origin: true,
     credentials: false,
-    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['content-type', 'x-api-key', 'x-request-id'],
   });
+
+  // Permite body vacío con content-type application/json (DELETE sin body, etc).
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      const raw = typeof body === 'string' ? body : '';
+      if (raw.trim() === '') return done(null, undefined);
+      try {
+        done(null, JSON.parse(raw));
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
 
   await app.register(staticPlugin, {
     root: resolve(ROOT, 'ui'),
