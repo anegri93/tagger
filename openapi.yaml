@@ -214,6 +214,143 @@ paths:
                     items:
                       $ref: '#/components/schemas/Categoria'
 
+  /patrones:
+    get:
+      tags: [Patrones]
+      summary: Lista patrones
+      parameters:
+        - in: query
+          name: tipo
+          schema: { type: string, enum: [regex, literal, prefijo, contiene] }
+        - in: query
+          name: categoria_slug
+          schema: { type: string }
+        - in: query
+          name: activo
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Patron' }
+    post:
+      tags: [Patrones]
+      summary: Crear patrón
+      description: |
+        Crea un patrón nuevo. Tipos: `regex` (conf 0.95), `literal` (0.95), `prefijo` (0.90), `contiene` (0.80).
+        409 si ya existe `tipo + valor + categoria_slug`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, valor, categoria_slug]
+              properties:
+                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+                valor: { type: string, minLength: 1, maxLength: 500, example: '\bBIGGIE\b' }
+                categoria_slug: { type: string, example: supermercado }
+                prioridad: { type: integer, minimum: 0, maximum: 10000, default: 100 }
+                descripcion: { type: string, maxLength: 200 }
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Patron' }
+        '409': { description: patron_duplicado }
+        '422': { description: patron_invalido }
+
+  /patrones/{id}:
+    get:
+      tags: [Patrones]
+      summary: Detalle patrón
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Patron' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Patrones]
+      summary: Actualizar patrón
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                valor: { type: string, minLength: 1, maxLength: 500 }
+                prioridad: { type: integer, minimum: 0, maximum: 10000 }
+                descripcion: { type: string, maxLength: 200, nullable: true }
+                activo: { type: boolean }
+                categoria_slug: { type: string }
+      responses:
+        '200':
+          description: Actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Patron' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { description: patron_invalido }
+    delete:
+      tags: [Patrones]
+      summary: Borrar patrón
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Borrado }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /patrones/test:
+    post:
+      tags: [Patrones]
+      summary: Probar match sin persistir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, valor, texto]
+              properties:
+                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+                valor: { type: string, minLength: 1, maxLength: 500 }
+                texto: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: Resultado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  match: { type: boolean }
+                  valor_normalizado: { type: string }
+                  texto_normalizado: { type: string }
+        '422': { description: patron_invalido }
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -331,6 +468,22 @@ components:
           nullable: true
         origen: { type: string, nullable: true }
         batch_id: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Patron:
+      type: object
+      required: [id, tipo, valor, categoria_id, prioridad, activo]
+      properties:
+        id: { type: string, format: uuid }
+        tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+        valor: { type: string }
+        categoria_id: { type: string, format: uuid }
+        categoria_slug: { type: string }
+        prioridad: { type: integer }
+        descripcion: { type: string, nullable: true }
+        fuente: { type: string, enum: [manual, catalogo_bancard, auto] }
+        activo: { type: boolean }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 

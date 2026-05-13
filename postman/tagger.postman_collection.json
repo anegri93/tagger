@@ -8,16 +8,40 @@
   "auth": {
     "type": "apikey",
     "apikey": [
-      { "key": "key", "value": "x-api-key", "type": "string" },
-      { "key": "value", "value": "{{apiKey}}", "type": "string" },
-      { "key": "in", "value": "header", "type": "string" }
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
     ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "apiKey", "value": "replace-with-strong-random-key-min-16-chars" },
-    { "key": "movimientoId", "value": "" },
-    { "key": "categoriaId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "apiKey",
+      "value": "replace-with-strong-random-key-min-16-chars"
+    },
+    {
+      "key": "movimientoId",
+      "value": ""
+    },
+    {
+      "key": "categoriaId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -27,23 +51,40 @@
         {
           "name": "GET /health",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
             "description": "Liveness probe. Sin auth.\n\n**Response 200:** `{\"status\":\"ok\"}`"
           }
         },
         {
           "name": "GET /health/ready",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/health/ready",
-              "host": ["{{baseUrl}}"],
-              "path": ["health", "ready"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
             },
             "description": "Readiness probe. Verifica DB + Ollama.\n\n**Response:** `{\"status\":\"ok|degraded\", \"db\":bool, \"ollama\":bool}`\n\nOllama puede estar `false` (servicio igual operativo, IA fallback no disponible)."
           }
@@ -76,10 +117,174 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/categorias",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorias"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
             },
             "description": "Lista todas las categorías activas.\n\n**Response 200:**\n```json\n{\"items\":[{\"id\":\"uuid\",\"slug\":\"transporte\",\"nombre\":\"Transporte\",\"descripcion\":\"...\",\"activo\":true}, ...]}\n```\n\nTest script: setea `categoriaId` con primer item (uso en correccion)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "patrones",
+      "description": "CRUD patrones (regex/literal/prefijo/contiene).",
+      "item": [
+        {
+          "name": "GET /patrones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /patrones (crear)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"regex\",\n  \"valor\": \"\\\\\\\\bBIGGIE\\\\\\\\b\",\n  \"categoria_slug\": \"supermercado\",\n  \"prioridad\": 100,\n  \"descripcion\": \"Cadena Biggie\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /patrones/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones",
+                "{{patron_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /patrones/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones",
+                "{{patron_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prioridad\": 50,\n  \"activo\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /patrones/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones",
+                "{{patron_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /patrones/test (probar sin persistir)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patrones/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patrones",
+                "test"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"regex\",\n  \"valor\": \"\\\\\\\\bBIGGIE\\\\\\\\b\",\n  \"texto\": \"BIGGIE-SHOPPING DEL SOL\"\n}"
+            }
           }
         }
       ]
@@ -107,15 +312,24 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"descripcion\": \"COMPRA BIGGIE EXPRESS SUC. CENTRO\",\n  \"monto\": 50000\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categorizar-movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorizar-movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorizar-movimiento"
+              ]
             },
             "description": "**Caso típico:** descripción matchea patrón (`BIGGIE` → supermercado).\n\n**Espera:** `fuente: 'contiene'` o `'regex'`, confianza 0.90-0.95.\n\nTest script: cachea `movimiento_id` para usar en GET detalle + correccion."
           }
@@ -124,15 +338,24 @@
           "name": "POST /categorizar-movimiento (solo MCC)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mcc\": \"5411\",\n  \"monto\": 12000\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categorizar-movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorizar-movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorizar-movimiento"
+              ]
             },
             "description": "**Caso:** banco solo envía MCC, sin descripción.\n\n5411 = Grocery Stores. Capa MCC matchea → categoría supermercado.\n\n**Espera:** `fuente: 'mcc'`, confianza 0.75."
           }
@@ -141,15 +364,24 @@
           "name": "POST /categorizar-movimiento (combustible)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"descripcion\": \"COPETROL ESTACION RUTA 2\",\n  \"nombre_bancard\": \"COPETROL\",\n  \"mcc\": \"5541\",\n  \"monto\": 250000\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categorizar-movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorizar-movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorizar-movimiento"
+              ]
             },
             "description": "**Caso ideal:** todos los campos disponibles. Pipeline elige el primer hit (patrón `COPETROL` o MCC 5541 → combustible)."
           }
@@ -158,15 +390,24 @@
           "name": "POST /categorizar-movimiento (desconocido → IA async)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"descripcion\": \"XYZ COMERCIO RANDOM\",\n  \"monto\": 30000\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categorizar-movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorizar-movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorizar-movimiento"
+              ]
             },
             "description": "**Caso:** descripción no matchea nada. Cascada agotada → response inmediato `categoria_id: null`, IA dispara async.\n\n**Mobile UX:** mostrar \"categorizando...\", poll `GET /movimientos/:id` cada 2-3s hasta `categoria_id !== null` (timeout 15s)."
           }
@@ -175,12 +416,24 @@
           "name": "POST /categorizar-movimiento (input inválido → 400)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"monto\": 100\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 100\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/categorizar-movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorizar-movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorizar-movimiento"
+              ]
             },
             "description": "**Caso error:** body sin ningún campo de texto/MCC requerido.\n\n**Espera 400:** `{\"error\":\"invalid_input\", \"issues\":{...}}` con detalle Zod."
           }
@@ -198,8 +451,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["movimientos", "{{movimientoId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movimientos",
+                "{{movimientoId}}"
+              ]
             },
             "description": "Detalle del movimiento.\n\nUsar para:\n- Polling tras IA fallback (categoria_id pasa de null → uuid cuando Ollama termina)\n- Inspeccionar `evidencia` (prompt IA, candidatos, scores)\n\n`movimientoId` se setea automáticamente al ejecutar el primer POST /categorizar-movimiento."
           }
@@ -208,15 +466,26 @@
           "name": "POST /movimientos/:id/correccion",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/correccion",
-              "host": ["{{baseUrl}}"],
-              "path": ["movimientos", "{{movimientoId}}", "correccion"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movimientos",
+                "{{movimientoId}}",
+                "correccion"
+              ]
             },
             "description": "Corrección manual desde mobile.\n\n**Body:**\n- `categoria_id_nueva` (UUID, required) — id de la categoría correcta. Cliente lo obtiene del cache de `GET /categorias`.\n- `motivo` (string, opcional) — feedback opcional.\n\n**Response 200:**\n```json\n{\n  \"ok\": true,\n  \"correccion_id\": \"uuid\",\n  \"categoria_anterior_id\": \"uuid|null\",\n  \"categoria_anterior\": \"slug|null\",\n  \"categoria_nueva_id\": \"uuid\",\n  \"categoria_nueva\": \"slug\"\n}\n```\n\nVariables: usa `{{categoriaId}}` (auto-seteada de GET /categorias) y `{{movimientoId}}` (auto-seteada de POST categorizar)."
           }
@@ -225,15 +494,26 @@
           "name": "POST /movimientos/:id/reprocesar",
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{}"
             },
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/reprocesar",
-              "host": ["{{baseUrl}}"],
-              "path": ["movimientos", "{{movimientoId}}", "reprocesar"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movimientos",
+                "{{movimientoId}}",
+                "reprocesar"
+              ]
             },
             "description": "Re-ejecuta cascada (catalogo → patrones → MCC) + IA fallback sobre un movimiento existente.\n\n**Casos de uso:**\n- Movimientos viejos creados antes de agregar patrones/MCCs nuevos\n- Movimientos que quedaron con `categoria_id: null` por IA fallida (ej. Ollama down al momento de POST inicial)\n- Cliente mobile permite \"re-categorizar este movimiento\"\n\n**Body (opcional):**\n```json\n{\n  \"bypass_catalogo\": false\n}\n```\n- `bypass_catalogo` (bool) — si true, salta capa 1 → fuerza cascada pura (testing).\n\n**Response 200:**\n```json\n{\n  \"movimiento_id\": \"uuid\",\n  \"categoria_id\": \"uuid | null\",\n  \"categoria\": { \"id\": \"...\", \"slug\": \"azar\", \"nombre\": \"Azar y apuestas\" } | null,\n  \"fuente\": \"regex | contiene | ... | null\",\n  \"confianza\": 0.95,\n  \"requiere_revision\": false,\n  \"ia_disparada\": true\n}\n```\n\n**`ia_disparada: true`** → cascada agotada, IA corriendo async. Cliente debe poll `GET /movimientos/:id` para ver categoría final.\n\n**Errores:**\n- 400 `invalid_id` — id no es UUID\n- 404 `no_existe` — movimiento no encontrado"
           }
@@ -243,10 +523,20 @@
     {
       "name": "auth-fail (sin api-key → 401)",
       "request": {
-        "auth": { "type": "noauth" },
+        "auth": {
+          "type": "noauth"
+        },
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/categorias", "host": ["{{baseUrl}}"], "path": ["categorias"] },
+        "url": {
+          "raw": "{{baseUrl}}/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categorias"
+          ]
+        },
         "description": "**Test negativo:** request sin header `x-api-key`.\n\n**Espera 401:** `{\"error\":\"unauthorized\"}`.\n\nÚtil para verificar auth funciona antes de configurar API_KEY real en producción."
       }
     }
