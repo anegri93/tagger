@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tagger</title>
+    <title>tagger — Inicio</title>
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
       .container {
-        max-width: 1100px;
+        max-width: 1180px;
         margin: 24px auto;
         padding: 0 20px;
       }
@@ -16,7 +16,7 @@
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
         padding: 32px;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
       }
       .hero h1 {
         margin: 0 0 8px;
@@ -24,14 +24,24 @@
       }
       .hero p {
         margin: 0;
+        color: var(--text-2);
+        max-width: 700px;
+        line-height: 1.5;
+      }
+
+      h2.section-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
         color: var(--text-3);
+        margin: 32px 0 12px;
+        font-weight: 600;
       }
 
       .health-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 12px;
-        margin-bottom: 24px;
       }
       .health-card {
         background: var(--bg-2);
@@ -63,19 +73,118 @@
         margin-top: 4px;
       }
 
+      .pipeline {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .pipe-step {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 16px;
+        text-decoration: none;
+        color: var(--text);
+        position: relative;
+        display: block;
+      }
+      .pipe-step:hover {
+        border-color: var(--primary);
+        background: var(--bg-3);
+        text-decoration: none;
+      }
+      .pipe-step .step-n {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        font-size: 11px;
+        color: var(--text-4);
+        font-family: var(--mono);
+      }
+      .pipe-step h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        color: var(--primary);
+      }
+      .pipe-step p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-3);
+        line-height: 1.4;
+      }
+
+      .quickstart {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+      .qs-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        text-decoration: none;
+        color: var(--text);
+      }
+      .qs-card:hover {
+        border-color: var(--primary);
+        text-decoration: none;
+      }
+      .qs-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .qs-num {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text-2);
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .qs-card.done .qs-num {
+        background: var(--success-bg);
+        color: white;
+        border-color: var(--success);
+      }
+      .qs-card h4 {
+        margin: 0;
+        font-size: 14px;
+      }
+      .qs-card p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-3);
+        line-height: 1.4;
+      }
+      .qs-card .meta {
+        font-size: 11px;
+        color: var(--text-4);
+        font-family: var(--mono);
+        margin-top: auto;
+      }
+
       .nav-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
+        gap: 14px;
       }
       .nav-card {
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 20px;
+        padding: 18px;
         text-decoration: none;
         color: var(--text);
-        transition: all 0.15s;
         display: block;
       }
       .nav-card:hover {
@@ -83,19 +192,46 @@
         background: var(--bg-3);
         text-decoration: none;
       }
-      .nav-card .icon {
-        font-size: 32px;
-        margin-bottom: 8px;
-      }
       .nav-card h3 {
         margin: 0 0 4px;
-        font-size: 16px;
+        font-size: 15px;
       }
       .nav-card p {
         margin: 0;
         font-size: 12px;
         color: var(--text-3);
         line-height: 1.4;
+      }
+
+      .dev-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+      }
+      .dev-card .text h3 {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+      .dev-card .text p {
+        margin: 0;
+        color: var(--text-3);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .dev-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      @media (max-width: 640px) {
+        .dev-card {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -108,10 +244,16 @@
 
     <div class="container">
       <section class="hero">
-        <h1>🏷️ tagger</h1>
-        <p>Servicio categorización movimientos bancarios — cascada catálogo→patrones→MCC→IA.</p>
+        <h1>tagger</h1>
+        <p>
+          Servicio de categorización de movimientos bancarios. Cascada de decisiones:
+          <strong>catálogo de comercios</strong> → <strong>patrones regex</strong> →
+          <strong>tabla MCC</strong> → <strong>IA (Ollama)</strong>. Cada nivel atrapa lo que el
+          anterior no resolvió.
+        </p>
       </section>
 
+      <h2 class="section-title">Salud del sistema</h2>
       <section class="health-grid">
         <div class="health-card">
           <div class="label">API</div>
@@ -140,27 +282,103 @@
         </div>
       </section>
 
+      <h2 class="section-title">¿Cómo funciona? — Cascada de categorización</h2>
+      <section class="pipeline" aria-label="Cascada de categorización">
+        <a class="pipe-step" href="/ui/categorias/index.html#tab-comercios">
+          <span class="step-n">01</span>
+          <h4>Catálogo</h4>
+          <p>Match exacto contra <code>comercios_catalogo</code>. Máxima precisión.</p>
+        </a>
+        <a class="pipe-step" href="/ui/categorias/index.html#tab-patrones">
+          <span class="step-n">02</span>
+          <h4>Patrones</h4>
+          <p>Regex sobre la descripción. Para variantes y typos.</p>
+        </a>
+        <a class="pipe-step" href="/ui/categorias/index.html#tab-mcc">
+          <span class="step-n">03</span>
+          <h4>MCC</h4>
+          <p>Merchant Category Code de la red de tarjetas. Fallback estándar.</p>
+        </a>
+        <a class="pipe-step" href="/ui/recat/index.html">
+          <span class="step-n">04</span>
+          <h4>IA</h4>
+          <p>Ollama sugiere categoría + marca cuando todo lo anterior falla.</p>
+        </a>
+      </section>
+
+      <h2 class="section-title">Empezar en 3 pasos</h2>
+      <section class="quickstart">
+        <a class="qs-card" id="qs-1" href="/ui/importar/index.html">
+          <div class="qs-head">
+            <span class="qs-num">1</span>
+            <h4>Importar catálogo o movimientos</h4>
+          </div>
+          <p>Sube XLSX/CSV. Mapea columnas a campos del esquema.</p>
+          <span class="meta" id="qs-1-meta">—</span>
+        </a>
+        <a class="qs-card" id="qs-2" href="/ui/categorias/index.html">
+          <div class="qs-head">
+            <span class="qs-num">2</span>
+            <h4>Definir categorías y patrones</h4>
+          </div>
+          <p>CRUD de categorías, patrones regex, MCC y marcas.</p>
+          <span class="meta" id="qs-2-meta">—</span>
+        </a>
+        <a class="qs-card" id="qs-3" href="/ui/recat/index.html">
+          <div class="qs-head">
+            <span class="qs-num">3</span>
+            <h4>Recategorizar y revisar diffs</h4>
+          </div>
+          <p>Re-evalúa catálogo, compara cambios, revisa sugerencias IA.</p>
+          <span class="meta" id="qs-3-meta">—</span>
+        </a>
+      </section>
+
+      <h2 class="section-title">Herramientas</h2>
       <section class="nav-grid">
         <a class="nav-card" href="/ui/categorias/index.html">
-          <div class="icon">📂</div>
           <h3>Categorías</h3>
           <p>CRUD categorías, patrones, MCCs, marcas IA, comercios.</p>
         </a>
         <a class="nav-card" href="/ui/importar/index.html">
-          <div class="icon">📥</div>
           <h3>Importar</h3>
           <p>Cargar XLSX/CSV a comercios_catalogo o movimientos con mapping de campos.</p>
         </a>
         <a class="nav-card" href="/ui/recat/index.html">
-          <div class="icon">🔁</div>
           <h3>Recategorizar</h3>
-          <p>Recategorizar catálogo + diffs + sugerencias IA + marcas candidatas.</p>
+          <p>Recategoriza catálogo. Diffs, sugerencias IA y marcas candidatas.</p>
         </a>
         <a class="nav-card" href="/ui/test-monitor/index.html">
-          <div class="icon">📊</div>
-          <h3>Test Monitor</h3>
+          <h3>Monitor de tests</h3>
           <p>Dashboard realtime de tests masivos. Latencia, agreement, mismatches.</p>
         </a>
+      </section>
+
+      <h2 class="section-title">Para developers</h2>
+      <section class="dev-card">
+        <div class="text">
+          <h3>API + colecciones</h3>
+          <p>
+            Repositorio público en GitHub. Colección Postman lista para importar y spec OpenAPI
+            para generar clientes.
+          </p>
+        </div>
+        <div class="dev-actions">
+          <a
+            class="btn btn-ghost"
+            href="https://github.com/anegri93/tagger"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Abrir GitHub ↗</a
+          >
+          <a
+            class="btn btn-primary"
+            href="/postman/tagger.postman_collection.json"
+            download
+            >Descargar Postman</a
+          >
+          <a class="btn" href="/openapi.yaml">Ver OpenAPI</a>
+        </div>
       </section>
     </div>
 
@@ -193,25 +411,52 @@
         }
       }
 
+      function setQs(id, count, label) {
+        const card = document.getElementById(id);
+        const meta = document.getElementById(id + '-meta');
+        if (count == null) {
+          meta.textContent = '—';
+          return;
+        }
+        meta.textContent = count + ' ' + label;
+        if (count > 0) card.classList.add('done');
+      }
+
       async function loadCounts() {
+        let cats = null,
+          pats = null,
+          marcas = null;
         try {
           const r = await window.taggerApi('/categorias');
-          document.getElementById('h-cats').textContent = r.items?.length ?? 0;
+          cats = r.items?.length ?? 0;
+          document.getElementById('h-cats').textContent = cats;
         } catch {
           document.getElementById('h-cats').textContent = '—';
         }
         try {
           const r = await window.taggerApi('/patrones');
-          document.getElementById('h-patrones').textContent = r.items?.length ?? 0;
+          pats = r.items?.length ?? 0;
+          document.getElementById('h-patrones').textContent = pats;
         } catch {
           document.getElementById('h-patrones').textContent = '—';
         }
         try {
           const r = await window.taggerApi('/marcas');
-          document.getElementById('h-marcas').textContent = r.items?.length ?? 0;
+          marcas = r.items?.length ?? 0;
+          document.getElementById('h-marcas').textContent = marcas;
         } catch {
           document.getElementById('h-marcas').textContent = '—';
         }
+        let comercios = null;
+        try {
+          const r = await window.taggerApi('/comercios?limit=1');
+          comercios = r.total ?? r.items?.length ?? 0;
+        } catch {
+          comercios = null;
+        }
+        setQs('qs-1', comercios, 'comercios');
+        setQs('qs-2', cats, 'categorías');
+        setQs('qs-3', marcas, 'marcas IA');
       }
 
       window.addEventListener('load', () => {

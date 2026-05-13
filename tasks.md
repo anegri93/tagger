@@ -68,8 +68,8 @@
 - **Aceptación**: descarga Postman dispara `download` attribute.
 
 ### Validación Fase 2
-- [ ] `pnpm lint && pnpm test && pnpm build`
-- [ ] Smoke: home muestra cascada + quickstart + card devs. Health/counters siguen funcionando.
+- [x] `pnpm lint && pnpm test && pnpm build`
+- [ ] Smoke manual pendiente.
 
 ---
 
@@ -161,7 +161,7 @@
 ## Estado global
 
 - [x] Fase 1
-- [ ] Fase 2
+- [x] Fase 2
 - [ ] Fase 3
 - [ ] Fase 4
 - [ ] Fase 5 (opcional)
