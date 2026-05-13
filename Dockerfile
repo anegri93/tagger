@@ -28,6 +28,9 @@ COPY src/db/migrations ./dist/migrations
 COPY data/seed.sql ./data/seed.sql
 COPY package.json ./
 COPY ui ./ui
+COPY postman ./postman
+COPY docs ./docs
+COPY openapi.yaml ./openapi.yaml
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 3000

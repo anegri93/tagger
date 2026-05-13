@@ -10,10 +10,8 @@ coverage
 !.env.example
 *.log
 .DS_Store
-docs
 data
 !data/seed.sql
-postman
 README.md
 .tagger.log
 .tagger.pid
