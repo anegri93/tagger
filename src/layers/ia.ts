@@ -6,6 +6,7 @@ export interface CategoriaActiva {
   id: string;
   slug: string;
   nombre: string;
+  descripcion?: string | null;
 }
 
 export interface CategoriasLoader {
@@ -20,13 +21,42 @@ export interface CapaIa {
   evaluar(input: MovimientoInput): Promise<ResultadoCapa | null>;
 }
 
-const SYSTEM_PROMPT = `Sos un clasificador de movimientos bancarios paraguayos. Devolvés SOLO JSON con esta forma:
-{"categoria_slug": "<slug>", "confianza": <0..1>}
-Si no estás seguro, devolvés {"categoria_slug": null, "confianza": 0}.`;
+const SYSTEM_PROMPT = `Sos un clasificador de movimientos bancarios paraguayos. Tu única tarea es elegir UN slug de la lista CATEGORÍAS y devolverlo en JSON.
+
+REGLAS ESTRICTAS:
+1. Respondé SOLO JSON con esta forma exacta:
+   {"categoria_slug": "<slug>", "confianza": <0.0-1.0>}
+2. El slug DEBE estar exactamente como aparece en CATEGORÍAS. NO inventés slugs.
+3. Si ningún slug encaja → {"categoria_slug": null, "confianza": 0}.
+4. NO incluyas texto fuera del JSON. NO uses code fences.
+
+GUÍA DE CONFIANZA:
+- 0.95: nombre obvio (ej. "FARMACIA CATEDRAL" → farmacia)
+- 0.85: probable con contexto local conocido
+- 0.65: razonable pero ambiguo
+- 0.40: adivinanza fundada
+- 0:    no sé → usar también categoria_slug:null
+
+CONTEXTO PARAGUAY (reglas locales que pesan más que el nombre genérico):
+- "MANGO-..." al inicio → transferencia P2P entre personas (slug: transferencia)
+- SHELL, PETROPAR, COPETROL, AXION, BARCOS Y RODADOS, ESSO → combustible
+- BIGGIE, STOCK, AREA, SUPER 6, FRUTI, REAL, ARETE → supermercado
+- SLOTS, CASINO, TRAGAMONEDAS, BETSAT, GIRO WIN, SOLBET, APUESTAS → azar (aunque MCC diga 5812 restaurante)
+- PUNTO FARMA, FARMACIA, FARMA, CATEDRAL, EUROFARMA → farmacia
+- TIGO, COPACO, ANDE, ESSAP con "PAGO FACT" → servicios
+- DESPENSA, MINIMARKET, ALMACEN → alimentacion (NO supermercado)
+
+EJEMPLOS:
+"SHELL LDM" → {"categoria_slug":"combustible","confianza":0.95}
+"SLOTS DEL SOL" → {"categoria_slug":"azar","confianza":0.95}
+"MANGO-PEREZ JUAN" → {"categoria_slug":"transferencia","confianza":0.95}
+"FARMACIA CATEDRAL-FB" → {"categoria_slug":"farmacia","confianza":0.95}
+"DESPENSA SAN JORGE" → {"categoria_slug":"alimentacion","confianza":0.85}
+"COMERCIAL XYZ S.A." → {"categoria_slug":null,"confianza":0}`;
 
 function buildMarcasBlock(marcasPorCat: Map<string, Array<{ marca: string }>>): string {
   if (marcasPorCat.size === 0) return '';
-  const lines = ['Marcas conocidas en Paraguay (interpretá typos/variantes con flexibilidad):'];
+  const lines = ['Marcas extra conocidas (interpretá typos con flexibilidad):'];
   for (const [slug, list] of marcasPorCat) {
     if (list.length === 0) continue;
     lines.push(`- ${slug}: ${list.map((m) => m.marca).join(', ')}`);
@@ -39,7 +69,12 @@ function buildPrompt(
   categorias: CategoriaActiva[],
   marcasBlock: string,
 ): string {
-  const lista = categorias.map((c) => `- ${c.slug}: ${c.nombre}`).join('\n');
+  const lista = categorias
+    .map((c) => {
+      const desc = c.descripcion ? ` — ${c.descripcion}` : '';
+      return `- ${c.slug}: ${c.nombre}${desc}`;
+    })
+    .join('\n');
   const datos = [
     input.descripcion ? `descripcion: ${input.descripcion}` : null,
     input.nombreComercio ? `nombre_comercio: ${input.nombreComercio}` : null,
@@ -52,15 +87,14 @@ function buildPrompt(
 
   return `${SYSTEM_PROMPT}
 
-Categorías disponibles:
+CATEGORÍAS (usá EXACTAMENTE estos slugs):
 ${lista}
+${marcasBlock ? '\n' + marcasBlock : ''}
 
-${marcasBlock}
-
-Movimiento:
+MOVIMIENTO A CLASIFICAR:
 ${datos}
 
-Respondé solo con el JSON.`;
+JSON:`;
 }
 
 interface IaResponse {
@@ -102,7 +136,8 @@ export function crearCapaIa(
       }
       const parsed = parseJson(raw);
       if (!parsed || !parsed.categoria_slug) return null;
-      const cat = cats.find((c) => c.slug === parsed.categoria_slug);
+      const slugNorm = parsed.categoria_slug.trim().toLowerCase();
+      const cat = cats.find((c) => c.slug.toLowerCase() === slugNorm);
       if (!cat) return null;
       const confianza = Math.min(Math.max(parsed.confianza, 0), CONFIANZA.ia_max);
       return {

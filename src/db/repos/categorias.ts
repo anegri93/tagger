@@ -212,7 +212,12 @@ export function crearCategoriasLoader(db: Db): CategoriasLoader {
   return {
     async activas(): Promise<CategoriaActiva[]> {
       const rows = await db
-        .select({ id: categorias.id, slug: categorias.slug, nombre: categorias.nombre })
+        .select({
+          id: categorias.id,
+          slug: categorias.slug,
+          nombre: categorias.nombre,
+          descripcion: categorias.descripcion,
+        })
         .from(categorias)
         .where(eq(categorias.activo, true));
       return rows;
