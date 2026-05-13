@@ -46,19 +46,17 @@ describe('extraerDestinatarioTransferencia', () => {
 describe('crearCapaMemoria', () => {
   function lookup(hit: { categoriaId: string } | null) {
     return {
-      buscar: vi
-        .fn()
-        .mockResolvedValue(
-          hit
-            ? {
-                ...hit,
-                categoriaSlug: 'alquiler',
-                categoriaNombre: 'Alquiler',
-                destinatario: 'X',
-                hits: 1,
-              }
-            : null,
-        ),
+      buscar: vi.fn().mockResolvedValue(
+        hit
+          ? {
+              ...hit,
+              categoriaSlug: 'alquiler',
+              categoriaNombre: 'Alquiler',
+              destinatario: 'X',
+              hits: 1,
+            }
+          : null,
+      ),
     };
   }
 
