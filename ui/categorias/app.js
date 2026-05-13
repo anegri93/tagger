@@ -20,6 +20,21 @@ async function loadList() {
   try {
     const { items } = await window.taggerApi('/categorias');
     const tbody = $('lista-cats');
+    if (!items || items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" id="cats-empty-cell"></td></tr>';
+      const cell = document.getElementById('cats-empty-cell');
+      if (window.taggerEmpty && cell) {
+        window.taggerEmpty.render(cell, {
+          title: 'Sin categorías',
+          message: 'Creá la primera categoría o importá un catálogo para empezar.',
+          ctaLabel: '+ Nueva categoría',
+          ctaHref: '#',
+          postmanRequest: 'POST /categorias',
+        });
+      }
+      setStatus('');
+      return;
+    }
     tbody.innerHTML = items
       .map(
         (c) => `<tr data-slug="${c.slug}">

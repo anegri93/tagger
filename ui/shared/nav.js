@@ -131,8 +131,21 @@
       );
     }
 
+    const helpBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'tagger-nav-help-btn',
+        title: 'API y atajos (?)',
+        'aria-label': 'Mostrar API y atajos',
+        onclick: () => window.taggerApiModal?.open(),
+      },
+      ['?'],
+    );
+
     const config = el('div', { class: 'tagger-nav-config' }, [
       renderHealthBadge(),
+      helpBtn,
       renderResourcesDropdown(),
       el('input', {
         id: 'tagger-nav-apikey',

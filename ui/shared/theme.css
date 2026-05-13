@@ -301,6 +301,177 @@ textarea:focus {
   border-radius: var(--r-sm);
 }
 
+.tagger-empty {
+  background: var(--bg-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.tagger-empty h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--text);
+}
+.tagger-empty p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tagger-empty-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tagger-tooltip {
+  position: absolute;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--primary);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  max-width: 280px;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  line-height: 1.4;
+}
+.tagger-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 4px;
+  cursor: help;
+  border: 1px solid var(--border);
+}
+.tagger-help:hover {
+  background: var(--primary-bg);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tagger-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 20px;
+  z-index: 500;
+  overflow-y: auto;
+}
+.tagger-modal-overlay[hidden] {
+  display: none;
+}
+.tagger-modal {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  width: min(720px, 100%);
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+.tagger-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.tagger-modal-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.tagger-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tagger-modal-close:hover {
+  color: var(--text);
+}
+.tagger-modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tagger-api-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tagger-api-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tagger-api-head code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.tagger-api-curl {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-2);
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre;
+}
+.tagger-modal-footer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.tagger-nav-help-btn {
+  background: transparent;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+.tagger-nav-help-btn:hover {
+  color: var(--text);
+  background: var(--bg-3);
+  border-color: var(--primary);
+}
+
 table.tbl {
   width: 100%;
   border-collapse: collapse;

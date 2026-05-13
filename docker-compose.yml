@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: tagger
       POSTGRES_PASSWORD: tagger
       POSTGRES_DB: tagger
+    ports:
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

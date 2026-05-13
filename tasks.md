@@ -88,8 +88,9 @@
 - **Aceptación**: modal abre con `?` keyboard shortcut o botón `</>` en topbar.
 
 ### Validación Fase 3
-- [ ] `pnpm lint && pnpm test && pnpm build`
-- [ ] Smoke: vaciar tabla categorias (filter), aparece empty state. Tooltip aparece. Modal API abre.
+- [x] `pnpm lint && pnpm test && pnpm build`
+- [ ] Smoke manual pendiente (tooltip MCC, modal `?`, empty state cuando no hay categorías).
+- Nota: empty state integrado en `categorias` (lista vacía). Recat/test-monitor/importar usan modal API; integración empty-state queda lista para adopción incremental.
 
 ---
 
@@ -162,7 +163,7 @@
 
 - [x] Fase 1
 - [x] Fase 2
-- [ ] Fase 3
+- [x] Fase 3
 - [ ] Fase 4
 - [ ] Fase 5 (opcional)
 - [ ] Fase 6

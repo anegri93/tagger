@@ -12,6 +12,9 @@
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
     <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
     <script src="/ui/shared/footer.js" defer></script>
 
     <section class="page-actions">
@@ -287,6 +290,20 @@
     </div>
 
     <script src="recat.js"></script>
-    <script>window.taggerBreadcrumbs && window.taggerBreadcrumbs([{label:"Inicio",href:"/ui/index.html"},{label:"Recategorizar"}]);</script>
+    <script>
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'Recategorizar' },
+        ]);
+      window.taggerApiModal &&
+        window.taggerApiModal.register([
+          { name: 'Recategorizar catálogo', method: 'POST', path: '/admin/recat/catalogo' },
+          { name: 'Estado reproceso', method: 'GET', path: '/admin/recat/status' },
+          { name: 'Diffs', method: 'GET', path: '/admin/recat/diffs' },
+          { name: 'Sugerencias IA', method: 'GET', path: '/admin/recat/sugerencias' },
+          { name: 'Marcas candidatas', method: 'GET', path: '/marcas/candidatas' },
+        ]);
+    </script>
   </body>
 </html>

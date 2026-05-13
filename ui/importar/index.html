@@ -134,6 +134,9 @@
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
     <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
     <script src="/ui/shared/footer.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -413,6 +416,18 @@
         return s.replace(/"/g, '&quot;');
       }
     </script>
-    <script>window.taggerBreadcrumbs && window.taggerBreadcrumbs([{label:"Inicio",href:"/ui/index.html"},{label:"Importar"}]);</script>
+    <script>
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'Importar' },
+        ]);
+      window.taggerApiModal &&
+        window.taggerApiModal.register([
+          { name: 'Importar comercios catálogo', method: 'POST', path: '/import/comercios' },
+          { name: 'Importar movimientos', method: 'POST', path: '/import/movimientos' },
+          { name: 'Estado de import', method: 'GET', path: '/import/status' },
+        ]);
+    </script>
   </body>
 </html>

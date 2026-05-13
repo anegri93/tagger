@@ -12,6 +12,9 @@
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
     <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
     <script src="/ui/shared/footer.js" defer></script>
 
     <section class="page-actions">
@@ -155,6 +158,18 @@
     </section>
 
     <script src="app.js"></script>
-    <script>window.taggerBreadcrumbs && window.taggerBreadcrumbs([{label:"Inicio",href:"/ui/index.html"},{label:"Monitor de tests"}]);</script>
+    <script>
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'Monitor de tests' },
+        ]);
+      window.taggerApiModal &&
+        window.taggerApiModal.register([
+          { name: 'Listar runs', method: 'GET', path: '/test-batch/runs' },
+          { name: 'Disparar run', method: 'POST', path: '/test-batch/runs' },
+          { name: 'Detalle run', method: 'GET', path: '/test-batch/runs/{id}' },
+        ]);
+    </script>
   </body>
 </html>
