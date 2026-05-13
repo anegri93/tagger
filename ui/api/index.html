@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — API explorer</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <style>
+      .container {
+        max-width: 1180px;
+        margin: 24px auto;
+        padding: 0 20px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .header .actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .tree {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 12px;
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+      }
+      .tree input.search {
+        width: 100%;
+        margin-bottom: 8px;
+      }
+      .folder {
+        margin-bottom: 8px;
+      }
+      .folder > .folder-name {
+        font-size: 11px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 4px 6px;
+      }
+      .req-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      .req-link:hover,
+      .req-link.active {
+        background: var(--bg-3);
+        color: var(--text);
+      }
+      .req-link .meth {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 5px;
+        border-radius: var(--r-sm);
+        min-width: 38px;
+        text-align: center;
+      }
+      .meth.GET {
+        background: #1c3b66;
+        color: var(--primary);
+      }
+      .meth.POST {
+        background: #1c4d23;
+        color: var(--success);
+      }
+      .meth.PATCH,
+      .meth.PUT {
+        background: #5c4515;
+        color: #e3b341;
+      }
+      .meth.DELETE {
+        background: #4f1a1a;
+        color: var(--danger);
+      }
+
+      .panel {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px;
+      }
+      .panel .req-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .panel .req-head h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .panel .desc {
+        color: var(--text-3);
+        font-size: 13px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+      .field input,
+      .field textarea {
+        width: 100%;
+      }
+      .field textarea {
+        min-height: 120px;
+      }
+      pre.response {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        padding: 12px;
+        font-size: 12px;
+        font-family: var(--mono);
+        overflow: auto;
+        max-height: 400px;
+        white-space: pre-wrap;
+      }
+      .resp-meta {
+        font-family: var(--mono);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .resp-meta .ok {
+        color: var(--success);
+      }
+      .resp-meta .err {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/toast.js"></script>
+    <script src="/ui/shared/skeleton.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
+
+    <div class="container">
+      <div class="header">
+        <h1>API explorer</h1>
+        <span class="t-muted t-small">basado en Postman collection</span>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/postman/tagger.postman_collection.json" download
+            >Descargar colección</a
+          >
+          <a class="btn btn-ghost" href="/openapi.yaml">OpenAPI</a>
+        </div>
+      </div>
+
+      <div class="layout">
+        <aside class="tree" aria-label="Árbol de requests">
+          <input
+            class="search"
+            id="search"
+            type="search"
+            placeholder="Filtrar requests…"
+            aria-label="Filtrar requests"
+          />
+          <div id="tree-root"></div>
+        </aside>
+        <main class="panel" id="detail-panel">
+          <p class="t-muted">Seleccioná un request del árbol.</p>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'API explorer' },
+        ]);
+
+      let collection = null;
+      let allRequests = [];
+      let activeRequest = null;
+
+      async function loadCollection() {
+        try {
+          const r = await fetch('/postman/tagger.postman_collection.json');
+          collection = await r.json();
+          renderTree();
+        } catch (e) {
+          document.getElementById('tree-root').innerHTML =
+            '<p class="t-muted t-small">Error cargando colección.</p>';
+          window.toast && window.toast.error('No se pudo cargar la colección Postman');
+        }
+      }
+
+      function flatten(items, parent) {
+        const out = [];
+        for (const it of items || []) {
+          if (it.item) out.push(...flatten(it.item, it.name));
+          else if (it.request) out.push({ ...it, _folder: parent || '' });
+        }
+        return out;
+      }
+
+      function renderTree() {
+        allRequests = flatten(collection.item || [], '');
+        const root = document.getElementById('tree-root');
+        const filter = (document.getElementById('search').value || '').toLowerCase();
+        const grouped = {};
+        for (const req of allRequests) {
+          const path = req.request?.url?.path?.join('/') || '';
+          const m = (req.request?.method || 'GET').toUpperCase();
+          if (filter && !(req.name + ' ' + path + ' ' + m).toLowerCase().includes(filter))
+            continue;
+          (grouped[req._folder] = grouped[req._folder] || []).push(req);
+        }
+        root.innerHTML = '';
+        for (const [folder, reqs] of Object.entries(grouped)) {
+          const f = document.createElement('div');
+          f.className = 'folder';
+          if (folder) {
+            const fn = document.createElement('div');
+            fn.className = 'folder-name';
+            fn.textContent = folder;
+            f.appendChild(fn);
+          }
+          for (const req of reqs) {
+            const row = document.createElement('div');
+            row.className = 'req-link';
+            row.tabIndex = 0;
+            row.dataset.id = req.id || req.name;
+            const m = (req.request?.method || 'GET').toUpperCase();
+            row.innerHTML = `<span class="meth ${m}">${m}</span><span>${escapeHtml(req.name)}</span>`;
+            row.addEventListener('click', () => selectRequest(req));
+            row.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') selectRequest(req);
+            });
+            f.appendChild(row);
+          }
+          root.appendChild(f);
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+        );
+      }
+
+      function resolveUrl(urlObj) {
+        if (!urlObj) return '';
+        const raw =
+          typeof urlObj === 'string' ? urlObj : urlObj.raw || ('/' + (urlObj.path || []).join('/'));
+        return raw
+          .replace(/\{\{baseUrl\}\}/g, window.tagger.baseUrl || 'http://localhost:3000')
+          .replace(/\{\{apiKey\}\}/g, window.tagger.apiKey || '');
+      }
+
+      function selectRequest(req) {
+        activeRequest = req;
+        document.querySelectorAll('.req-link').forEach((n) => n.classList.remove('active'));
+        const id = req.id || req.name;
+        const node = Array.from(document.querySelectorAll('.req-link')).find(
+          (n) => n.dataset.id === id,
+        );
+        if (node) node.classList.add('active');
+        renderDetail(req);
+      }
+
+      function renderDetail(req) {
+        const panel = document.getElementById('detail-panel');
+        const m = (req.request?.method || 'GET').toUpperCase();
+        const url = resolveUrl(req.request?.url);
+        const desc = req.request?.description || '';
+        const bodyMode = req.request?.body?.mode;
+        const bodyRaw =
+          bodyMode === 'raw' ? req.request?.body?.raw || '' : JSON.stringify(req.request?.body || {}, null, 2);
+
+        panel.innerHTML = `
+          <div class="req-head">
+            <span class="meth ${m}" style="padding:2px 8px">${m}</span>
+            <h2>${escapeHtml(req.name)}</h2>
+          </div>
+          <div class="field">
+            <label>URL</label>
+            <input id="x-url" value="${escapeHtml(url)}" />
+          </div>
+          ${desc ? `<div class="desc">${escapeHtml(desc)}</div>` : ''}
+          ${
+            ['POST', 'PUT', 'PATCH'].includes(m)
+              ? `<div class="field"><label>Body</label><textarea id="x-body">${escapeHtml(
+                  bodyRaw || '{}',
+                )}</textarea></div>`
+              : ''
+          }
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+            <button id="x-run" class="btn btn-primary">Ejecutar</button>
+            <button id="x-copy" class="btn btn-ghost">Copiar curl</button>
+            <span id="x-meta" class="resp-meta t-muted">—</span>
+          </div>
+          <pre class="response" id="x-resp" hidden></pre>
+        `;
+        document.getElementById('x-run').addEventListener('click', () => runRequest(m));
+        document.getElementById('x-copy').addEventListener('click', () => copyCurl(m));
+      }
+
+      async function runRequest(method) {
+        const url = document.getElementById('x-url').value;
+        const path = url.replace(window.tagger.baseUrl || '', '');
+        const opts = { method };
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+          const txt = document.getElementById('x-body')?.value || '';
+          if (txt.trim()) opts.body = txt;
+        }
+        const resp = document.getElementById('x-resp');
+        const meta = document.getElementById('x-meta');
+        meta.innerHTML = 'enviando…';
+        resp.hidden = true;
+        const t0 = performance.now();
+        try {
+          const data = await window.taggerApi(path, opts);
+          const ms = Math.round(performance.now() - t0);
+          meta.innerHTML = `<span class="ok">200 OK</span> · ${ms} ms`;
+          resp.textContent = JSON.stringify(data, null, 2);
+          resp.hidden = false;
+          window.toast && window.toast.success(`OK ${method} ${path}`);
+        } catch (e) {
+          const ms = Math.round(performance.now() - t0);
+          meta.innerHTML = `<span class="err">${e.status || 'ERR'}</span> · ${ms} ms`;
+          resp.textContent = JSON.stringify({ message: e.message, body: e.body }, null, 2);
+          resp.hidden = false;
+          window.toast && window.toast.error(e.userMessage || e.message);
+        }
+      }
+
+      function copyCurl(method) {
+        const url = document.getElementById('x-url').value;
+        const body = document.getElementById('x-body')?.value;
+        const headers = ['-H "x-api-key: $API_KEY"'];
+        if (body) headers.push('-H "content-type: application/json"');
+        let cmd = `curl -X ${method} ${headers.join(' ')} "${url}"`;
+        if (body) cmd += ` \\\n  -d '${body.replace(/'/g, "'\\''")}'`;
+        navigator.clipboard?.writeText(cmd);
+        window.toast && window.toast.info('curl copiado');
+      }
+
+      document.getElementById('search').addEventListener('input', renderTree);
+      loadCollection();
+    </script>
+  </body>
+</html>

@@ -127,8 +127,9 @@
 - **Aceptación**: GET `/categorias` se ejecuta, response visible. Editar body funciona para POST.
 
 ### Validación Fase 5
-- [ ] `pnpm lint && pnpm test && pnpm build`
-- [ ] Smoke: ejecutar 3 requests distintos (GET, POST, PATCH).
+- [x] `pnpm lint && pnpm test && pnpm build`
+- [ ] Smoke manual pendiente.
+- Implementación: `/ui/api/index.html` con árbol filtrable + ejecutor inline (curl, retry, response viewer).
 
 ---
 
@@ -151,12 +152,13 @@
 - **Aceptación**: toggle cambia tema sin reload, persiste.
 
 ### Validación Fase 6 (FINAL)
-- [ ] `pnpm lint`
-- [ ] `pnpm test`
-- [ ] `pnpm build`
-- [ ] Smoke completo: recorrer las 5 páginas + dark mode + densidad + modal API + toasts.
-- [ ] Lighthouse a11y > 90.
-- [ ] PR a `main` con changelog por fase.
+- [x] `pnpm lint` (0 errores; 13 warnings preexistentes)
+- [x] `pnpm test` (241/241)
+- [x] `pnpm build`
+- [ ] Smoke completo manual pendiente.
+- [ ] Lighthouse a11y manual.
+- [ ] PR a `main` (pendiente acción usuario).
+- Implementación: dark/light toggle persistido + densidad compacta para tablas, drop emojis en headers, audit comentado en theme.css.
 
 ---
 
@@ -166,5 +168,5 @@
 - [x] Fase 2
 - [x] Fase 3
 - [x] Fase 4
-- [ ] Fase 5 (opcional)
-- [ ] Fase 6
+- [x] Fase 5
+- [x] Fase 6

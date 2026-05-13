@@ -1,4 +1,14 @@
-:root {
+/*
+ * Tokens del tema. Pares de contraste verificados WCAG AA:
+ *  - text/bg     #e6edf3 / #0d1117  (15.6:1)
+ *  - text-3/bg-2 #8b949e / #161b22  (5.9:1)
+ *  - primary/bg  #58a6ff / #0d1117  (7.6:1)
+ *  - success/bg  #3fb950 / #0d1117  (7.4:1)
+ *  - danger/bg   #f85149 / #0d1117  (5.4:1)
+ * Light theme activado con [data-theme="light"] en <html>.
+ */
+:root,
+:root[data-theme='dark'] {
   --bg: #0d1117;
   --bg-2: #161b22;
   --bg-3: #21262d;
@@ -19,6 +29,31 @@
   --r-sm: 4px;
   --r-md: 6px;
   --r-lg: 8px;
+}
+
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --bg-2: #f6f8fa;
+  --bg-3: #eaeef2;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-2: #424a53;
+  --text-3: #656d76;
+  --text-4: #8c959f;
+  --primary: #0969da;
+  --primary-bg: #0969da;
+  --success: #1a7f37;
+  --success-bg: #1f883d;
+  --warn: #9a6700;
+  --warn-bg: #bf8700;
+  --danger: #d1242f;
+  --danger-bg: #cf222e;
+}
+
+:root[data-density='compact'] table.tbl th,
+:root[data-density='compact'] table.tbl td {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 * {

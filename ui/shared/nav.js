@@ -8,6 +8,7 @@
     { path: '/ui/importar/index.html', label: 'Importar', prefix: '/ui/importar/' },
     { path: '/ui/recat/index.html', label: 'Recategorizar', prefix: '/ui/recat/' },
     { path: '/ui/test-monitor/index.html', label: 'Monitor', prefix: '/ui/test-monitor/' },
+    { path: '/ui/api/index.html', label: 'API', prefix: '/ui/api/' },
   ];
 
   const RESOURCES = [
@@ -17,6 +18,21 @@
     { label: 'Runbook', href: '/docs/runbook.md', external: false },
     { label: 'Integration guide', href: '/docs/integration-guide.md', external: false },
   ];
+
+  const THEME_KEY = 'tagger:theme';
+  function getTheme() {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem(THEME_KEY, t);
+  }
+  setTheme(getTheme());
 
   function isActive(section) {
     const p = window.location.pathname;
@@ -131,6 +147,23 @@
       );
     }
 
+    const themeBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'tagger-nav-help-btn',
+        title: 'Cambiar tema',
+        'aria-label': 'Cambiar tema',
+        id: 'tagger-theme-toggle',
+      },
+      [getTheme() === 'light' ? '☾' : '☼'],
+    );
+    themeBtn.addEventListener('click', () => {
+      const next = getTheme() === 'light' ? 'dark' : 'light';
+      setTheme(next);
+      themeBtn.textContent = next === 'light' ? '☾' : '☼';
+    });
+
     const helpBtn = el(
       'button',
       {
@@ -145,6 +178,7 @@
 
     const config = el('div', { class: 'tagger-nav-config' }, [
       renderHealthBadge(),
+      themeBtn,
       helpBtn,
       renderResourcesDropdown(),
       el('input', {
