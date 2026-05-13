@@ -37,21 +37,17 @@ GUÍA DE CONFIANZA:
 - 0.40: adivinanza fundada
 - 0:    no sé → usar también categoria_slug:null
 
-CONTEXTO PARAGUAY (reglas locales que pesan más que el nombre genérico):
+CONTEXTO PARAGUAY:
 - "MANGO-..." al inicio → transferencia P2P entre personas (slug: transferencia)
-- SHELL, PETROPAR, COPETROL, AXION, BARCOS Y RODADOS, ESSO → combustible
-- BIGGIE, STOCK, AREA, SUPER 6, FRUTI, REAL, ARETE → supermercado
-- SLOTS, CASINO, TRAGAMONEDAS, BETSAT, GIRO WIN, SOLBET, APUESTAS → azar (aunque MCC diga 5812 restaurante)
-- PUNTO FARMA, FARMACIA, FARMA, CATEDRAL, EUROFARMA → farmacia
+- PUNTO FARMA, FARMACIA, FARMA, BOTICA → farmacia
 - TIGO, COPACO, ANDE, ESSAP con "PAGO FACT" → servicios
-- DESPENSA, MINIMARKET, ALMACEN → alimentacion (NO supermercado)
+- DESPENSA, MINIMARKET, ALMACEN, BODEGA → alimentacion (NO supermercado grande)
 
 EJEMPLOS:
-"SHELL LDM" → {"categoria_slug":"combustible","confianza":0.95}
-"SLOTS DEL SOL" → {"categoria_slug":"azar","confianza":0.95}
 "MANGO-PEREZ JUAN" → {"categoria_slug":"transferencia","confianza":0.95}
 "FARMACIA CATEDRAL-FB" → {"categoria_slug":"farmacia","confianza":0.95}
 "DESPENSA SAN JORGE" → {"categoria_slug":"alimentacion","confianza":0.85}
+"TIGO PAGO DE FACT" → {"categoria_slug":"servicios","confianza":0.9}
 "COMERCIAL XYZ S.A." → {"categoria_slug":null,"confianza":0}`;
 
 function buildMarcasBlock(marcasPorCat: Map<string, Array<{ marca: string }>>): string {
