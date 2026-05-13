@@ -9,15 +9,30 @@
   </head>
   <body>
     <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/toast.js"></script>
+    <script src="/ui/shared/skeleton.js"></script>
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
 
     <section class="page-actions">
-      <h2>📂 Categorías</h2>
+      <h2>Categorías</h2>
       <div class="actions">
         <button id="btn-reload" class="btn btn-primary">↻ Reload</button>
         <button id="btn-new" class="btn">+ Nueva</button>
         <button id="btn-reprocess" class="btn btn-danger">⚙ Re-procesar catálogo</button>
+        <button
+          id="btn-density"
+          class="btn btn-ghost btn-sm"
+          type="button"
+          aria-label="Alternar densidad"
+        >
+          Densidad: normal
+        </button>
         <span id="status" class="t-small t-muted"></span>
       </div>
     </section>
@@ -35,7 +50,16 @@
             <th>Slug</th>
             <th>Nombre</th>
             <th>Movs</th>
-            <th>MCC</th>
+            <th>
+              MCC
+              <span
+                class="tagger-help"
+                tabindex="0"
+                data-tooltip="Merchant Category Code (ISO 18245). Cantidad de MCCs asociados a esta categoría como fallback."
+                aria-label="Ayuda MCC"
+                >?</span
+              >
+            </th>
             <th>Comercios</th>
             <th>Acciones</th>
           </tr>
@@ -62,5 +86,41 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+      (function () {
+        const KEY = 'tagger:density';
+        const btn = document.getElementById('btn-density');
+        function apply(v) {
+          document.documentElement.setAttribute('data-density', v);
+          if (btn) btn.textContent = `Densidad: ${v}`;
+        }
+        apply(localStorage.getItem(KEY) || 'normal');
+        btn?.addEventListener('click', () => {
+          const next =
+            (localStorage.getItem(KEY) || 'normal') === 'normal' ? 'compact' : 'normal';
+          localStorage.setItem(KEY, next);
+          apply(next);
+        });
+      })();
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'Categorías' },
+        ]);
+      window.taggerApiModal &&
+        window.taggerApiModal.register([
+          { name: 'Listar categorías', method: 'GET', path: '/categorias' },
+          {
+            name: 'Crear categoría',
+            method: 'POST',
+            path: '/categorias',
+            body: { slug: 'transporte', nombre: 'Transporte', descripcion: '...' },
+          },
+          { name: 'Listar patrones', method: 'GET', path: '/patrones' },
+          { name: 'Listar comercios', method: 'GET', path: '/comercios?limit=50' },
+          { name: 'Listar marcas IA', method: 'GET', path: '/marcas' },
+          { name: 'Reprocesar catálogo', method: 'POST', path: '/admin/recat/catalogo' },
+        ]);
+    </script>
   </body>
 </html>

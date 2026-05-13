@@ -1,4 +1,14 @@
-:root {
+/*
+ * Tokens del tema. Pares de contraste verificados WCAG AA:
+ *  - text/bg     #e6edf3 / #0d1117  (15.6:1)
+ *  - text-3/bg-2 #8b949e / #161b22  (5.9:1)
+ *  - primary/bg  #58a6ff / #0d1117  (7.6:1)
+ *  - success/bg  #3fb950 / #0d1117  (7.4:1)
+ *  - danger/bg   #f85149 / #0d1117  (5.4:1)
+ * Light theme activado con [data-theme="light"] en <html>.
+ */
+:root,
+:root[data-theme='dark'] {
   --bg: #0d1117;
   --bg-2: #161b22;
   --bg-3: #21262d;
@@ -19,6 +29,31 @@
   --r-sm: 4px;
   --r-md: 6px;
   --r-lg: 8px;
+}
+
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --bg-2: #f6f8fa;
+  --bg-3: #eaeef2;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-2: #424a53;
+  --text-3: #656d76;
+  --text-4: #8c959f;
+  --primary: #0969da;
+  --primary-bg: #0969da;
+  --success: #1a7f37;
+  --success-bg: #1f883d;
+  --warn: #9a6700;
+  --warn-bg: #bf8700;
+  --danger: #d1242f;
+  --danger-bg: #cf222e;
+}
+
+:root[data-density='compact'] table.tbl th,
+:root[data-density='compact'] table.tbl td {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 * {
@@ -115,15 +150,25 @@ textarea:focus {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .tagger-nav .brand {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text);
   margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.tagger-nav .brand-icon {
-  margin-right: 4px;
+.tagger-nav .brand:hover {
+  text-decoration: none;
+}
+.tagger-nav .brand-mark {
+  color: var(--primary);
+  font-size: 16px;
 }
 .tagger-nav-links {
   display: flex;
@@ -164,6 +209,408 @@ textarea:focus {
 }
 .tagger-nav-status.err {
   color: var(--danger);
+}
+
+.tagger-nav-health {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-3);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.tagger-nav-health.ok {
+  color: var(--success);
+}
+.tagger-nav-health.warn {
+  color: var(--warn);
+}
+.tagger-nav-health.err {
+  color: var(--danger);
+}
+
+.tagger-nav-dd {
+  position: relative;
+}
+.tagger-nav-dd-btn {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tagger-nav-dd-btn:hover,
+.tagger-nav-dd-btn[aria-expanded='true'] {
+  background: var(--bg-3);
+  color: var(--text);
+  border-color: var(--primary);
+}
+.tagger-nav-dd-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+}
+.tagger-nav-dd-menu[hidden] {
+  display: none;
+}
+.tagger-nav-dd-menu a {
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.tagger-nav-dd-menu a:hover {
+  background: var(--bg-3);
+  color: var(--text);
+  text-decoration: none;
+}
+.tagger-nav-dd-menu a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.tagger-footer {
+  margin-top: 48px;
+  padding: 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-3);
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+.tagger-footer .links {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.tagger-footer code {
+  font-family: var(--mono);
+  color: var(--text-2);
+}
+
+.tagger-breadcrumbs {
+  padding: 12px 20px 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.tagger-breadcrumbs ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tagger-breadcrumbs li::after {
+  content: '/';
+  margin-left: 6px;
+  color: var(--text-4);
+}
+.tagger-breadcrumbs li:last-child::after {
+  content: '';
+}
+.tagger-breadcrumbs li:last-child {
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.tagger-empty {
+  background: var(--bg-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.tagger-empty h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--text);
+}
+.tagger-empty p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tagger-empty-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tagger-tooltip {
+  position: absolute;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--primary);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  max-width: 280px;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  line-height: 1.4;
+}
+.tagger-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 4px;
+  cursor: help;
+  border: 1px solid var(--border);
+}
+.tagger-help:hover {
+  background: var(--primary-bg);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tagger-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 20px;
+  z-index: 500;
+  overflow-y: auto;
+}
+.tagger-modal-overlay[hidden] {
+  display: none;
+}
+.tagger-modal {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  width: min(720px, 100%);
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+.tagger-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.tagger-modal-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.tagger-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tagger-modal-close:hover {
+  color: var(--text);
+}
+.tagger-modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tagger-api-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tagger-api-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tagger-api-head code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.tagger-api-curl {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-2);
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre;
+}
+.tagger-modal-footer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.tagger-nav-help-btn {
+  background: transparent;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+.tagger-nav-help-btn:hover {
+  color: var(--text);
+  background: var(--bg-3);
+  border-color: var(--primary);
+}
+
+.tagger-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1500;
+  max-width: 360px;
+}
+.tagger-toast {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  animation: tagger-toast-in 0.18s ease-out;
+}
+@keyframes tagger-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tagger-toast.out {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.18s;
+}
+.tagger-toast-success {
+  border-left-color: var(--success);
+}
+.tagger-toast-error {
+  border-left-color: var(--danger);
+}
+.tagger-toast-warn {
+  border-left-color: var(--warn);
+}
+.tagger-toast-info {
+  border-left-color: var(--primary);
+}
+.tagger-toast-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+.tagger-toast-action {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--primary);
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.tagger-toast-action:hover {
+  background: var(--bg-3);
+}
+.tagger-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tagger-toast-close:hover {
+  color: var(--text);
+}
+
+.tagger-skel-bar {
+  display: inline-block;
+  width: 80%;
+  height: 12px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--bg-3) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  background-size: 200% 100%;
+  animation: tagger-skel 1.2s infinite;
+}
+.tagger-skel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+.tagger-skel-row td {
+  vertical-align: middle;
+}
+@keyframes tagger-skel {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 table.tbl {

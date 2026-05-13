@@ -94,11 +94,18 @@
   </head>
   <body>
     <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/toast.js"></script>
+    <script src="/ui/shared/skeleton.js"></script>
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
 
     <section class="page-actions">
-      <h2>📂 <span id="cat-slug">…</span></h2>
+      <h2><span id="cat-slug">…</span></h2>
       <div class="actions">
         <a href="/ui/categorias/index.html" class="btn btn-ghost">← Volver lista</a>
         <span id="status" class="t-small t-muted"></span>
@@ -299,5 +306,6 @@
     </div>
 
     <script src="detalle.js"></script>
+    <script>window.taggerBreadcrumbs && window.taggerBreadcrumbs([{label:"Inicio",href:"/ui/index.html"},{label:"Categorías",href:"/ui/categorias/index.html"},{label:"Detalle"}]);</script>
   </body>
 </html>

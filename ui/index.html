@@ -3,50 +3,262 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tagger</title>
+    <title>tagger — Inicio</title>
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
       .container {
-        max-width: 1100px;
-        margin: 24px auto;
+        max-width: 1200px;
+        margin: 24px auto 48px;
         padding: 0 20px;
       }
+
       .hero {
         background: linear-gradient(135deg, var(--bg-2), var(--bg-3));
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 32px;
-        margin-bottom: 24px;
+        padding: 36px 32px;
+        margin-bottom: 32px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: center;
+      }
+      @media (max-width: 760px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
       }
       .hero h1 {
         margin: 0 0 8px;
-        font-size: 28px;
+        font-size: 30px;
+        letter-spacing: -0.5px;
       }
       .hero p {
         margin: 0;
+        color: var(--text-2);
+        max-width: 640px;
+        line-height: 1.55;
+        font-size: 14px;
+      }
+      .hero .cta {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 220px;
+      }
+      .hero .cta .btn {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      h2.section-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         color: var(--text-3);
+        margin: 36px 0 14px;
+        font-weight: 700;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+
+      .docs-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 760px) {
+        .docs-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .doc-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--primary);
+        border-radius: var(--r-lg);
+        padding: 22px;
+        text-decoration: none;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: transform 0.15s, border-color 0.15s;
+      }
+      .doc-card:hover {
+        border-color: var(--primary);
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+      .doc-card.ops {
+        border-left-color: var(--warn);
+      }
+      .doc-card.dev {
+        border-left-color: var(--success);
+      }
+      .doc-card .doc-kicker {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-3);
+        font-weight: 600;
+      }
+      .doc-card h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .doc-card .doc-desc {
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .doc-card ul.toc {
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 14px;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .doc-card ul.toc li::before {
+        content: '›';
+        margin-right: 6px;
+        color: var(--primary);
+      }
+      .doc-card .doc-actions {
+        margin-top: auto;
+        padding-top: 12px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .roles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      @media (max-width: 900px) {
+        .roles {
+          grid-template-columns: 1fr;
+        }
+      }
+      .role-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px;
+      }
+      .role-card h3 {
+        margin: 0 0 4px;
+        font-size: 14px;
+      }
+      .role-card .who {
+        font-size: 12px;
+        color: var(--text-3);
+        margin: 0 0 12px;
+      }
+      .role-card ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .role-card ol li {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .role-card ol li .num {
+        flex-shrink: 0;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text-2);
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .role-card a {
+        font-size: 13px;
+      }
+      .role-card .step-meta {
+        display: block;
+        font-size: 11px;
+        color: var(--text-4);
+        margin-top: 2px;
+      }
+
+      .pipeline {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      @media (max-width: 760px) {
+        .pipeline {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .pipe-step {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px;
+        text-decoration: none;
+        color: var(--text);
+        display: block;
+      }
+      .pipe-step:hover {
+        border-color: var(--primary);
+        text-decoration: none;
+      }
+      .pipe-step .step-n {
+        font-size: 10px;
+        color: var(--text-4);
+        font-family: var(--mono);
+      }
+      .pipe-step h4 {
+        margin: 2px 0 4px;
+        font-size: 14px;
+        color: var(--primary);
+      }
+      .pipe-step p {
+        margin: 0;
+        font-size: 11px;
+        color: var(--text-3);
+        line-height: 1.4;
       }
 
       .health-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-        margin-bottom: 24px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
       }
       .health-card {
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 14px 16px;
+        padding: 12px 14px;
       }
       .health-card .label {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text-3);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
       .health-card .value {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 600;
         margin-top: 4px;
         font-family: var(--mono);
@@ -57,39 +269,27 @@
       .health-card .value.err {
         color: var(--danger);
       }
-      .health-card .sub {
-        font-size: 11px;
-        color: var(--text-3);
-        margin-top: 4px;
-      }
 
       .nav-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
+        gap: 12px;
       }
       .nav-card {
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 20px;
+        padding: 16px;
         text-decoration: none;
         color: var(--text);
-        transition: all 0.15s;
-        display: block;
       }
       .nav-card:hover {
         border-color: var(--primary);
-        background: var(--bg-3);
         text-decoration: none;
-      }
-      .nav-card .icon {
-        font-size: 32px;
-        margin-bottom: 8px;
       }
       .nav-card h3 {
         margin: 0 0 4px;
-        font-size: 16px;
+        font-size: 14px;
       }
       .nav-card p {
         margin: 0;
@@ -101,20 +301,207 @@
   </head>
   <body>
     <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/toast.js"></script>
+    <script src="/ui/shared/skeleton.js"></script>
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/empty-state.js"></script>
+    <script src="/ui/shared/tooltip.js"></script>
+    <script src="/ui/shared/api-modal.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
 
     <div class="container">
       <section class="hero">
-        <h1>🏷️ tagger</h1>
-        <p>Servicio categorización movimientos bancarios — cascada catálogo→patrones→MCC→IA.</p>
+        <div>
+          <h1>tagger</h1>
+          <p>
+            Categorización automática de movimientos bancarios con cascada
+            <strong>catálogo → patrones → MCC → IA</strong>. Cada nivel atrapa lo que el anterior
+            no resolvió.
+          </p>
+        </div>
+        <div class="cta">
+          <a class="btn btn-primary" href="/docs/integration-guide.md"
+            >Integrar como developer →</a
+          >
+          <a class="btn btn-ghost" href="/docs/runbook.md">Operar el servicio →</a>
+        </div>
       </section>
 
+      <h2 class="section-title">Documentación esencial</h2>
+      <section class="docs-grid">
+        <a class="doc-card dev" href="/docs/integration-guide.md">
+          <span class="doc-kicker">Para developers</span>
+          <h3>Integration guide</h3>
+          <p class="doc-desc">
+            Guía completa para integrar tagger desde apps mobile o backends. Auth, payloads de
+            ejemplo, manejo de respuestas async (IA), correcciones de usuario, edge cases.
+          </p>
+          <ul class="toc">
+            <li>Auth con x-api-key</li>
+            <li>Categorizar movimiento</li>
+            <li>Polling de IA</li>
+            <li>Correcciones</li>
+            <li>Errores comunes</li>
+            <li>Ejemplos cURL/TS</li>
+          </ul>
+          <div class="doc-actions">
+            <span class="btn btn-primary btn-sm">Leer guía</span>
+            <a class="btn btn-ghost btn-sm" href="/ui/api/index.html">Probar API</a>
+            <a
+              class="btn btn-ghost btn-sm"
+              href="/postman/tagger.postman_collection.json"
+              download
+              >Postman</a
+            >
+          </div>
+        </a>
+
+        <a class="doc-card ops" href="/docs/runbook.md">
+          <span class="doc-kicker">Para operadores y devops</span>
+          <h3>Runbook operacional</h3>
+          <p class="doc-desc">
+            Procedimientos de deploy, importación de catálogo, recategorización masiva,
+            mantenimiento de DB y troubleshooting de errores frecuentes (401, IA timeout, sin
+            categoría).
+          </p>
+          <ul class="toc">
+            <li>Deploy inicial</li>
+            <li>Importar catálogo</li>
+            <li>Recategorización</li>
+            <li>Métricas y logs</li>
+            <li>Mantenimiento DB</li>
+            <li>Troubleshooting</li>
+          </ul>
+          <div class="doc-actions">
+            <span class="btn btn-warn btn-sm">Abrir runbook</span>
+            <a class="btn btn-ghost btn-sm" href="/ui/test-monitor/index.html">Monitor</a>
+            <a class="btn btn-ghost btn-sm" href="/ui/recat/index.html">Recategorizar</a>
+          </div>
+        </a>
+      </section>
+
+      <h2 class="section-title">Empezar según tu rol</h2>
+      <section class="roles">
+        <div class="role-card">
+          <h3>Operador de negocio</h3>
+          <p class="who">Cargás catálogo, definís categorías, revisás resultados.</p>
+          <ol>
+            <li>
+              <span class="num">1</span>
+              <div>
+                <a href="/ui/importar/index.html">Importar catálogo o movimientos</a>
+                <span class="step-meta">XLSX/CSV con mapping de columnas</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">2</span>
+              <div>
+                <a href="/ui/categorias/index.html">Definir categorías y patrones</a>
+                <span class="step-meta">CRUD + regex / MCC / marcas</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">3</span>
+              <div>
+                <a href="/ui/recat/index.html">Recategorizar y revisar diffs</a>
+                <span class="step-meta">Sugerencias IA + marcas candidatas</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="role-card">
+          <h3>Developer integrador</h3>
+          <p class="who">Conectás tagger desde tu backend o app.</p>
+          <ol>
+            <li>
+              <span class="num">1</span>
+              <div>
+                <a href="/docs/integration-guide.md">Leer integration guide</a>
+                <span class="step-meta">Auth, payloads, IA async</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">2</span>
+              <div>
+                <a href="/ui/api/index.html">Probar requests en API explorer</a>
+                <span class="step-meta">Ejecutor inline + copy curl</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">3</span>
+              <div>
+                <a href="/postman/tagger.postman_collection.json" download
+                  >Importar colección Postman</a
+                >
+                <span class="step-meta"
+                  >o ver <a href="/openapi.yaml">OpenAPI spec</a></span
+                >
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="role-card">
+          <h3>DevOps / SRE</h3>
+          <p class="who">Deployás, monitoreás, mantenés salud del servicio.</p>
+          <ol>
+            <li>
+              <span class="num">1</span>
+              <div>
+                <a href="/docs/runbook.md">Seguir runbook de deploy</a>
+                <span class="step-meta">docker compose + migrations + seed</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">2</span>
+              <div>
+                <a href="/ui/test-monitor/index.html">Correr suite de tests masivos</a>
+                <span class="step-meta">latencia, throughput, mismatches</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">3</span>
+              <div>
+                <a href="/docs/runbook.md">Troubleshooting de incidentes</a>
+                <span class="step-meta">401, IA timeout, DB</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <h2 class="section-title">Cómo decide la categoría — Cascada</h2>
+      <section class="pipeline" aria-label="Cascada de categorización">
+        <a class="pipe-step" href="/ui/categorias/index.html">
+          <span class="step-n">PASO 01</span>
+          <h4>Catálogo</h4>
+          <p>Match exacto en <code>comercios_catalogo</code>. Máxima precisión.</p>
+        </a>
+        <a class="pipe-step" href="/ui/categorias/index.html">
+          <span class="step-n">PASO 02</span>
+          <h4>Patrones</h4>
+          <p>Regex/contiene/prefijo sobre descripción. Variantes y typos.</p>
+        </a>
+        <a class="pipe-step" href="/ui/categorias/index.html">
+          <span class="step-n">PASO 03</span>
+          <h4>MCC</h4>
+          <p>Merchant Category Code de la red. Fallback estándar.</p>
+        </a>
+        <a class="pipe-step" href="/ui/recat/index.html">
+          <span class="step-n">PASO 04</span>
+          <h4>IA (Ollama)</h4>
+          <p>Sugiere categoría + marca cuando todo lo anterior falla.</p>
+        </a>
+      </section>
+
+      <h2 class="section-title">Salud del sistema</h2>
       <section class="health-grid">
         <div class="health-card">
           <div class="label">API</div>
           <div class="value" id="h-api">…</div>
-          <div class="sub" id="h-api-sub">—</div>
         </div>
         <div class="health-card">
           <div class="label">Database</div>
@@ -138,26 +525,36 @@
         </div>
       </section>
 
+      <h2 class="section-title">Todas las herramientas</h2>
       <section class="nav-grid">
         <a class="nav-card" href="/ui/categorias/index.html">
-          <div class="icon">📂</div>
           <h3>Categorías</h3>
-          <p>CRUD categorías, patrones, MCCs, marcas IA, comercios.</p>
+          <p>CRUD categorías, patrones, MCCs, marcas IA y comercios.</p>
         </a>
         <a class="nav-card" href="/ui/importar/index.html">
-          <div class="icon">📥</div>
           <h3>Importar</h3>
-          <p>Cargar XLSX/CSV a comercios_catalogo o movimientos con mapping de campos.</p>
+          <p>Cargar XLSX/CSV a comercios_catalogo o movimientos.</p>
         </a>
         <a class="nav-card" href="/ui/recat/index.html">
-          <div class="icon">🔁</div>
           <h3>Recategorizar</h3>
-          <p>Recategorizar catálogo + diffs + sugerencias IA + marcas candidatas.</p>
+          <p>Diffs, sugerencias IA y marcas candidatas.</p>
         </a>
         <a class="nav-card" href="/ui/test-monitor/index.html">
-          <div class="icon">📊</div>
-          <h3>Test Monitor</h3>
-          <p>Dashboard realtime de tests masivos. Latencia, agreement, mismatches.</p>
+          <h3>Monitor de tests</h3>
+          <p>Dashboard realtime de tests masivos.</p>
+        </a>
+        <a class="nav-card" href="/ui/api/index.html">
+          <h3>API explorer</h3>
+          <p>Árbol Postman + ejecutor inline de requests.</p>
+        </a>
+        <a
+          class="nav-card"
+          href="https://github.com/anegri93/tagger"
+          target="_blank"
+          rel="noopener"
+        >
+          <h3>GitHub repo ↗</h3>
+          <p>Código fuente, issues, releases.</p>
         </a>
       </section>
     </div>
@@ -169,7 +566,6 @@
           const apiOk = r.ok;
           document.getElementById('h-api').textContent = apiOk ? 'OK' : `HTTP ${r.status}`;
           document.getElementById('h-api').className = 'value ' + (apiOk ? 'ok' : 'err');
-          document.getElementById('h-api-sub').textContent = apiOk ? 'ok' : '';
         } catch {
           document.getElementById('h-api').textContent = 'down';
           document.getElementById('h-api').className = 'value err';

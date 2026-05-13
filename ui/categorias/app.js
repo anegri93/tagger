@@ -17,9 +17,28 @@ function esc(s) {
 
 async function loadList() {
   setStatus('cargando…');
+  const tbodySkel = $('lista-cats');
+  if (tbodySkel && window.taggerSkeleton) {
+    window.taggerSkeleton.rows(tbodySkel, { rows: 5, cols: 6 });
+  }
   try {
     const { items } = await window.taggerApi('/categorias');
     const tbody = $('lista-cats');
+    if (!items || items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" id="cats-empty-cell"></td></tr>';
+      const cell = document.getElementById('cats-empty-cell');
+      if (window.taggerEmpty && cell) {
+        window.taggerEmpty.render(cell, {
+          title: 'Sin categorías',
+          message: 'Creá la primera categoría o importá un catálogo para empezar.',
+          ctaLabel: '+ Nueva categoría',
+          ctaHref: '#',
+          postmanRequest: 'POST /categorias',
+        });
+      }
+      setStatus('');
+      return;
+    }
     tbody.innerHTML = items
       .map(
         (c) => `<tr data-slug="${c.slug}">
@@ -50,6 +69,10 @@ async function loadList() {
     setStatus(`${items.length} categorías`, 'live');
   } catch (e) {
     setStatus(`error: ${e.message}`, 'error');
+    if (window.toast)
+      window.toast.error(e.userMessage || e.message, {
+        action: { label: 'Reintentar', onClick: () => loadList() },
+      });
   }
 }
 
@@ -72,8 +95,10 @@ async function crear() {
     $('new-nombre').value = '';
     $('new-desc').value = '';
     await loadList();
+    if (window.toast) window.toast.success(`Categoría "${slug}" creada`);
   } catch (e) {
     $('new-error').textContent = e.message;
+    if (window.toast) window.toast.error(e.userMessage || e.message);
   }
 }
 
