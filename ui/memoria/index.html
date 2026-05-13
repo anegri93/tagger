@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — memoria usuario</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <style>
+      .container {
+        max-width: 1100px;
+        margin: 24px auto;
+        padding: 0 20px;
+      }
+      .header {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .header h1 {
+        margin: 0;
+      }
+      .header .desc {
+        color: var(--text-3);
+        font-size: 13px;
+        flex: 1;
+        min-width: 240px;
+      }
+      .search-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
+        margin-bottom: 16px;
+      }
+      .search-row label {
+        font-size: 12px;
+        color: var(--text-3);
+        text-transform: uppercase;
+      }
+      .search-row input {
+        flex: 1;
+        max-width: 360px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .stat {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 10px 14px;
+      }
+      .stat .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        letter-spacing: 0.5px;
+      }
+      .stat .value {
+        font-size: 20px;
+        font-weight: 600;
+        margin-top: 2px;
+        font-family: var(--mono);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        letter-spacing: 0.5px;
+        background: var(--bg-3);
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .cat-pill {
+        display: inline-block;
+        background: var(--bg-3);
+        padding: 2px 8px;
+        border-radius: var(--r-sm);
+        font-size: 12px;
+      }
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-danger:hover {
+        opacity: 0.85;
+      }
+      .empty {
+        text-align: center;
+        color: var(--text-3);
+        padding: 40px 20px;
+        font-size: 14px;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+
+    <div class="container">
+      <div class="header">
+        <h1>🧠 Memoria por usuario</h1>
+        <div class="desc">
+          Asociaciones <code>(usuario, destinatario)</code> → categoría aprendidas de correcciones
+          en transferencias <code>MANGO-*</code>.
+        </div>
+      </div>
+
+      <div class="search-row">
+        <label for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          type="text"
+          placeholder="ej: usuario_42 (= origen del movimiento)"
+          autocomplete="off"
+        />
+        <button id="btn-cargar" class="btn btn-primary">Cargar</button>
+      </div>
+
+      <div class="stats" id="stats" hidden>
+        <div class="stat">
+          <div class="label">Asociaciones</div>
+          <div class="value" id="stat-count">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Total hits</div>
+          <div class="value" id="stat-hits">0</div>
+        </div>
+      </div>
+
+      <div id="result"></div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const input = $('usuario');
+      const btn = $('btn-cargar');
+
+      btn.addEventListener('click', cargar);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') cargar();
+      });
+
+      async function cargar() {
+        const u = input.value.trim();
+        if (!u) {
+          $('result').innerHTML =
+            '<div class="empty">Ingresá un usuario para cargar su memoria.</div>';
+          $('stats').hidden = true;
+          return;
+        }
+        $('result').innerHTML = '<div class="empty">Cargando...</div>';
+        try {
+          const data = await window.taggerApi('/memoria/' + encodeURIComponent(u));
+          render(u, data);
+        } catch (e) {
+          $('result').innerHTML =
+            '<div class="empty">Error: ' + (e?.message || 'falló la carga') + '</div>';
+          $('stats').hidden = true;
+        }
+      }
+
+      function render(usuario, data) {
+        const items = data.items || [];
+        $('stat-count').textContent = items.length;
+        $('stat-hits').textContent = items.reduce((s, it) => s + (it.hits || 0), 0);
+        $('stats').hidden = false;
+
+        if (items.length === 0) {
+          $('result').innerHTML =
+            '<div class="empty">Este usuario no tiene memoria todavía. Corregí una transferencia para empezar.</div>';
+          return;
+        }
+        const rows = items
+          .map(
+            (it) => `
+              <tr data-dest="${escapeHtml(it.destinatario_normalizado)}">
+                <td>${escapeHtml(it.destinatario)}</td>
+                <td><span class="cat-pill">${escapeHtml(it.categoria_nombre)}</span></td>
+                <td class="mono">${it.hits}</td>
+                <td class="mono">${fmtDate(it.updated_at)}</td>
+                <td>
+                  <button class="btn-danger" data-action="olvidar">Olvidar</button>
+                </td>
+              </tr>`,
+          )
+          .join('');
+        $('result').innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Destinatario</th>
+                <th>Categoría</th>
+                <th>Hits</th>
+                <th>Última corrección</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+        $('result')
+          .querySelectorAll('[data-action="olvidar"]')
+          .forEach((btn) =>
+            btn.addEventListener('click', async (e) => {
+              const tr = e.target.closest('tr');
+              const dest = tr.getAttribute('data-dest');
+              if (!confirm(`¿Olvidar asociación con "${dest}"?`)) return;
+              try {
+                await window.taggerApi(
+                  '/memoria/' + encodeURIComponent(usuario) + '/' + encodeURIComponent(dest),
+                  { method: 'DELETE' },
+                );
+                tr.remove();
+                const newCount = $('result').querySelectorAll('tbody tr').length;
+                if (newCount === 0) $('result').innerHTML = '<div class="empty">Sin memoria.</div>';
+              } catch (e2) {
+                alert('Error al borrar: ' + (e2?.message || 'fallo'));
+              }
+            }),
+          );
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? '').replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            })[c],
+        );
+      }
+      function fmtDate(iso) {
+        try {
+          return new Date(iso).toISOString().replace('T', ' ').slice(0, 16);
+        } catch {
+          return iso;
+        }
+      }
+    </script>
+  </body>
+</html>
