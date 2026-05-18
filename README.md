@@ -68,6 +68,57 @@ Cualquier movimiento con confianza menor a **0.70** queda flagueado como `requie
 **Resumen en una línea.** Tagger es una cadena de reglas y memorias que reconocen movimientos
 conocidos en milisegundos, y solo molesta a la IA cuando no tiene mejor opción.
 
+### Diagrama del flujo
+
+```mermaid
+flowchart TD
+    Start([Movimiento entra<br/>nombre + monto + mcc opcional]) --> C0{0. Memoria<br/>del usuario}
+    C0 -->|MANGO-X conocido| Fin0[✅ Categoría<br/>fuente: manual · 1.00]
+    C0 -->|no match| C1{1. Reglas<br/>personales}
+    C1 -->|regla del usuario matchea| Fin1[✅ Categoría<br/>fuente: regex/contiene · 0.80-0.95]
+    C1 -->|no match| C2{2. Catálogo<br/>Bancard}
+    C2 -->|bancard_id + codigo| Fin2[✅ Categoría<br/>fuente: catálogo · hereda]
+    C2 -->|no match| C3{3. Reglas<br/>globales}
+    C3 -->|patrón matchea| Fin3[✅ Categoría<br/>fuente: regex/contiene · 0.80-0.95]
+    C3 -->|no match| C4{4. MCC<br/>oficial}
+    C4 -->|MCC mapeado| Fin4[✅ Categoría<br/>fuente: mcc · 0.75]
+    C4 -->|sin MCC o ambiguo| C5{5. MCC<br/>inferido por nombre}
+    C5 -->|otros movs igual nombre tienen MCC| Fin5[✅ Categoría<br/>fuente: mcc inferido · 0.75]
+    C5 -->|no inferible| C6{IA habilitada?}
+    C6 -->|sí| IA[6. IA Gemma async<br/>fire-and-forget]
+    C6 -->|no| Pendiente[⏸ pendiente_ia<br/>requiere_revision: true]
+    IA --> FinIA[✅ Categoría<br/>fuente: ia · ≤ 0.50<br/>requiere_revision: true]
+
+    User([Usuario corrige<br/>cualquier movimiento]) -.->|si es MANGO| Aprende0[(💾 memoria_usuario_<br/>destinatario)]
+    User -.->|aporta a| Aprende1[(💾 sugerencias<br/>patrones-usuario)]
+    Aprende0 -.->|próxima vez| C0
+    Aprende1 -.->|usuario aprueba| C1
+
+    style C0 fill:#e1f5ff,stroke:#0288d1
+    style C1 fill:#e1f5ff,stroke:#0288d1
+    style C2 fill:#fff3e0,stroke:#f57c00
+    style C3 fill:#fff3e0,stroke:#f57c00
+    style C4 fill:#f3e5f5,stroke:#7b1fa2
+    style C5 fill:#f3e5f5,stroke:#7b1fa2
+    style C6 fill:#ffebee,stroke:#c62828
+    style IA fill:#ffebee,stroke:#c62828
+    style Fin0 fill:#c8e6c9,stroke:#2e7d32
+    style Fin1 fill:#c8e6c9,stroke:#2e7d32
+    style Fin2 fill:#c8e6c9,stroke:#2e7d32
+    style Fin3 fill:#c8e6c9,stroke:#2e7d32
+    style Fin4 fill:#c8e6c9,stroke:#2e7d32
+    style Fin5 fill:#c8e6c9,stroke:#2e7d32
+    style FinIA fill:#fff9c4,stroke:#f9a825
+    style Pendiente fill:#ffccbc,stroke:#d84315
+    style User fill:#e8eaf6,stroke:#3949ab
+    style Aprende0 fill:#fce4ec,stroke:#c2185b
+    style Aprende1 fill:#fce4ec,stroke:#c2185b
+```
+
+**Cómo leerlo.** Las flechas sólidas son el flujo de categorización (de arriba hacia abajo, capa por capa). Las flechas punteadas son el bucle de aprendizaje: cuando el usuario corrige, los datos vuelven a las capas 0 y 1 para que la próxima vez no haga falta la corrección.
+
+Colores: 🔵 personalizado por usuario · 🟠 datos cargados (Bancard / reglas globales) · 🟣 código MCC · 🔴 IA / fallback · 🟢 resultado exitoso · 🟡 IA marcada para revisión · 🟫 sin categoría.
+
 ---
 
 ## Arquitectura
