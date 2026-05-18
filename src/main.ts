@@ -40,7 +40,6 @@ import { marcasCandidatasRoute } from './api/routes/marcas-candidatas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearCatalogoLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
-import { crearMccPorNombreLookup } from './db/repos/mcc-por-nombre.js';
 import {
   crearMovimientoRepository,
   crearMovimientoUpdater,
@@ -91,7 +90,6 @@ async function main() {
   const patronesLoader = crearPatronesLoader(db);
   const catalogoLookup = crearCatalogoLookup(db);
   const mccLookup = crearMccLookup(db);
-  const mccPorNombreLookup = crearMccPorNombreLookup(db);
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
@@ -115,7 +113,6 @@ async function main() {
     catalogo: crearCapaCatalogo(catalogoLookup),
     patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
-    mccPorNombre: mccPorNombreLookup,
   };
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
   const iaFallback = env.IA_ENABLED

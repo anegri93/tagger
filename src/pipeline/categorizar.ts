@@ -11,11 +11,16 @@ export interface CapasSincrono {
     evaluar(
       bancardId: string | null | undefined,
       codigoComercio: string | null | undefined,
+      nombre?: string | null | undefined,
     ): Promise<ResultadoCapa | null>;
   };
   patrones?: { evaluar(texto: string): Promise<ResultadoCapa | null> };
-  mcc: { evaluar(codMcc: string | null | undefined): Promise<ResultadoCapa | null> };
-  mccPorNombre?: { inferir(nombre: string | null | undefined): Promise<string | null> };
+  mcc: {
+    evaluar(
+      codMcc: string | null | undefined,
+      opts?: { ignorarAmbiguo?: boolean },
+    ): Promise<ResultadoCapa | null>;
+  };
 }
 
 export interface ResultadoPipeline {
@@ -48,7 +53,8 @@ export async function ejecutarCascada(
   }
 
   if (capas.catalogo && !opts.bypassCatalogo) {
-    const r0 = await capas.catalogo.evaluar(input.bancardId, input.codigoComercio);
+    const nombre = input.nombreBancard ?? input.nombreComercio ?? null;
+    const r0 = await capas.catalogo.evaluar(input.bancardId, input.codigoComercio, nombre);
     if (r0) return { resultado: r0, requiereRevision: false, requiereIa: false };
   }
 
@@ -57,24 +63,6 @@ export async function ejecutarCascada(
 
   const r4 = await capas.mcc.evaluar(input.mcc);
   if (r4) return { resultado: r4, requiereRevision: false, requiereIa: false };
-
-  if (capas.mccPorNombre) {
-    const nombre = input.nombreBancard ?? input.nombreComercio ?? null;
-    const mccInferido = await capas.mccPorNombre.inferir(nombre);
-    if (mccInferido) {
-      const r5 = await capas.mcc.evaluar(mccInferido);
-      if (r5) {
-        return {
-          resultado: {
-            ...r5,
-            evidencia: { ...(r5.evidencia ?? {}), mcc_inferido_por_nombre: true },
-          },
-          requiereRevision: false,
-          requiereIa: false,
-        };
-      }
-    }
-  }
 
   return { resultado: null, requiereRevision: true, requiereIa: true };
 }

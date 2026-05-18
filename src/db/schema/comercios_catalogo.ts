@@ -50,6 +50,9 @@ export const comerciosCatalogo = pgTable(
     uniqueIndex('comercios_bancard_codigo_uniq')
       .on(t.bancardId, t.codigoComercio)
       .where(sql`${t.bancardId} IS NOT NULL`),
+    uniqueIndex('comercios_nombre_norm_solo_uniq')
+      .on(t.nombreNormalizado)
+      .where(sql`${t.bancardId} IS NULL AND ${t.codigoComercio} IS NULL`),
     index('comercios_nombre_normalizado_idx').on(t.nombreNormalizado),
     index('comercios_requiere_revision_idx')
       .on(t.requiereRevision)

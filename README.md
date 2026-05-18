@@ -2,7 +2,7 @@
 
 **Servicio de categorización automática de movimientos bancarios.**
 
-Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (reglas personales) → catálogo precomputado → patrones (regex/contiene/prefijo/literal) → MCC oficial → MCC inferido por nombre → fallback IA (Gemma vía Ollama).
+Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (reglas personales) → catálogo (bancard+codigo o nombre normalizado) → patrones (regex/contiene/prefijo/literal) → MCC oficial → fallback IA (Gemma vía Ollama).
 
 ---
 
@@ -40,12 +40,11 @@ Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (
        │ 0. MEMORIA       (usuario, destinatario) → cat │
        │                  (solo transferencias MANGO-)  │
        │ 1. PATRONES-USR  reglas personales del usuario │
-       │ 2. CATÁLOGO      bancard_id+codigo (lookup)    │
+       │ 2. CATÁLOGO      bancard+codigo o nombre exacto│
        │ 3. PATRONES      regex/contiene/prefijo/literal│
        │ 4. MCC           código MCC del input          │
-       │ 5. MCC×NOMBRE    infiere MCC vía nombre        │
-       │ 6. RESPUESTA     inmediata (puede ser null)    │
-       │ 7. IA            Gemma async (fire-and-forget) │
+       │ 5. RESPUESTA     inmediata (puede ser null)    │
+       │ 6. IA            Gemma async (fire-and-forget) │
        └─────────────────────┬─────────────────────────┘
                              ▼
        ┌─────────────────────────────────────────────┐
@@ -59,7 +58,7 @@ Postgres 16 (Drizzle ORM) ─── tablas:
   ┌─ categorias              (slug PK, nombre)
   ├─ patrones                (tipo + valor → categoría)
   ├─ mcc_catalogo            (cod_mcc → categoría)
-  ├─ comercios_catalogo      (bancard_id+codigo, incluye recategorización shadow)
+  ├─ comercios_catalogo      (bancard+codigo o nombre normalizado, incluye recategorización shadow)
   ├─ marcas_conocidas        (IA hints dinámicos)
   ├─ movimientos             (histórico predicciones)
   ├─ correcciones_usuario    (correcciones manual cliente)
@@ -119,11 +118,12 @@ open http://localhost:3000/ui/      # UIs
 **Seed inicial** (cargado automático por `start.sh` desde `data/seed.sql`):
 
 - 35 categorías
-- 215 MCCs mapeados (13 ambiguos)
-- 287 patrones
+- 215 MCCs mapeados
+- 291 patrones
 - 76 marcas conocidas
+- ~65k comercios (sheet TuFi, `bancard_id` NULL, match por nombre)
 
-**Catálogo de comercios** (`comercios_catalogo`): se carga aparte via `/ui/importar/` (XLSX/CSV con `bancard_id + codigo_comercio`). Sin este catálogo, capa 1 nunca matchea — pipeline cae a patrones/MCC/IA igual.
+**Catálogo de comercios** (`comercios_catalogo`): cargado automático por seed (incluye sheet TuFi: ~65k nombres → MCC). Match por `bancard_id+codigo_comercio` o por `nombre_normalizado`. Para sincronizar desde XLSX nuevo: `pnpm tsx scripts/sync-comercios-tufi.ts --apply`. Para importar CSV manual: `/ui/importar/`.
 
 ### Variables de entorno (`.env`)
 
@@ -228,21 +228,20 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 | -------------- | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. memoria       | `manual`                   | 1.00       | Solo transferencias (`MANGO-*`). Lookup `(usuario, destinatario)` en `memoria_usuario_destinatario`. Evidencia incluye `memoria_destinatario` |
 | 1. patrones-usr  | `regex/literal/contiene/prefijo` | 0.80-0.95 | Reglas personales del usuario (tabla `patrones_usuario`). Solo si `usuario` presente en input. Cache LRU por usuario, TTL 60s             |
-| 2. catálogo      | (hereda de la fila stored) | (hereda)   | Hit exacto `bancard_id + codigo_comercio`                                                                                                     |
+| 2. catálogo      | (hereda de la fila stored) | (hereda)   | Hit exacto por `bancard_id + codigo_comercio` o por `nombre_normalizado`. Evidencia: `match_type: 'bancard' \| 'nombre_exacto'`                |
 | 3. patrones      | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
 | 3. patrones      | `literal`                  | 0.95       | Patrón tipo literal matchea                                                                                                                   |
 | 3. patrones      | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
 | 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
 | 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
-| 5. MCC×NOMBRE    | `mcc`                      | 0.75       | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth`. Evidencia: `mcc_inferido_por_nombre: true`               |
-| 6. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
+| 5. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
 | Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si es transferencia, auto-upsert en `memoria_usuario_destinatario`                                        |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 
 **Threshold revisión**: confianza < 0.70 → `requiere_revision=true`.
 
-**Bypass catálogo** (testing): flag `bypass_catalogo=true` salta capa 1 → fuerza cascada pura.
+**Bypass catálogo** (testing): flag `bypass_catalogo=true` salta capa catálogo → fuerza cascada pura.
 
 **IA fire-and-forget**: cuando todas las capas sync devuelven null, response inmediato es null + revisión, y `setImmediate` dispara IA. Cliente debe re-fetchear `/movimientos/:id` después para ver categoría asignada por IA.
 

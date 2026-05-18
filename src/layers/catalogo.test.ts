@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { crearCapaCatalogo, type CatalogoHit } from './catalogo.js';
 
-function lookup(hit: CatalogoHit | null) {
-  return { porBancardCodigo: vi.fn().mockResolvedValue(hit) };
+function lookup(hit: CatalogoHit | null, hitNombre: CatalogoHit | null = null) {
+  return {
+    porBancardCodigo: vi.fn().mockResolvedValue(hit),
+    porNombre: vi.fn().mockResolvedValue(hitNombre),
+  };
 }
 
 describe('capa catalogo', () => {

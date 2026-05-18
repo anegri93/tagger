@@ -35,6 +35,7 @@ function mkCapas(opts: {
         if (!b || !c) return null;
         return opts.catalogo?.[`${b}|${c}`] ?? null;
       },
+      porNombre: async () => null,
     }),
     patrones: crearCapaPatrones({ cargar: async () => patronesAsPatrones }),
     mcc: crearCapaMcc({ porCodigo: async (k) => opts.mcc?.[k] ?? null }),

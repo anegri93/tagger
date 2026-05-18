@@ -108,6 +108,52 @@ async function main() {
   }
   out.push('');
 
+  // comercios_catalogo (solo filas sin bancard_id/codigo_comercio — catálogo cargado desde sheet)
+  const comercios = await db.execute(sql`
+    SELECT nombre, nombre_normalizado, mcc, mcc_original, categoria_id,
+           fuente_categoria, confianza, requiere_revision, mcc_inferido
+    FROM comercios_catalogo
+    WHERE bancard_id IS NULL AND codigo_comercio IS NULL
+    ORDER BY nombre_normalizado
+  `);
+  out.push(`-- comercios_catalogo (${comercios.rows.length}) — solo filas sin bancard_id`);
+  if (comercios.rows.length > 0) {
+    const BATCH = 1000;
+    const rows = comercios.rows as Array<Record<string, unknown>>;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const chunk = rows.slice(i, i + BATCH);
+      out.push(
+        `INSERT INTO comercios_catalogo (nombre, nombre_normalizado, bancard_id, codigo_comercio, mcc, mcc_original, categoria_id, fuente_categoria, confianza, requiere_revision, mcc_inferido) VALUES`,
+      );
+      out.push(
+        chunk
+          .map(
+            (r) =>
+              '(' +
+              [
+                esc(r.nombre),
+                esc(r.nombre_normalizado),
+                'NULL',
+                'NULL',
+                esc(r.mcc),
+                esc(r.mcc_original),
+                esc(r.categoria_id),
+                `${esc(r.fuente_categoria)}::fuente_categoria`,
+                esc(r.confianza),
+                esc(r.requiere_revision),
+                esc(r.mcc_inferido),
+              ].join(', ') +
+              ')',
+          )
+          .join(',\n'),
+      );
+      out.push(
+        `ON CONFLICT (nombre_normalizado) WHERE bancard_id IS NULL AND codigo_comercio IS NULL DO NOTHING;`,
+      );
+    }
+  }
+  out.push('');
+
   out.push('COMMIT;');
   out.push('');
 
@@ -118,6 +164,7 @@ async function main() {
   console.log(`  mcc_catalogo: ${mccs.rows.length}`);
   console.log(`  patrones: ${pats.rows.length}`);
   console.log(`  marcas_conocidas: ${marcas.rows.length}`);
+  console.log(`  comercios_catalogo: ${comercios.rows.length}`);
   process.exit(0);
 }
 
