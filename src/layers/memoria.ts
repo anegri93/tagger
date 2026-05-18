@@ -17,6 +17,30 @@ export function extraerDestinatarioTransferencia(
   return { raw, normalizado };
 }
 
+export interface ClaveMemoria {
+  raw: string;
+  normalizado: string;
+  esTransferencia: boolean;
+}
+
+/**
+ * Clave de memoria para un movimiento.
+ * Prioridad: transferencia MANGO-X → destinatario X; sino nombreComercio || nombreBancard || descripcion.
+ */
+export function clavePara(input: {
+  nombreBancard?: string | null | undefined;
+  nombreComercio?: string | null | undefined;
+  descripcion?: string | null | undefined;
+}): ClaveMemoria | null {
+  const trans = extraerDestinatarioTransferencia(input.nombreBancard);
+  if (trans) return { ...trans, esTransferencia: true };
+  const raw = (input.nombreComercio ?? input.nombreBancard ?? input.descripcion ?? '').trim();
+  if (!raw) return null;
+  const normalizado = normalize(raw);
+  if (!normalizado) return null;
+  return { raw, normalizado, esTransferencia: false };
+}
+
 export interface CapaMemoria {
   evaluar(input: MovimientoInput, usuario: string | null): Promise<ResultadoCapa | null>;
 }
@@ -25,15 +49,15 @@ export function crearCapaMemoria(lookup: MemoriaUsuarioLookup): CapaMemoria {
   return {
     async evaluar(input, usuario) {
       if (!usuario) return null;
-      const dest = extraerDestinatarioTransferencia(input.nombreBancard);
-      if (!dest) return null;
-      const hit = await lookup.buscar(usuario, dest.normalizado);
+      const clave = clavePara(input);
+      if (!clave) return null;
+      const hit = await lookup.buscar(usuario, clave.normalizado);
       if (!hit) return null;
       return {
         categoriaId: hit.categoriaId,
         confianza: 1.0,
         fuente: 'manual',
-        evidencia: { memoria_destinatario: dest.raw },
+        evidencia: { memoria_destinatario: clave.raw },
       };
     },
   };

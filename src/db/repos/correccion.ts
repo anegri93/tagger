@@ -3,7 +3,7 @@ import type { Db } from '../client.js';
 import { movimientos, correccionesUsuario, categorias } from '../schema/index.js';
 import type { CorreccionService } from '../../api/routes/correccion.js';
 import type { MemoriaUsuarioWriter } from './memoria-usuario.js';
-import { extraerDestinatarioTransferencia } from '../../layers/memoria.js';
+import { clavePara } from '../../layers/memoria.js';
 
 export function crearCorreccionService(db: Db, memoria?: MemoriaUsuarioWriter): CorreccionService {
   return {
@@ -14,6 +14,8 @@ export function crearCorreccionService(db: Db, memoria?: MemoriaUsuarioWriter): 
           categoriaPredichaId: movimientos.categoriaPredichaId,
           categoriaConfirmadaId: movimientos.categoriaConfirmadaId,
           nombreBancard: movimientos.nombreBancard,
+          nombreComercio: movimientos.nombreComercio,
+          descripcion: movimientos.descripcion,
           origen: movimientos.origen,
         })
         .from(movimientos)
@@ -58,15 +60,20 @@ export function crearCorreccionService(db: Db, memoria?: MemoriaUsuarioWriter): 
         return { ok: true as const, correccionId, categoriaAnteriorId: anterior };
       });
 
-      // Hook: si es transferencia y tenemos usuario, guardar en memoria.
+      // Hook: si hay usuario y podemos derivar una clave del movimiento, guardar en memoria.
+      // Cubre tanto transferencias (MANGO-X) como comercios normales.
       if (memoria) {
         const usuario = input.usuario ?? mov.origen;
-        const dest = extraerDestinatarioTransferencia(mov.nombreBancard);
-        if (usuario && dest) {
+        const clave = clavePara({
+          nombreBancard: mov.nombreBancard,
+          nombreComercio: mov.nombreComercio,
+          descripcion: mov.descripcion,
+        });
+        if (usuario && clave) {
           try {
             await memoria.upsert({
               usuario,
-              destinatario: dest.raw,
+              destinatario: clave.raw,
               categoriaId: input.categoriaIdNueva,
               origen: 'correccion',
             });

@@ -67,9 +67,17 @@ describe('crearCapaMemoria', () => {
     expect(await capa.evaluar(input, null)).toBeNull();
   });
 
-  it('devuelve null si no es transferencia', async () => {
+  it('matchea por nombre comercio (no solo transferencia)', async () => {
+    const lk = lookup({ categoriaId: 'cat-a' });
+    const capa = crearCapaMemoria(lk);
+    const r = await capa.evaluar({ nombreComercio: 'BIGGIE' }, 'u1');
+    expect(r?.categoriaId).toBe('cat-a');
+    expect(lk.buscar).toHaveBeenCalledWith('u1', 'BIGGIE');
+  });
+
+  it('devuelve null si no hay nombre derivable', async () => {
     const capa = crearCapaMemoria(lookup({ categoriaId: 'cat-a' }));
-    expect(await capa.evaluar({ nombreBancard: 'BIGGIE' }, 'u1')).toBeNull();
+    expect(await capa.evaluar({ monto: 100 }, 'u1')).toBeNull();
   });
 
   it('devuelve null si no hay hit', async () => {
