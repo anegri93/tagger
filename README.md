@@ -35,7 +35,7 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 
 | # | Estación | Qué hace | Tabla(s) que consulta | Ejemplo |
 |---|----------|----------|-----------------------|---------|
-| 0 | **Memoria del usuario** | Recuerda transferencias P2P de cada persona | `memoria_usuario_destinatario` (+ `categorias` para resolver el nombre) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler la vez pasada" |
+| 0 | **Memoria del usuario** | Recuerda movimientos que el usuario ya corrigió (transferencias MANGO y/o comercios). Si el mismo nombre vuelve a aparecer para ese usuario, sale automático | `memoria_usuario_destinatario` (+ `categorias` para resolver el nombre) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler", o "usuario_42 marcó BMW como Transporte" |
 | 1 | **Reglas personales** | Reglas que solo aplican a un usuario | `patrones_usuario` (+ `categorias`) | "Para usuario_42, todo lo que contenga STRIPE es Software" |
 | 2 | **Catálogo de comercios** | Lista oficial de Bancard (~25k comercios) + match por nombre normalizado del comercio | `comercios_catalogo` (+ `categorias`) | "Bancard ID 12345 + código 678 = Supermercado Stock", o "nombre 'SHELL LDM' coincide con catálogo" |
 | 3 | **Reglas globales** | Reglas compartidas entre todos | `patrones` (+ `categorias`) | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
@@ -145,7 +145,7 @@ Postgres 16 (Drizzle ORM) ─── tablas:
   ├─ movimientos             (histórico predicciones)
   ├─ correcciones_usuario    (correcciones manual cliente)
   ├─ test_ground_truth       (ground truth para validación pipeline)
-  ├─ memoria_usuario_destinatario  (memoria por usuario para transferencias P2P)
+  ├─ memoria_usuario_destinatario  (memoria por usuario — transferencias MANGO y comercios)
   └─ patrones_usuario              (reglas personales por usuario + sugerencias)
 ```
 
@@ -308,7 +308,7 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 
 | Capa pipeline  | Fuente devuelta            | Confianza  | Cuándo dispara                                                                                                                                |
 | -------------- | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. memoria       | `manual`                   | 1.00       | Solo transferencias (`MANGO-*`). Lookup `(usuario, destinatario)` en `memoria_usuario_destinatario`. Evidencia incluye `memoria_destinatario` |
+| 0. memoria       | `manual`                   | 1.00       | Lookup `(usuario, clave_normalizada)` en `memoria_usuario_destinatario`. Clave: si nombre es `MANGO-*` usa destinatario; sino usa `nombreComercio` / `nombreBancard` / `descripcion`. Evidencia incluye `memoria_destinatario` (nombre crudo de la clave) |
 | 1. patrones-usr  | `regex/literal/contiene/prefijo` | 0.80-0.95 | Reglas personales del usuario (tabla `patrones_usuario`). Solo si `usuario` presente en input. Cache LRU por usuario, TTL 60s             |
 | 2. catálogo      | (hereda de la fila stored) | (hereda)   | Hit exacto por `bancard_id + codigo_comercio` o por `nombre_normalizado`. Evidencia: `match_type: 'bancard' \| 'nombre_exacto'`                |
 | 3. patrones      | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
@@ -317,7 +317,7 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 | 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
 | 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
 | 5. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
-| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si es transferencia, auto-upsert en `memoria_usuario_destinatario`                                        |
+| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si hay usuario y se puede derivar una clave (transferencia MANGO o nombre comercio), auto-upsert en `memoria_usuario_destinatario`. Aporta a sugerencias de `patrones_usuario` |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 

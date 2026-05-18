@@ -435,8 +435,11 @@
         </div>
 
         <div class="learned-section">
-          <h3>💾 Transferencias que recuerdo</h3>
-          <div class="sub">Cuando enviás plata a estas personas, ya sé qué categoría es.</div>
+          <h3>💾 Lo que ya viste antes</h3>
+          <div class="sub">
+            Movimientos que ya corregiste (transferencias o comercios). La próxima vez que aparezca
+            el mismo destinatario/comercio, ya sé qué categoría es.
+          </div>
           <div id="memoria-result"><div class="empty">Cargando...</div></div>
         </div>
 
@@ -751,7 +754,7 @@
         const items = data.items || [];
         if (!items.length) {
           $('memoria-result').innerHTML =
-            '<div class="empty">Todavía no recuerdo ningún destinatario. Corregí una transferencia MANGO para empezar.</div>';
+            '<div class="empty">Todavía no recuerdo nada. Corregí un movimiento para empezar.</div>';
           return;
         }
         $('memoria-result').innerHTML =
@@ -761,7 +764,7 @@
               (it) => `
             <li data-dest="${escapeHtml(it.destinatario_normalizado)}">
               <div class="item-main">
-                Cuando enviás a <code>${escapeHtml(it.destinatario)}</code> →
+                <code>${escapeHtml(it.destinatario)}</code> →
                 <span class="pill">${escapeHtml(it.categoria_nombre)}</span>
               </div>
               <button class="btn-x" data-action="olvidar">Olvidar</button>
