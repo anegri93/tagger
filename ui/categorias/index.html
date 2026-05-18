@@ -24,7 +24,7 @@
       <div class="actions">
         <button id="btn-reload" class="btn btn-primary">↻ Reload</button>
         <button id="btn-new" class="btn">+ Nueva</button>
-        <button id="btn-reprocess" class="btn btn-danger">⚙ Re-procesar catálogo</button>
+        <a href="/ui/recat/" class="btn">⚙ Re-procesar catálogo</a>
         <button
           id="btn-density"
           class="btn btn-ghost btn-sm"
@@ -35,12 +35,6 @@
         </button>
         <span id="status" class="t-small t-muted"></span>
       </div>
-    </section>
-
-    <section id="reproc-status" class="reproc card" style="display: none; margin: 0 20px 16px">
-      <div><strong>Reproceso:</strong> <span id="rp-status">—</span></div>
-      <div>Total: <span id="rp-total">—</span> | Revisión: <span id="rp-rev">—</span></div>
-      <div>Por fuente: <span id="rp-fuente">—</span></div>
     </section>
 
     <section class="list" style="padding: 0 20px 20px">

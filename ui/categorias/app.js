@@ -133,59 +133,10 @@ async function editar(slug) {
   }
 }
 
-async function reprocess() {
-  if (
-    !confirm(
-      'Re-procesar catálogo masivo (49k comercios)?\nTarda ~30s.\n\nTRUNCAR comercios_catalogo antes?',
-    )
-  )
-    return;
-  const truncate = confirm(
-    'OK = TRUNCAR antes (limpio).\nCancelar = mantener existentes (upsert).',
-  );
-  try {
-    setStatus('reproceso disparado…', 'live');
-    await window.taggerApi('/catalogo/reprocess', {
-      method: 'POST',
-      body: JSON.stringify({ truncate_first: truncate }),
-    });
-    pollReprocess();
-  } catch (e) {
-    setStatus(`error: ${e.message}`, 'error');
-  }
-}
-
-let reprocInterval = null;
-async function pollReprocess() {
-  if (reprocInterval) clearInterval(reprocInterval);
-  $('reproc-status').style.display = 'block';
-  const tick = async () => {
-    try {
-      const s = await window.taggerApi('/catalogo/reprocess/status');
-      $('rp-status').textContent = s.status;
-      $('rp-total').textContent = s.total ?? '—';
-      $('rp-rev').textContent = s.revision ?? '—';
-      $('rp-fuente').textContent = s.porFuente
-        ? Object.entries(s.porFuente)
-            .map(([k, v]) => `${k}=${v}`)
-            .join(' ')
-        : '—';
-      if (s.status === 'done' || s.status === 'error') {
-        clearInterval(reprocInterval);
-        reprocInterval = null;
-        await loadList();
-      }
-    } catch {}
-  };
-  await tick();
-  reprocInterval = setInterval(tick, 2000);
-}
-
 $('btn-reload').addEventListener('click', loadList);
 $('btn-new').addEventListener('click', () => ($('modal-new').style.display = 'flex'));
 $('btn-cancel').addEventListener('click', () => ($('modal-new').style.display = 'none'));
 $('btn-save').addEventListener('click', crear);
-$('btn-reprocess').addEventListener('click', reprocess);
 $('lista-cats').addEventListener('click', (e) => {
   const btn = e.target.closest('.action-btn');
   if (!btn) return;
