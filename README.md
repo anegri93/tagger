@@ -8,6 +8,7 @@ Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (
 
 ## 📚 Contenido
 
+- [Cómo funciona (versión simple)](#cómo-funciona-versión-simple)
 - [Arquitectura](#arquitectura)
 - [Stack](#stack)
 - [Quick start](#quick-start)
@@ -17,6 +18,55 @@ Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (
 - [UIs](#uis)
 - [Scripts útiles](#scripts-útiles)
 - [Estructura del proyecto](#estructura-del-proyecto)
+
+---
+
+## Cómo funciona (versión simple)
+
+> Esta sección está pensada para personas no técnicas (product, negocio, directores).
+
+**Problema que resuelve.** Cuando alguien paga con tarjeta o hace una transferencia, el banco
+manda un texto crudo tipo `FARMACIA CATEDRAL-FB` o `MANGO-PEREZ JUAN` con un monto. La app
+necesita mostrar al usuario una **categoría** (Farmacia, Transferencias, Alquiler, etc.).
+Tagger es el servicio que recibe ese texto y devuelve la categoría.
+
+**La idea: cascada de 7 estaciones.** El movimiento entra arriba y va bajando hasta que alguna
+estación lo reconoce. La primera que lo reconoce gana, las siguientes no se ejecutan.
+
+| # | Estación | Qué hace | Ejemplo |
+|---|----------|----------|---------|
+| 0 | **Memoria del usuario** | Recuerda transferencias P2P de cada persona | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler la vez pasada" |
+| 1 | **Reglas personales** | Reglas que solo aplican a un usuario | "Para usuario_42, todo lo que contenga STRIPE es Software" |
+| 2 | **Catálogo de comercios** | Lista oficial de Bancard con ~25k comercios identificados | "Bancard ID 12345 + código 678 = Supermercado Stock" |
+| 3 | **Reglas globales** | Reglas compartidas entre todos | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
+| 4 | **MCC** | Código de categoría que viene en la tarjeta (estándar Visa/Master) | "MCC 5411 = Supermercado" |
+| 5 | **MCC inferido** | Si el movimiento no trae MCC, lo deduce de otros movimientos con el mismo nombre | "SHELL LDM no trae MCC, pero otros 1000 SHELL tienen 5541 → Gasolinera" |
+| 6 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+
+**Cómo aprende sin re-entrenar.** Tagger mejora solo, a medida que se usa, por 3 vías:
+
+1. **El usuario corrige una transferencia MANGO** → se guarda en su memoria. Próxima vez sale automático (estación 0).
+2. **El usuario corrige el mismo comercio varias veces** → aparece como sugerencia para crear una regla personal. Si aprueba, futuras compras en ese comercio salen automático (estación 1).
+3. **Un equipo de operaciones agrega reglas globales o catálogo Bancard** → afecta a todos los usuarios (estaciones 2 y 3).
+
+**Por qué 7 estaciones y no una sola IA.** Costo, velocidad y trazabilidad:
+
+- Estaciones 0-5 son consultas a base de datos: tardan menos de 10 milisegundos.
+- IA tarda 1 a 5 segundos por movimiento y consume CPU/memoria del modelo.
+- Estaciones 0-5 cubren ~70% del volumen real. IA solo procesa el 30% restante.
+- Cada movimiento queda con un registro de **qué estación lo categorizó** y **con qué evidencia** (regex usada, MCC, id del comercio, etc.). Esto permite auditar y corregir errores sistemáticamente.
+
+**Niveles de confianza.** No todas las estaciones tienen la misma certeza:
+
+- Memoria del usuario y correcciones manuales: **1.00** (máxima)
+- Catálogo, regex, reglas: **0.80 a 0.95**
+- MCC: **0.75**
+- IA: **0.50** (siempre marca el movimiento como "requiere revisión")
+
+Cualquier movimiento con confianza menor a **0.70** queda flagueado como `requiere_revisión=true` para que se revise manualmente si hace falta.
+
+**Resumen en una línea.** Tagger es una cadena de reglas y memorias que reconocen movimientos
+conocidos en milisegundos, y solo molesta a la IA cuando no tiene mejor opción.
 
 ---
 
