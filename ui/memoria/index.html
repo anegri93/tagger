@@ -7,29 +7,80 @@
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
       .container {
-        max-width: 1200px;
-        margin: 24px auto;
-        padding: 0 20px;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
       }
-      .header {
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .topbar h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .topbar .field {
+        margin: 0;
+        flex: 0 0 220px;
+      }
+      .topbar .status {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+        font-size: 11px;
+        align-items: center;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background: var(--text-3);
+      }
+      .dot.ok {
+        background: var(--success);
+      }
+      .dot.err {
+        background: var(--danger);
+      }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
         margin-bottom: 18px;
+        flex-wrap: wrap;
       }
-      .header h1 {
-        margin: 0 0 4px;
-      }
-      .header .desc {
+      .tab {
+        padding: 10px 16px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
         color: var(--text-3);
         font-size: 13px;
+        border-bottom: 2px solid transparent;
+        font-family: inherit;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
+      .tab:hover {
+        color: var(--text);
       }
-      @media (max-width: 900px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
+      .tab.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+        font-weight: 600;
+      }
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
       }
       .card {
         background: var(--bg-2);
@@ -40,7 +91,7 @@
       }
       .card h2 {
         margin: 0 0 12px;
-        font-size: 15px;
+        font-size: 14px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--text-3);
@@ -64,15 +115,55 @@
       .row {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
       .row .field {
         flex: 1;
+        min-width: 140px;
       }
       .actions {
         display: flex;
         gap: 10px;
         margin-top: 12px;
         flex-wrap: wrap;
+      }
+      /* Pipeline tracer */
+      .tracer {
+        display: flex;
+        gap: 6px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+      }
+      .tracer-step {
+        flex: 1;
+        min-width: 80px;
+        padding: 8px 6px;
+        border-radius: var(--r-sm);
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-3);
+        transition: all 0.25s ease;
+      }
+      .tracer-step.skipped {
+        opacity: 0.45;
+      }
+      .tracer-step.hit {
+        background: rgba(46, 160, 67, 0.18);
+        border-color: var(--success);
+        color: var(--success);
+        font-weight: 600;
+        transform: scale(1.04);
+      }
+      .tracer-step.miss {
+        opacity: 0.55;
+      }
+      .tracer-step .n {
+        display: block;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 2px;
       }
       .result-line {
         display: flex;
@@ -152,7 +243,7 @@
         padding: 10px;
         font-size: 11px;
         font-family: var(--mono);
-        max-height: 200px;
+        max-height: 180px;
         overflow: auto;
         white-space: pre-wrap;
         margin: 8px 0 0;
@@ -162,6 +253,61 @@
         color: var(--text-3);
         margin-top: 8px;
       }
+      .quick-ex {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .quick-ex button {
+        font-size: 11px;
+        padding: 4px 10px;
+      }
+      /* Toast */
+      .toast-host {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 360px;
+      }
+      .toast {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--r-sm);
+        padding: 10px 14px;
+        font-size: 13px;
+        animation: slidein 0.18s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      .toast.ok {
+        border-left-color: var(--success);
+      }
+      .toast.err {
+        border-left-color: var(--danger);
+      }
+      .toast.warn {
+        border-left-color: #e3b341;
+      }
+      @keyframes slidein {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .corregir-inline {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
     </style>
   </head>
   <body>
@@ -169,204 +315,252 @@
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
 
+    <!-- Sticky top bar -->
+    <div class="topbar">
+      <h1>🧪 Playground</h1>
+      <div class="field">
+        <label>usuario</label>
+        <input id="usuario-global" type="text" value="usuario_42" placeholder="usuario_42" />
+      </div>
+      <div class="status">
+        <span><span class="dot" id="dot-db"></span> DB</span>
+        <span><span class="dot" id="dot-ia"></span> IA</span>
+      </div>
+    </div>
+
     <div class="container">
-      <div class="header">
-        <h1>🧪 Playground — categorizar + corregir + memoria</h1>
-        <div class="desc">
-          Flujo end-to-end. Creá un movimiento, corregilo, mirá la memoria del usuario, repetí para
-          validar que aplica.
+      <!-- Tabs -->
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="categorizar">▶ Categorizar</button>
+        <button class="tab" data-tab="memoria">💾 Memoria</button>
+        <button class="tab" data-tab="reglas">📐 Reglas</button>
+        <button class="tab" data-tab="sugerencias">💡 Sugerencias</button>
+        <button class="tab" data-tab="historial">🕓 Historial</button>
+      </div>
+
+      <!-- TAB: Categorizar -->
+      <div class="panel active" data-panel="categorizar">
+        <div class="card">
+          <h2>Movimiento</h2>
+          <div class="quick-ex">
+            <span class="hint" style="margin-top: 6px">Ejemplos rápidos:</span>
+            <button class="btn btn-ghost" data-example="mango">MANGO-PEREZ JUAN</button>
+            <button class="btn btn-ghost" data-example="farma">FARMACIA CATEDRAL</button>
+            <button class="btn btn-ghost" data-example="stripe">STRIPE*SUB</button>
+            <button class="btn btn-ghost" data-example="raro">COMERCIAL XYZ</button>
+          </div>
+          <div class="field">
+            <label>nombre_bancard *</label>
+            <input id="m-nombre" type="text" placeholder="MANGO-PEREZ JUAN" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>monto</label>
+              <input id="m-monto" type="number" step="0.01" placeholder="2500000" />
+            </div>
+            <div class="field">
+              <label>mcc (opcional)</label>
+              <input id="m-mcc" type="text" placeholder="5411" />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="btn-crear" class="btn btn-primary">▶ Categorizar</button>
+            <button id="btn-clear" class="btn btn-ghost">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="card" id="card-resultado" hidden>
+          <h2>Pipeline — qué capa lo categorizó</h2>
+          <div class="tracer" id="tracer">
+            <div class="tracer-step" data-step="memoria"><span class="n">0</span>Memoria</div>
+            <div class="tracer-step" data-step="patrones-usr">
+              <span class="n">1</span>Reglas usr
+            </div>
+            <div class="tracer-step" data-step="catalogo"><span class="n">2</span>Catálogo</div>
+            <div class="tracer-step" data-step="patrones"><span class="n">3</span>Reglas glob</div>
+            <div class="tracer-step" data-step="mcc"><span class="n">4</span>MCC</div>
+            <div class="tracer-step" data-step="mcc-nombre">
+              <span class="n">5</span>MCC×nombre
+            </div>
+            <div class="tracer-step" data-step="ia"><span class="n">6</span>IA</div>
+          </div>
+          <div id="resultado"></div>
+          <div class="corregir-inline" id="corregir-inline" hidden>
+            <div class="row">
+              <div class="field">
+                <label>cambiar a categoría</label>
+                <select id="c-categoria"></select>
+              </div>
+              <div class="field" style="flex: 0 0 110px; align-self: flex-end; margin-bottom: 0">
+                <button id="btn-corregir" class="btn btn-primary">✓ Corregir</button>
+              </div>
+            </div>
+          </div>
+          <details style="margin-top: 12px">
+            <summary class="hint" style="cursor: pointer">Ver JSON crudo</summary>
+            <pre class="raw" id="resultado-raw"></pre>
+          </details>
         </div>
       </div>
 
-      <div class="grid">
-        <!-- IZQUIERDA — Crear / Corregir -->
-        <div>
-          <div class="card">
-            <h2>1. Crear movimiento</h2>
-            <div class="field">
-              <label>nombre_bancard *</label>
-              <input id="m-nombre" type="text" placeholder="MANGO-PEREZ JUAN" />
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>monto</label>
-                <input id="m-monto" type="number" step="0.01" placeholder="2500000" />
-              </div>
-              <div class="field">
-                <label>mcc (opcional)</label>
-                <input id="m-mcc" type="text" placeholder="5411" />
-              </div>
-            </div>
-            <div class="field">
-              <label>origen (usuario) *</label>
-              <input id="m-origen" type="text" placeholder="usuario_42" value="usuario_42" />
-            </div>
-            <div class="actions">
-              <button id="btn-crear" class="btn btn-primary">▶ Categorizar</button>
-              <button id="btn-clear" class="btn btn-ghost">Limpiar resultado</button>
-            </div>
-            <div class="hint">
-              💡 Para activar memoria: <code>nombre_bancard</code> debe arrancar con
-              <code>MANGO-</code> y se necesita <code>origen</code>.
-            </div>
+      <!-- TAB: Memoria -->
+      <div class="panel" data-panel="memoria">
+        <div class="card">
+          <h2>Memoria del usuario (transferencias MANGO)</h2>
+          <div class="hint" style="margin-bottom: 12px">
+            Asociaciones <code>(usuario, destinatario) → categoría</code>. Se llenan automáticamente
+            al corregir transferencias MANGO-*.
           </div>
-
-          <div class="card" id="card-resultado" hidden>
-            <h2>2. Resultado del pipeline</h2>
-            <div id="resultado"></div>
-            <pre class="raw" id="resultado-raw"></pre>
-          </div>
-
-          <div class="card" id="card-corregir" hidden>
-            <h2>3. Corregir categoría</h2>
-            <div class="field">
-              <label>nueva categoría</label>
-              <select id="c-categoria"></select>
-            </div>
-            <div class="field">
-              <label>motivo (opcional)</label>
-              <input id="c-motivo" type="text" placeholder="es alquiler mensual" />
-            </div>
-            <div class="actions">
-              <button id="btn-corregir" class="btn btn-primary">✓ Aplicar corrección</button>
-            </div>
-            <div class="hint">
-              Si el movimiento es transferencia (<code>MANGO-*</code>), la corrección se guarda en
-              memoria del usuario automáticamente.
-            </div>
+          <div id="memoria-result">
+            <div class="empty">Ingresá usuario arriba y se carga.</div>
           </div>
         </div>
+      </div>
 
-        <!-- DERECHA — Memoria -->
-        <div>
-          <div class="card">
-            <h2>4. Memoria del usuario</h2>
-            <div class="row">
-              <div class="field">
-                <label>usuario</label>
-                <input id="mem-usuario" type="text" placeholder="usuario_42" />
-              </div>
-              <div class="field" style="max-width: 140px">
-                <label>&nbsp;</label>
-                <button id="btn-cargar-memoria" class="btn btn-primary">Cargar</button>
-              </div>
-            </div>
-            <div id="memoria-result"></div>
+      <!-- TAB: Reglas -->
+      <div class="panel" data-panel="reglas">
+        <div class="card">
+          <h2>Mis reglas personales</h2>
+          <div class="hint" style="margin-bottom: 12px">
+            Patrones que aplican <strong>solo a este usuario</strong>. Evaluados después de memoria
+            y antes del catálogo (capa 1).
           </div>
-
-          <div class="card">
-            <h2>5. Historial — movimientos creados en esta sesión</h2>
-            <div class="hint" style="margin-top: 0">
-              Click en una fila → carga ese movimiento en las secciones 2 y 3 para verlo o
-              corregirlo.
-            </div>
-            <div id="historial-result" style="margin-top: 10px">
-              <div class="empty">Todavía no creaste ningún movimiento.</div>
-            </div>
-            <div class="actions">
-              <button id="btn-historial-clear" class="btn btn-ghost">🗑 Limpiar historial</button>
-            </div>
+          <div id="pu-result">
+            <div class="empty">Ingresá usuario arriba y se carga.</div>
           </div>
-
-          <div class="card">
-            <h2>7. Mis reglas personales (patrones por usuario)</h2>
-            <div class="hint" style="margin-top: 0">
-              Reglas que aplican <strong>solo a este usuario</strong>. Se evalúan después de memoria
-              y antes del catálogo. Ej.: "STRIPE" → software para este usuario.
+        </div>
+        <div class="card">
+          <h2>Crear regla nueva</h2>
+          <div class="row">
+            <div class="field" style="max-width: 130px">
+              <label>tipo</label>
+              <select id="pu-tipo">
+                <option value="contiene">contiene</option>
+                <option value="literal">literal</option>
+                <option value="prefijo">prefijo</option>
+                <option value="regex">regex</option>
+              </select>
             </div>
-            <div class="row">
-              <div class="field">
-                <label>usuario</label>
-                <input id="pu-usuario" type="text" placeholder="usuario_42" />
-              </div>
-              <div class="field" style="max-width: 140px">
-                <label>&nbsp;</label>
-                <button id="btn-cargar-pu" class="btn btn-primary">Cargar reglas</button>
-              </div>
+            <div class="field">
+              <label>valor</label>
+              <input id="pu-valor" type="text" placeholder="STRIPE" />
             </div>
-            <div id="pu-result" style="margin-top: 10px"></div>
-            <hr style="margin: 16px 0; border: none; border-top: 1px solid #eee" />
-            <div class="hint" style="margin-top: 0; margin-bottom: 8px">
-              <strong>Crear regla nueva</strong>
-            </div>
-            <div class="row">
-              <div class="field" style="max-width: 110px">
-                <label>tipo</label>
-                <select id="pu-tipo">
-                  <option value="contiene">contiene</option>
-                  <option value="literal">literal</option>
-                  <option value="prefijo">prefijo</option>
-                  <option value="regex">regex</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>valor</label>
-                <input id="pu-valor" type="text" placeholder="STRIPE" />
-              </div>
-              <div class="field" style="max-width: 180px">
-                <label>categoría</label>
-                <select id="pu-categoria"></select>
-              </div>
-              <div class="field" style="max-width: 100px">
-                <label>&nbsp;</label>
-                <button id="btn-crear-pu" class="btn btn-primary">Crear</button>
-              </div>
+            <div class="field">
+              <label>categoría</label>
+              <select id="pu-categoria"></select>
             </div>
           </div>
-
-          <div class="card">
-            <h2>8. Sugerencias de reglas (a partir de tus correcciones)</h2>
-            <div class="hint" style="margin-top: 0">
-              Cuando corregís el mismo nombre ≥N veces, aparece como sugerencia para promover a
-              regla automática.
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>usuario</label>
-                <input id="sug-usuario" type="text" placeholder="usuario_42" />
-              </div>
-              <div class="field" style="max-width: 80px">
-                <label>umbral</label>
-                <input id="sug-umbral" type="number" value="2" min="1" />
-              </div>
-              <div class="field" style="max-width: 130px">
-                <label>&nbsp;</label>
-                <button id="btn-cargar-sug" class="btn btn-primary">Buscar</button>
-              </div>
-            </div>
-            <div id="sug-result" style="margin-top: 10px"></div>
+          <div class="actions">
+            <button id="btn-crear-pu" class="btn btn-primary">+ Crear regla</button>
           </div>
+        </div>
+      </div>
 
-          <div class="card">
-            <h2>9. Acciones rápidas</h2>
-            <div class="hint" style="margin-top: 0">Probá el flujo completo en orden:</div>
-            <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px">
-              <li>Crear MANGO-PEREZ JUAN con origen <code>usuario_42</code></li>
-              <li>Pipeline devuelve <code>Transferencias P2P</code> (fuente=regex)</li>
-              <li>Corregir a "Alquiler"</li>
-              <li>Cargar memoria del <code>usuario_42</code> → ver asociación</li>
-              <li>
-                Volver a paso 1 con mismo nombre → ahora sale <code>Alquiler</code> con
-                fuente=manual y memoria_destinatario
-              </li>
-            </ol>
-            <div class="actions">
-              <button id="btn-demo" class="btn btn-ghost">⚡ Auto-rellenar demo</button>
+      <!-- TAB: Sugerencias -->
+      <div class="panel" data-panel="sugerencias">
+        <div class="card">
+          <h2>Sugerencias (correcciones repetidas)</h2>
+          <div class="hint" style="margin-bottom: 12px">
+            Cuando corregís el mismo nombre ≥N veces, aparece como sugerencia para promover a regla
+            automática.
+          </div>
+          <div class="row" style="margin-bottom: 12px">
+            <div class="field" style="max-width: 100px">
+              <label>umbral</label>
+              <input id="sug-umbral" type="number" value="2" min="1" />
             </div>
+            <div class="field" style="flex: 0 0 130px; align-self: flex-end; margin-bottom: 0">
+              <button id="btn-cargar-sug" class="btn btn-primary">🔍 Buscar</button>
+            </div>
+          </div>
+          <div id="sug-result">
+            <div class="empty">Click "Buscar" para listar sugerencias.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Historial -->
+      <div class="panel" data-panel="historial">
+        <div class="card">
+          <h2>Movimientos creados en esta sesión</h2>
+          <div class="hint" style="margin-bottom: 12px">
+            Click en una fila → carga ese movimiento en "Categorizar" para ver o corregir.
+          </div>
+          <div id="historial-result">
+            <div class="empty">Todavía no creaste ningún movimiento.</div>
+          </div>
+          <div class="actions">
+            <button id="btn-historial-clear" class="btn btn-ghost">🗑 Limpiar historial</button>
           </div>
         </div>
       </div>
     </div>
 
+    <div class="toast-host" id="toast-host"></div>
+
     <script>
       const $ = (id) => document.getElementById(id);
       const HISTORIAL_KEY = 'tagger:playground:historial';
+      const USUARIO_KEY = 'tagger:playground:usuario';
       let lastMovimientoId = null;
       let lastNombreBancard = null;
       let lastOrigen = null;
       let categoriasCache = null;
       let historial = loadHistorial();
 
+      // --- toast ---
+      function toast(msg, type = 'info') {
+        const el = document.createElement('div');
+        el.className = 'toast ' + (type || '');
+        el.textContent = msg;
+        $('toast-host').appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+      }
+
+      // --- usuario global ---
+      function getUsuario() {
+        return $('usuario-global').value.trim();
+      }
+      function setUsuario(u) {
+        $('usuario-global').value = u;
+        localStorage.setItem(USUARIO_KEY, u);
+      }
+      try {
+        const saved = localStorage.getItem(USUARIO_KEY);
+        if (saved) $('usuario-global').value = saved;
+      } catch {}
+      $('usuario-global').addEventListener('change', () => {
+        const u = getUsuario();
+        localStorage.setItem(USUARIO_KEY, u);
+        refreshActiveTab();
+      });
+
+      // --- tabs ---
+      $('tabs').addEventListener('click', (e) => {
+        const t = e.target.closest('.tab');
+        if (!t) return;
+        document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        t.classList.add('active');
+        const name = t.getAttribute('data-tab');
+        document.querySelector(`.panel[data-panel="${name}"]`).classList.add('active');
+        refreshActiveTab();
+      });
+
+      function activeTab() {
+        return document.querySelector('.tab.active')?.getAttribute('data-tab');
+      }
+
+      function refreshActiveTab() {
+        const t = activeTab();
+        if (t === 'memoria') cargarMemoria();
+        if (t === 'reglas') cargarPatronesUsuario();
+        if (t === 'sugerencias') {
+          /* requiere click "Buscar" — no auto */
+        }
+      }
+
+      // --- historial ---
       function loadHistorial() {
         try {
           return JSON.parse(localStorage.getItem(HISTORIAL_KEY) || '[]');
@@ -377,29 +571,84 @@
       function saveHistorial() {
         try {
           localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial.slice(0, 50)));
-        } catch {
-          /* ignore */
-        }
+        } catch {}
       }
 
       async function cargarCategorias() {
         if (categoriasCache) return categoriasCache;
         const r = await window.taggerApi('/categorias');
         categoriasCache = r.items || [];
-        const sel = $('c-categoria');
-        sel.innerHTML = categoriasCache
+        const opts = categoriasCache
           .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
           .join('');
+        $('c-categoria').innerHTML = opts;
+        $('pu-categoria').innerHTML = opts;
         return categoriasCache;
       }
 
-      $('btn-crear').addEventListener('click', async () => {
+      // --- pipeline tracer ---
+      function renderTracer(fuente) {
+        const map = {
+          manual: 'memoria',
+          regex: 'patrones',
+          literal: 'patrones',
+          prefijo: 'patrones',
+          contiene: 'patrones',
+          bancard: 'catalogo',
+          nombre: 'catalogo',
+          mcc: 'mcc',
+          ia: 'ia',
+        };
+        const order = [
+          'memoria',
+          'patrones-usr',
+          'catalogo',
+          'patrones',
+          'mcc',
+          'mcc-nombre',
+          'ia',
+        ];
+        const hitStep = fuente ? map[fuente] : null;
+        const hitIdx = hitStep ? order.indexOf(hitStep) : -1;
+        document.querySelectorAll('.tracer-step').forEach((el) => {
+          el.classList.remove('hit', 'miss', 'skipped');
+          const idx = order.indexOf(el.getAttribute('data-step'));
+          if (hitIdx < 0) {
+            el.classList.add('skipped');
+          } else if (idx < hitIdx) {
+            el.classList.add('miss');
+          } else if (idx === hitIdx) {
+            el.classList.add('hit');
+          } else {
+            el.classList.add('skipped');
+          }
+        });
+      }
+
+      // --- crear movimiento ---
+      $('btn-crear').addEventListener('click', categorizar);
+      document.querySelectorAll('[data-example]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const map = {
+            mango: { nombre: 'MANGO-PEREZ JUAN', monto: '2500000' },
+            farma: { nombre: 'FARMACIA CATEDRAL', monto: '85000' },
+            stripe: { nombre: 'STRIPE*SUB', monto: '50000' },
+            raro: { nombre: 'COMERCIAL XYZ S.A.', monto: '125000' },
+          };
+          const ex = map[b.getAttribute('data-example')];
+          $('m-nombre').value = ex.nombre;
+          $('m-monto').value = ex.monto;
+          $('m-mcc').value = '';
+        }),
+      );
+
+      async function categorizar() {
         const nombre = $('m-nombre').value.trim();
         const monto = $('m-monto').value.trim();
         const mcc = $('m-mcc').value.trim();
-        const origen = $('m-origen').value.trim();
+        const origen = getUsuario();
         if (!nombre) {
-          alert('nombre_bancard requerido');
+          toast('nombre_bancard requerido', 'err');
           return;
         }
         const body = { nombre_bancard: nombre };
@@ -431,122 +680,85 @@
           saveHistorial();
           renderHistorial();
           await cargarCategorias();
-          $('card-corregir').hidden = false;
-          if (origen) {
-            $('mem-usuario').value = origen;
+          if (r.fuente === null || r.fuente === 'ia') {
+            pollIaResultado(r.movimiento_id);
           }
         } catch (e) {
-          alert('Error: ' + (e?.message || 'falló'));
+          toast('Error: ' + (e?.message || 'falló'), 'err');
         }
-      });
-
-      $('btn-historial-clear').addEventListener('click', () => {
-        if (historial.length === 0) return;
-        if (!confirm('¿Limpiar historial local?')) return;
-        historial = [];
-        saveHistorial();
-        renderHistorial();
-      });
-
-      function renderHistorial() {
-        const el = $('historial-result');
-        if (!historial.length) {
-          el.innerHTML = '<div class="empty">Todavía no creaste ningún movimiento.</div>';
-          return;
-        }
-        const rows = historial
-          .map((it, idx) => {
-            const cls = !it.requiere_revision
-              ? 'ok'
-              : it.fuente === 'ia'
-                ? 'warn'
-                : it.fuente
-                  ? 'warn'
-                  : 'err';
-            const when = new Date(it.ts).toLocaleTimeString();
-            return `
-              <tr data-idx="${idx}" style="cursor: pointer">
-                <td><span class="mono" style="font-size: 11px">${when}</span></td>
-                <td>${escapeHtml(it.nombre_bancard)}</td>
-                <td>${it.categoria_nombre ? `<span class="pill">${escapeHtml(it.categoria_nombre)}</span>` : '<i>—</i>'}</td>
-                <td><span class="pill ${cls}">${escapeHtml(it.fuente ?? 'pendiente_ia')}</span></td>
-                <td><span class="mono" style="font-size: 11px">${it.origen ?? '—'}</span></td>
-              </tr>`;
-          })
-          .join('');
-        el.innerHTML = `
-          <table>
-            <thead><tr><th>Hora</th><th>Nombre</th><th>Categoría</th><th>Fuente</th><th>Origen</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        `;
-        el.querySelectorAll('tbody tr').forEach((tr) =>
-          tr.addEventListener('click', () => {
-            const idx = Number(tr.getAttribute('data-idx'));
-            const it = historial[idx];
-            if (!it) return;
-            lastMovimientoId = it.movimiento_id;
-            lastNombreBancard = it.nombre_bancard;
-            lastOrigen = it.origen;
-            renderResultado({
-              movimiento_id: it.movimiento_id,
-              categoria_id: it.categoria_id,
-              categoria: it.categoria_nombre ? { nombre: it.categoria_nombre } : null,
-              fuente: it.fuente,
-              confianza: it.confianza,
-              requiere_revision: it.requiere_revision,
-            });
-            $('card-corregir').hidden = false;
-            if (it.origen) $('mem-usuario').value = it.origen;
-          }),
-        );
       }
-      renderHistorial();
 
-      $('btn-clear').addEventListener('click', () => {
-        $('card-resultado').hidden = true;
-        $('card-corregir').hidden = true;
-        lastMovimientoId = null;
-      });
+      async function pollIaResultado(id, intentos = 15) {
+        for (let i = 0; i < intentos; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            const m = await window.taggerApi('/movimientos/' + id);
+            if (m && m.fuente && m.fuente !== 'pendiente_ia') {
+              if (lastMovimientoId === id) {
+                renderResultado({
+                  movimiento_id: m.id,
+                  categoria_id: m.categoria_predicha_id,
+                  categoria: m.categoria_predicha,
+                  fuente: m.fuente_categoria,
+                  confianza: m.confianza,
+                  requiere_revision: m.requiere_revision,
+                });
+                toast('IA completó: ' + (m.categoria_predicha?.nombre ?? 'sin categoría'), 'ok');
+              }
+              return;
+            }
+          } catch {}
+        }
+      }
 
       function renderResultado(r) {
         const cat = r.categoria;
-        const cls = !r.requiere_revision ? 'ok' : r.fuente === 'ia' ? 'warn' : 'err';
+        const fuente = r.fuente;
+        const cls = !r.requiere_revision ? 'ok' : fuente === 'ia' ? 'warn' : 'err';
         $('resultado').innerHTML = `
           <div class="result-line">
-            <span class="k">movimiento_id</span>
-            <span class="v">${escapeHtml(r.movimiento_id || '')}</span>
-          </div>
-          <div class="result-line">
             <span class="k">categoría</span>
-            <span class="v">${cat ? `<span class="pill">${escapeHtml(cat.nombre)}</span>` : '<i>—</i>'}</span>
+            <span class="v">${cat ? `<span class="pill ok">${escapeHtml(cat.nombre)}</span>` : '<i>—</i>'}</span>
           </div>
           <div class="result-line">
             <span class="k">fuente</span>
-            <span class="v"><span class="pill ${cls}">${escapeHtml(r.fuente ?? 'pendiente_ia')}</span></span>
+            <span class="v"><span class="pill ${cls}">${escapeHtml(fuente ?? 'pendiente_ia')}</span></span>
           </div>
           <div class="result-line">
             <span class="k">confianza</span>
             <span class="v">${r.confianza != null ? Number(r.confianza).toFixed(2) : '—'}</span>
           </div>
           <div class="result-line">
-            <span class="k">requiere_revision</span>
-            <span class="v">${r.requiere_revision ? '⚠️ true' : '✓ false'}</span>
+            <span class="k">requiere_revisión</span>
+            <span class="v">${r.requiere_revision ? '⚠️ sí' : '✓ no'}</span>
+          </div>
+          <div class="result-line">
+            <span class="k">movimiento_id</span>
+            <span class="v" style="font-size: 10px">${escapeHtml(r.movimiento_id || '')}</span>
           </div>
         `;
         $('resultado-raw').textContent = JSON.stringify(r, null, 2);
         $('card-resultado').hidden = false;
+        $('corregir-inline').hidden = !lastMovimientoId;
+        renderTracer(fuente);
       }
 
+      $('btn-clear').addEventListener('click', () => {
+        $('card-resultado').hidden = true;
+        lastMovimientoId = null;
+        $('m-nombre').value = '';
+        $('m-monto').value = '';
+        $('m-mcc').value = '';
+      });
+
+      // --- corregir ---
       $('btn-corregir').addEventListener('click', async () => {
         if (!lastMovimientoId) {
-          alert('Creá un movimiento primero');
+          toast('Categorizá un movimiento primero', 'err');
           return;
         }
         const categoria_id_nueva = $('c-categoria').value;
-        const motivo = $('c-motivo').value.trim();
         const body = { categoria_id_nueva };
-        if (motivo) body.motivo = motivo;
         if (lastOrigen) body.usuario = lastOrigen;
         try {
           const r = await window.taggerApi(`/movimientos/${lastMovimientoId}/correccion`, {
@@ -554,22 +766,23 @@
             body: JSON.stringify(body),
             headers: { 'content-type': 'application/json' },
           });
-          alert(
-            `✓ Corregido: ${r.categoria_anterior?.nombre ?? '—'} → ${r.categoria_nueva?.nombre ?? '—'}`,
+          toast(
+            `✓ ${r.categoria_anterior?.nombre ?? '—'} → ${r.categoria_nueva?.nombre ?? '—'}`,
+            'ok',
           );
-          if (lastOrigen) cargarMemoria(lastOrigen);
+          // Auto-refresh memoria + sugerencias si están abiertas
+          if (activeTab() === 'memoria') cargarMemoria();
+          if (activeTab() === 'sugerencias') cargarSugerencias();
         } catch (e) {
-          alert('Error: ' + (e?.message || 'falló'));
+          toast('Error: ' + (e?.message || 'falló'), 'err');
         }
       });
 
-      $('btn-cargar-memoria').addEventListener('click', () =>
-        cargarMemoria($('mem-usuario').value.trim()),
-      );
-
-      async function cargarMemoria(u) {
+      // --- memoria ---
+      async function cargarMemoria() {
+        const u = getUsuario();
         if (!u) {
-          $('memoria-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          $('memoria-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
           return;
         }
         $('memoria-result').innerHTML = '<div class="empty">Cargando...</div>';
@@ -586,7 +799,7 @@
         const items = data.items || [];
         if (items.length === 0) {
           $('memoria-result').innerHTML =
-            '<div class="empty">Sin memoria. Corregí una transferencia para empezar.</div>';
+            '<div class="empty">Sin memoria. Corregí una transferencia MANGO-* para empezar.</div>';
           return;
         }
         const rows = items
@@ -604,8 +817,7 @@
           <table>
             <thead><tr><th>Destinatario</th><th>Categoría</th><th>Hits</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
-          </table>
-        `;
+          </table>`;
         $('memoria-result')
           .querySelectorAll('[data-action="olvidar"]')
           .forEach((btn) =>
@@ -618,25 +830,20 @@
                   '/memoria/' + encodeURIComponent(usuario) + '/' + encodeURIComponent(dest),
                   { method: 'DELETE' },
                 );
-                tr.remove();
-                if ($('memoria-result').querySelectorAll('tbody tr').length === 0) {
-                  $('memoria-result').innerHTML = '<div class="empty">Sin memoria.</div>';
-                }
+                toast('Olvidado', 'ok');
+                cargarMemoria();
               } catch (e2) {
-                alert('Error: ' + (e2?.message || 'falló'));
+                toast('Error: ' + (e2?.message || 'falló'), 'err');
               }
             }),
           );
       }
 
-      // -------- Patrones-usuario --------
-      $('btn-cargar-pu').addEventListener('click', () =>
-        cargarPatronesUsuario($('pu-usuario').value.trim()),
-      );
-
-      async function cargarPatronesUsuario(u) {
+      // --- patrones-usuario ---
+      async function cargarPatronesUsuario() {
+        const u = getUsuario();
         if (!u) {
-          $('pu-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          $('pu-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
           return;
         }
         $('pu-result').innerHTML = '<div class="empty">Cargando...</div>';
@@ -653,7 +860,7 @@
         const items = data.items || [];
         if (items.length === 0) {
           $('pu-result').innerHTML =
-            '<div class="empty">Sin reglas. Crealas abajo o promové sugerencias.</div>';
+            '<div class="empty">Sin reglas. Creá una abajo o promové sugerencias.</div>';
           return;
         }
         const rows = items
@@ -666,7 +873,7 @@
                 <td>${it.hits}</td>
                 <td>${it.activo ? '✅' : '⏸'}</td>
                 <td>
-                  <button class="btn-ghost" data-action="toggle">${it.activo ? 'Pausar' : 'Activar'}</button>
+                  <button class="btn btn-ghost" data-action="toggle">${it.activo ? 'Pausar' : 'Activar'}</button>
                   <button class="btn-danger" data-action="eliminar">Eliminar</button>
                 </td>
               </tr>`,
@@ -688,6 +895,7 @@
                 if (action === 'eliminar') {
                   if (!confirm('¿Eliminar regla?')) return;
                   await window.taggerApi('/patrones-usuario/' + id, { method: 'DELETE' });
+                  toast('Regla eliminada', 'ok');
                 } else if (action === 'toggle') {
                   const item = items.find((it) => it.id === id);
                   await window.taggerApi('/patrones-usuario/' + id, {
@@ -695,22 +903,23 @@
                     body: JSON.stringify({ activo: !item.activo }),
                     headers: { 'content-type': 'application/json' },
                   });
+                  toast(item.activo ? 'Pausada' : 'Activada', 'ok');
                 }
-                cargarPatronesUsuario(usuario);
+                cargarPatronesUsuario();
               } catch (err) {
-                alert('Error: ' + (err?.message || 'falló'));
+                toast('Error: ' + (err?.message || 'falló'), 'err');
               }
             }),
           );
       }
 
       $('btn-crear-pu').addEventListener('click', async () => {
-        const usuario = $('pu-usuario').value.trim();
+        const usuario = getUsuario();
         const tipo = $('pu-tipo').value;
         const valor = $('pu-valor').value.trim();
         const catId = $('pu-categoria').value;
         if (!usuario || !valor || !catId) {
-          alert('usuario, valor y categoría son requeridos');
+          toast('usuario, valor y categoría son requeridos', 'err');
           return;
         }
         const cat = (categoriasCache || []).find((c) => c.id === catId);
@@ -718,29 +927,25 @@
         try {
           await window.taggerApi('/patrones-usuario', {
             method: 'POST',
-            body: JSON.stringify({
-              usuario,
-              tipo,
-              valor,
-              categoria_slug: cat.slug,
-            }),
+            body: JSON.stringify({ usuario, tipo, valor, categoria_slug: cat.slug }),
             headers: { 'content-type': 'application/json' },
           });
           $('pu-valor').value = '';
-          cargarPatronesUsuario(usuario);
+          toast('Regla creada', 'ok');
+          cargarPatronesUsuario();
         } catch (e) {
-          alert('Error: ' + (e?.message || 'falló'));
+          toast('Error: ' + (e?.message || 'falló'), 'err');
         }
       });
 
-      // -------- Sugerencias --------
-      $('btn-cargar-sug').addEventListener('click', () => cargarSugerencias());
+      // --- sugerencias ---
+      $('btn-cargar-sug').addEventListener('click', cargarSugerencias);
 
       async function cargarSugerencias() {
-        const u = $('sug-usuario').value.trim();
+        const u = getUsuario();
         const umbral = $('sug-umbral').value || 2;
         if (!u) {
-          $('sug-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          $('sug-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
           return;
         }
         $('sug-result').innerHTML = '<div class="empty">Buscando...</div>';
@@ -770,13 +975,13 @@
                 <td>${escapeHtml(s.ejemplos.join(', '))}</td>
                 <td><span class="pill">${escapeHtml(s.categoriaSlug)}</span></td>
                 <td>${s.veces}</td>
-                <td><button class="btn btn-primary" data-action="promover">Crear regla</button></td>
+                <td><button class="btn btn-primary" data-action="promover">+ Regla</button></td>
               </tr>`,
           )
           .join('');
         $('sug-result').innerHTML = `
           <table>
-            <thead><tr><th>Nombre normalizado</th><th>Ejemplos</th><th>Categoría</th><th>Veces</th><th></th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Ejemplos</th><th>Categoría</th><th>Veces</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>`;
         $('sug-result')
@@ -796,51 +1001,102 @@
                   }),
                   headers: { 'content-type': 'application/json' },
                 });
+                toast('Regla creada desde sugerencia', 'ok');
                 cargarSugerencias();
-                $('pu-usuario').value = usuario;
-                cargarPatronesUsuario(usuario);
               } catch (err) {
-                alert('Error: ' + (err?.message || 'falló'));
+                toast('Error: ' + (err?.message || 'falló'), 'err');
               }
             }),
           );
       }
 
-      // Poblar select categorías de patrones-usuario al cargar
-      async function poblarSelectCategoriasPu() {
-        await cargarCategorias();
-        const sel = $('pu-categoria');
-        sel.innerHTML = (categoriasCache || [])
-          .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
+      // --- historial ---
+      function renderHistorial() {
+        const el = $('historial-result');
+        if (!historial.length) {
+          el.innerHTML = '<div class="empty">Todavía no creaste ningún movimiento.</div>';
+          return;
+        }
+        const rows = historial
+          .map((it, idx) => {
+            const cls = !it.requiere_revision ? 'ok' : it.fuente ? 'warn' : 'err';
+            const when = new Date(it.ts).toLocaleTimeString();
+            return `
+              <tr data-idx="${idx}" style="cursor: pointer">
+                <td><span style="font-size: 11px" class="mono">${when}</span></td>
+                <td>${escapeHtml(it.nombre_bancard)}</td>
+                <td>${it.categoria_nombre ? `<span class="pill">${escapeHtml(it.categoria_nombre)}</span>` : '<i>—</i>'}</td>
+                <td><span class="pill ${cls}">${escapeHtml(it.fuente ?? 'pendiente_ia')}</span></td>
+                <td><span style="font-size: 11px" class="mono">${it.origen ?? '—'}</span></td>
+              </tr>`;
+          })
           .join('');
+        el.innerHTML = `
+          <table>
+            <thead><tr><th>Hora</th><th>Nombre</th><th>Categoría</th><th>Fuente</th><th>Usuario</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+        el.querySelectorAll('tbody tr').forEach((tr) =>
+          tr.addEventListener('click', () => {
+            const idx = Number(tr.getAttribute('data-idx'));
+            const it = historial[idx];
+            if (!it) return;
+            lastMovimientoId = it.movimiento_id;
+            lastNombreBancard = it.nombre_bancard;
+            lastOrigen = it.origen;
+            renderResultado({
+              movimiento_id: it.movimiento_id,
+              categoria_id: it.categoria_id,
+              categoria: it.categoria_nombre ? { nombre: it.categoria_nombre } : null,
+              fuente: it.fuente,
+              confianza: it.confianza,
+              requiere_revision: it.requiere_revision,
+            });
+            // Switch tab
+            document.querySelector('[data-tab="categorizar"]').click();
+          }),
+        );
       }
 
-      $('btn-demo').addEventListener('click', () => {
-        $('m-nombre').value = 'MANGO-PEREZ JUAN';
-        $('m-monto').value = '2500000';
-        $('m-mcc').value = '';
-        $('m-origen').value = 'usuario_demo_' + Math.floor(Math.random() * 1000);
-        $('mem-usuario').value = $('m-origen').value;
+      $('btn-historial-clear').addEventListener('click', () => {
+        if (historial.length === 0) return;
+        if (!confirm('¿Limpiar historial local?')) return;
+        historial = [];
+        saveHistorial();
+        renderHistorial();
       });
 
+      // --- health ---
+      async function pingHealth() {
+        try {
+          const h = await fetch('/health/ready').then((r) => r.json());
+          $('dot-db').className = 'dot ' + (h.db === 'ok' ? 'ok' : 'err');
+          if (h.ollama === undefined) {
+            $('dot-ia').className = 'dot';
+            $('dot-ia').title = 'IA deshabilitada';
+          } else {
+            $('dot-ia').className = 'dot ' + (h.ollama === 'ok' ? 'ok' : 'err');
+          }
+        } catch {
+          $('dot-db').className = 'dot err';
+          $('dot-ia').className = 'dot err';
+        }
+      }
+
+      // --- util ---
       function escapeHtml(s) {
         return String(s ?? '').replace(
           /[&<>"']/g,
           (c) =>
-            ({
-              '&': '&amp;',
-              '<': '&lt;',
-              '>': '&gt;',
-              '"': '&quot;',
-              "'": '&#39;',
-            })[c],
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
         );
       }
 
-      // Carga inicial categorias en background
-      cargarCategorias()
-        .then(() => poblarSelectCategoriasPu())
-        .catch(() => {});
+      // --- init ---
+      cargarCategorias().catch(() => {});
+      renderHistorial();
+      pingHealth();
+      setInterval(pingHealth, 30_000);
     </script>
   </body>
 </html>
