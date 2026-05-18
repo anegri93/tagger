@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import type { Db } from '../client.js';
 import { patrones, categorias } from '../schema/index.js';
 import type { PatronesLoader, PatronCargado } from '../../layers/patrones.js';
@@ -44,6 +44,20 @@ export interface PatronWriter {
     },
   ): Promise<PatronPublico | null>;
   eliminar(id: string): Promise<boolean>;
+  conflictos(): Promise<PatronConflicto[]>;
+}
+
+export interface PatronConflictoEntry {
+  id: string;
+  categoriaSlug: string;
+  categoriaNombre: string;
+  prioridad: number;
+}
+
+export interface PatronConflicto {
+  tipo: PatronTipo;
+  valor: string;
+  entries: PatronConflictoEntry[];
 }
 
 export function crearPatronesLoader(db: Db): PatronesLoader {
@@ -197,6 +211,45 @@ export function crearPatronWriter(db: Db, invalidar?: () => void): PatronWriter 
       if (del.length === 0) return false;
       invalidar?.();
       return true;
+    },
+    async conflictos() {
+      const rows = await db.execute(sql`
+        SELECT p.tipo, p.valor, p.id, p.prioridad,
+               c.slug AS categoria_slug, c.nombre AS categoria_nombre
+        FROM patrones p
+        JOIN categorias c ON c.id = p.categoria_id
+        WHERE p.activo = true
+          AND (p.tipo, p.valor) IN (
+            SELECT tipo, valor FROM patrones
+            WHERE activo = true
+            GROUP BY tipo, valor
+            HAVING count(DISTINCT categoria_id) > 1
+          )
+        ORDER BY p.tipo, p.valor, p.prioridad
+      `);
+      const grupos = new Map<string, PatronConflicto>();
+      for (const r of rows.rows as Array<{
+        tipo: PatronTipo;
+        valor: string;
+        id: string;
+        prioridad: number;
+        categoria_slug: string;
+        categoria_nombre: string;
+      }>) {
+        const key = `${r.tipo}|${r.valor}`;
+        let g = grupos.get(key);
+        if (!g) {
+          g = { tipo: r.tipo, valor: r.valor, entries: [] };
+          grupos.set(key, g);
+        }
+        g.entries.push({
+          id: r.id,
+          categoriaSlug: r.categoria_slug,
+          categoriaNombre: r.categoria_nombre,
+          prioridad: r.prioridad,
+        });
+      }
+      return [...grupos.values()];
     },
   };
 }

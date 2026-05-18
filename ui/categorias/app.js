@@ -133,7 +133,41 @@ async function editar(slug) {
   }
 }
 
-$('btn-reload').addEventListener('click', loadList);
+async function loadConflictos() {
+  try {
+    const { items } = await window.taggerApi('/patrones/conflictos');
+    const banner = $('conflictos-banner');
+    if (!items || items.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'block';
+    $('conflictos-count').textContent = String(items.length);
+    const det = $('conflictos-detalle');
+    det.innerHTML = items
+      .map(
+        (c) =>
+          `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08)">
+            <code>${esc(c.tipo)} "${esc(c.valor)}"</code> →
+            ${c.entries
+              .map(
+                (e) =>
+                  `<span style="margin-left:8px;padding:2px 6px;background:rgba(255,255,255,0.08);border-radius:4px">${esc(e.categoriaSlug)} <span class="t-small t-muted">(prio ${e.prioridad})</span></span>`,
+              )
+              .join('')}
+          </div>`,
+      )
+      .join('');
+  } catch (e) {
+    // silencio: feature secundaria
+    console.warn('conflictos load failed:', e);
+  }
+}
+
+$('btn-reload').addEventListener('click', () => {
+  loadList();
+  loadConflictos();
+});
 $('btn-new').addEventListener('click', () => ($('modal-new').style.display = 'flex'));
 $('btn-cancel').addEventListener('click', () => ($('modal-new').style.display = 'none'));
 $('btn-save').addEventListener('click', crear);
@@ -145,6 +179,15 @@ $('lista-cats').addEventListener('click', (e) => {
   if (act === 'edit') editar(slug);
   else if (act === 'delete') eliminar(slug);
 });
+$('conflictos-toggle').addEventListener('click', () => {
+  const det = $('conflictos-detalle');
+  const visible = det.style.display !== 'none';
+  det.style.display = visible ? 'none' : 'block';
+  $('conflictos-toggle').textContent = visible ? 'Ver detalle' : 'Ocultar';
+});
 
-window.tagger.on('apiKey', () => loadList());
+window.tagger.on('apiKey', () => {
+  loadList();
+  loadConflictos();
+});
 loadList();

@@ -37,6 +37,11 @@ export const patronesRoute =
       },
     );
 
+    app.get('/patrones/conflictos', async (_req, reply) => {
+      const items = await writer.conflictos();
+      return reply.send({ items });
+    });
+
     app.get<{ Params: { id: string } }>('/patrones/:id', async (req, reply) => {
       const p = await writer.obtener(req.params.id);
       if (!p) return reply.code(404).send({ error: 'no_existe' });

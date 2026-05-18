@@ -37,6 +37,32 @@
       </div>
     </section>
 
+    <section
+      id="conflictos-banner"
+      class="card"
+      style="
+        display: none;
+        margin: 0 20px 16px;
+        padding: 12px 16px;
+        border-left: 4px solid #d97706;
+        background: rgba(217, 119, 6, 0.08);
+      "
+    >
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+        <div>
+          <strong>⚠️ <span id="conflictos-count">0</span> patrón(es) duplicado(s)</strong>
+          <div class="t-small t-muted" style="margin-top: 4px">
+            Mismo (tipo, valor) activo en categorías distintas. El orden lo decide DB → resultado impredecible.
+          </div>
+        </div>
+        <button id="conflictos-toggle" class="btn btn-sm">Ver detalle</button>
+      </div>
+      <div
+        id="conflictos-detalle"
+        style="display: none; margin-top: 12px; max-height: 360px; overflow: auto"
+      ></div>
+    </section>
+
     <section class="list" style="padding: 0 20px 20px">
       <table class="tbl">
         <thead>
