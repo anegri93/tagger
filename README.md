@@ -33,14 +33,16 @@ Tagger es el servicio que recibe ese texto y devuelve la categoría.
 **La idea: cascada de 7 estaciones.** El movimiento entra arriba y va bajando hasta que alguna
 estación lo reconoce. La primera que lo reconoce gana, las siguientes no se ejecutan.
 
-| # | Estación | Qué hace | Ejemplo |
-|---|----------|----------|---------|
-| 0 | **Memoria del usuario** | Recuerda transferencias P2P de cada persona | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler la vez pasada" |
-| 1 | **Reglas personales** | Reglas que solo aplican a un usuario | "Para usuario_42, todo lo que contenga STRIPE es Software" |
-| 2 | **Catálogo de comercios** | Lista oficial de Bancard (~25k comercios) + match por nombre normalizado del comercio | "Bancard ID 12345 + código 678 = Supermercado Stock", o "nombre 'SHELL LDM' coincide con catálogo" |
-| 3 | **Reglas globales** | Reglas compartidas entre todos | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
-| 4 | **MCC** | Código de categoría que viene en la tarjeta (estándar Visa/Master) | "MCC 5411 = Supermercado" |
-| 5 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+| # | Estación | Qué hace | Tabla(s) que consulta | Ejemplo |
+|---|----------|----------|-----------------------|---------|
+| 0 | **Memoria del usuario** | Recuerda transferencias P2P de cada persona | `memoria_usuario_destinatario` (+ `categorias` para resolver el nombre) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler la vez pasada" |
+| 1 | **Reglas personales** | Reglas que solo aplican a un usuario | `patrones_usuario` (+ `categorias`) | "Para usuario_42, todo lo que contenga STRIPE es Software" |
+| 2 | **Catálogo de comercios** | Lista oficial de Bancard (~25k comercios) + match por nombre normalizado del comercio | `comercios_catalogo` (+ `categorias`) | "Bancard ID 12345 + código 678 = Supermercado Stock", o "nombre 'SHELL LDM' coincide con catálogo" |
+| 3 | **Reglas globales** | Reglas compartidas entre todos | `patrones` (+ `categorias`) | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
+| 4 | **MCC** | Código de categoría que viene en la tarjeta (estándar Visa/Master) | `mcc_catalogo` (+ `categorias`) | "MCC 5411 = Supermercado" |
+| 5 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | `categorias` (lista de opciones) + opcional `marcas_conocidas` (hints) — no consulta tablas de matching | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+
+> Toda categoría resuelta termina escrita en la tabla `movimientos` (campos `categoria_predicha_id`, `fuente_categoria`, `confianza`, `evidencia`, `requiere_revision`). Las correcciones manuales se persisten en `correcciones_usuario` y, según el caso, retroalimentan `memoria_usuario_destinatario` o las sugerencias de `patrones_usuario`.
 
 **Cómo aprende sin re-entrenar.** Tagger mejora solo, a medida que se usa, por 3 vías:
 
