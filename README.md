@@ -37,11 +37,10 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 |---|----------|----------|---------|
 | 0 | **Memoria del usuario** | Recuerda transferencias P2P de cada persona | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler la vez pasada" |
 | 1 | **Reglas personales** | Reglas que solo aplican a un usuario | "Para usuario_42, todo lo que contenga STRIPE es Software" |
-| 2 | **Catálogo de comercios** | Lista oficial de Bancard con ~25k comercios identificados | "Bancard ID 12345 + código 678 = Supermercado Stock" |
+| 2 | **Catálogo de comercios** | Lista oficial de Bancard (~25k comercios) + match por nombre normalizado del comercio | "Bancard ID 12345 + código 678 = Supermercado Stock", o "nombre 'SHELL LDM' coincide con catálogo" |
 | 3 | **Reglas globales** | Reglas compartidas entre todos | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
 | 4 | **MCC** | Código de categoría que viene en la tarjeta (estándar Visa/Master) | "MCC 5411 = Supermercado" |
-| 5 | **MCC inferido** | Si el movimiento no trae MCC, lo deduce de otros movimientos con el mismo nombre | "SHELL LDM no trae MCC, pero otros 1000 SHELL tienen 5541 → Gasolinera" |
-| 6 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+| 5 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
 
 **Cómo aprende sin re-entrenar.** Tagger mejora solo, a medida que se usa, por 3 vías:
 
@@ -49,11 +48,11 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 2. **El usuario corrige el mismo comercio varias veces** → aparece como sugerencia para crear una regla personal. Si aprueba, futuras compras en ese comercio salen automático (estación 1).
 3. **Un equipo de operaciones agrega reglas globales o catálogo Bancard** → afecta a todos los usuarios (estaciones 2 y 3).
 
-**Por qué 7 estaciones y no una sola IA.** Costo, velocidad y trazabilidad:
+**Por qué 6 estaciones y no una sola IA.** Costo, velocidad y trazabilidad:
 
-- Estaciones 0-5 son consultas a base de datos: tardan menos de 10 milisegundos.
+- Estaciones 0-4 son consultas a base de datos: tardan menos de 10 milisegundos.
 - IA tarda 1 a 5 segundos por movimiento y consume CPU/memoria del modelo.
-- Estaciones 0-5 cubren ~70% del volumen real. IA solo procesa el 30% restante.
+- Estaciones 0-4 cubren ~70% del volumen real. IA solo procesa el 30% restante.
 - Cada movimiento queda con un registro de **qué estación lo categorizó** y **con qué evidencia** (regex usada, MCC, id del comercio, etc.). Esto permite auditar y corregir errores sistemáticamente.
 
 **Niveles de confianza.** No todas las estaciones tienen la misma certeza:
@@ -76,16 +75,14 @@ flowchart LR
     C0 -->|hit| OK([Categoría asignada])
     C0 -->|no| C1[1 · Reglas personales]
     C1 -->|hit| OK
-    C1 -->|no| C2[2 · Catálogo Bancard]
+    C1 -->|no| C2[2 · Catálogo Bancard + nombre]
     C2 -->|hit| OK
     C2 -->|no| C3[3 · Reglas globales]
     C3 -->|hit| OK
     C3 -->|no| C4[4 · MCC oficial]
     C4 -->|hit| OK
-    C4 -->|no| C5[5 · MCC por nombre]
-    C5 -->|hit| OK
-    C5 -->|no| C6[6 · IA Gemma async]
-    C6 --> OK
+    C4 -->|no| C5[5 · IA Gemma async]
+    C5 --> OK
 ```
 
 **Bucle de aprendizaje** — qué pasa cuando un usuario corrige un movimiento:
