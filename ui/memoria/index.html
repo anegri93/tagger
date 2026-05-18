@@ -269,7 +269,76 @@
           </div>
 
           <div class="card">
-            <h2>6. Acciones rápidas</h2>
+            <h2>7. Mis reglas personales (patrones por usuario)</h2>
+            <div class="hint" style="margin-top: 0">
+              Reglas que aplican <strong>solo a este usuario</strong>. Se evalúan después de memoria
+              y antes del catálogo. Ej.: "STRIPE" → software para este usuario.
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>usuario</label>
+                <input id="pu-usuario" type="text" placeholder="usuario_42" />
+              </div>
+              <div class="field" style="max-width: 140px">
+                <label>&nbsp;</label>
+                <button id="btn-cargar-pu" class="btn btn-primary">Cargar reglas</button>
+              </div>
+            </div>
+            <div id="pu-result" style="margin-top: 10px"></div>
+            <hr style="margin: 16px 0; border: none; border-top: 1px solid #eee" />
+            <div class="hint" style="margin-top: 0; margin-bottom: 8px">
+              <strong>Crear regla nueva</strong>
+            </div>
+            <div class="row">
+              <div class="field" style="max-width: 110px">
+                <label>tipo</label>
+                <select id="pu-tipo">
+                  <option value="contiene">contiene</option>
+                  <option value="literal">literal</option>
+                  <option value="prefijo">prefijo</option>
+                  <option value="regex">regex</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>valor</label>
+                <input id="pu-valor" type="text" placeholder="STRIPE" />
+              </div>
+              <div class="field" style="max-width: 180px">
+                <label>categoría</label>
+                <select id="pu-categoria"></select>
+              </div>
+              <div class="field" style="max-width: 100px">
+                <label>&nbsp;</label>
+                <button id="btn-crear-pu" class="btn btn-primary">Crear</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>8. Sugerencias de reglas (a partir de tus correcciones)</h2>
+            <div class="hint" style="margin-top: 0">
+              Cuando corregís el mismo nombre ≥N veces, aparece como sugerencia para promover a
+              regla automática.
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>usuario</label>
+                <input id="sug-usuario" type="text" placeholder="usuario_42" />
+              </div>
+              <div class="field" style="max-width: 80px">
+                <label>umbral</label>
+                <input id="sug-umbral" type="number" value="2" min="1" />
+              </div>
+              <div class="field" style="max-width: 130px">
+                <label>&nbsp;</label>
+                <button id="btn-cargar-sug" class="btn btn-primary">Buscar</button>
+              </div>
+            </div>
+            <div id="sug-result" style="margin-top: 10px"></div>
+          </div>
+
+          <div class="card">
+            <h2>9. Acciones rápidas</h2>
             <div class="hint" style="margin-top: 0">Probá el flujo completo en orden:</div>
             <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px">
               <li>Crear MANGO-PEREZ JUAN con origen <code>usuario_42</code></li>
@@ -560,6 +629,192 @@
           );
       }
 
+      // -------- Patrones-usuario --------
+      $('btn-cargar-pu').addEventListener('click', () =>
+        cargarPatronesUsuario($('pu-usuario').value.trim()),
+      );
+
+      async function cargarPatronesUsuario(u) {
+        if (!u) {
+          $('pu-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          return;
+        }
+        $('pu-result').innerHTML = '<div class="empty">Cargando...</div>';
+        try {
+          const data = await window.taggerApi('/patrones-usuario/' + encodeURIComponent(u));
+          renderPatronesUsuario(u, data);
+        } catch (e) {
+          $('pu-result').innerHTML =
+            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        }
+      }
+
+      function renderPatronesUsuario(usuario, data) {
+        const items = data.items || [];
+        if (items.length === 0) {
+          $('pu-result').innerHTML =
+            '<div class="empty">Sin reglas. Crealas abajo o promové sugerencias.</div>';
+          return;
+        }
+        const rows = items
+          .map(
+            (it) => `
+              <tr data-id="${escapeHtml(it.id)}">
+                <td><code>${escapeHtml(it.tipo)}</code></td>
+                <td><code>${escapeHtml(it.valor)}</code></td>
+                <td><span class="pill">${escapeHtml(it.categoria_slug)}</span></td>
+                <td>${it.hits}</td>
+                <td>${it.activo ? '✅' : '⏸'}</td>
+                <td>
+                  <button class="btn-ghost" data-action="toggle">${it.activo ? 'Pausar' : 'Activar'}</button>
+                  <button class="btn-danger" data-action="eliminar">Eliminar</button>
+                </td>
+              </tr>`,
+          )
+          .join('');
+        $('pu-result').innerHTML = `
+          <table>
+            <thead><tr><th>Tipo</th><th>Valor</th><th>Categoría</th><th>Hits</th><th>Estado</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+        $('pu-result')
+          .querySelectorAll('[data-action]')
+          .forEach((btn) =>
+            btn.addEventListener('click', async (e) => {
+              const tr = e.target.closest('tr');
+              const id = tr.getAttribute('data-id');
+              const action = e.target.getAttribute('data-action');
+              try {
+                if (action === 'eliminar') {
+                  if (!confirm('¿Eliminar regla?')) return;
+                  await window.taggerApi('/patrones-usuario/' + id, { method: 'DELETE' });
+                } else if (action === 'toggle') {
+                  const item = items.find((it) => it.id === id);
+                  await window.taggerApi('/patrones-usuario/' + id, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ activo: !item.activo }),
+                    headers: { 'content-type': 'application/json' },
+                  });
+                }
+                cargarPatronesUsuario(usuario);
+              } catch (err) {
+                alert('Error: ' + (err?.message || 'falló'));
+              }
+            }),
+          );
+      }
+
+      $('btn-crear-pu').addEventListener('click', async () => {
+        const usuario = $('pu-usuario').value.trim();
+        const tipo = $('pu-tipo').value;
+        const valor = $('pu-valor').value.trim();
+        const catId = $('pu-categoria').value;
+        if (!usuario || !valor || !catId) {
+          alert('usuario, valor y categoría son requeridos');
+          return;
+        }
+        const cat = (categoriasCache || []).find((c) => c.id === catId);
+        if (!cat) return;
+        try {
+          await window.taggerApi('/patrones-usuario', {
+            method: 'POST',
+            body: JSON.stringify({
+              usuario,
+              tipo,
+              valor,
+              categoria_slug: cat.slug,
+            }),
+            headers: { 'content-type': 'application/json' },
+          });
+          $('pu-valor').value = '';
+          cargarPatronesUsuario(usuario);
+        } catch (e) {
+          alert('Error: ' + (e?.message || 'falló'));
+        }
+      });
+
+      // -------- Sugerencias --------
+      $('btn-cargar-sug').addEventListener('click', () => cargarSugerencias());
+
+      async function cargarSugerencias() {
+        const u = $('sug-usuario').value.trim();
+        const umbral = $('sug-umbral').value || 2;
+        if (!u) {
+          $('sug-result').innerHTML = '<div class="empty">Ingresá un usuario.</div>';
+          return;
+        }
+        $('sug-result').innerHTML = '<div class="empty">Buscando...</div>';
+        try {
+          const data = await window.taggerApi(
+            '/patrones-usuario/' + encodeURIComponent(u) + '/sugerencias?umbral=' + umbral,
+          );
+          renderSugerencias(u, data);
+        } catch (e) {
+          $('sug-result').innerHTML =
+            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        }
+      }
+
+      function renderSugerencias(usuario, data) {
+        const items = data.sugerencias || [];
+        if (items.length === 0) {
+          $('sug-result').innerHTML =
+            '<div class="empty">Sin sugerencias. Corregí movimientos repetidos para generar.</div>';
+          return;
+        }
+        const rows = items
+          .map(
+            (s, i) => `
+              <tr data-i="${i}">
+                <td><code>${escapeHtml(s.nombreNormalizado)}</code></td>
+                <td>${escapeHtml(s.ejemplos.join(', '))}</td>
+                <td><span class="pill">${escapeHtml(s.categoriaSlug)}</span></td>
+                <td>${s.veces}</td>
+                <td><button class="btn btn-primary" data-action="promover">Crear regla</button></td>
+              </tr>`,
+          )
+          .join('');
+        $('sug-result').innerHTML = `
+          <table>
+            <thead><tr><th>Nombre normalizado</th><th>Ejemplos</th><th>Categoría</th><th>Veces</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+        $('sug-result')
+          .querySelectorAll('[data-action="promover"]')
+          .forEach((btn) =>
+            btn.addEventListener('click', async (e) => {
+              const tr = e.target.closest('tr');
+              const s = items[Number(tr.getAttribute('data-i'))];
+              try {
+                await window.taggerApi('/patrones-usuario', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    usuario,
+                    tipo: 'contiene',
+                    valor: s.nombreNormalizado,
+                    categoria_slug: s.categoriaSlug,
+                  }),
+                  headers: { 'content-type': 'application/json' },
+                });
+                cargarSugerencias();
+                $('pu-usuario').value = usuario;
+                cargarPatronesUsuario(usuario);
+              } catch (err) {
+                alert('Error: ' + (err?.message || 'falló'));
+              }
+            }),
+          );
+      }
+
+      // Poblar select categorías de patrones-usuario al cargar
+      async function poblarSelectCategoriasPu() {
+        await cargarCategorias();
+        const sel = $('pu-categoria');
+        sel.innerHTML = (categoriasCache || [])
+          .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
+          .join('');
+      }
+
       $('btn-demo').addEventListener('click', () => {
         $('m-nombre').value = 'MANGO-PEREZ JUAN';
         $('m-monto').value = '2500000';
@@ -583,7 +838,9 @@
       }
 
       // Carga inicial categorias en background
-      cargarCategorias().catch(() => {});
+      cargarCategorias()
+        .then(() => poblarSelectCategoriasPu())
+        .catch(() => {});
     </script>
   </body>
 </html>

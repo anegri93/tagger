@@ -269,6 +269,136 @@ paths:
         '400': { description: usuario_invalido o destinatario_invalido }
         '404': { description: no_existe }
 
+  /patrones-usuario/{usuario}:
+    get:
+      tags: [PatronesUsuario]
+      summary: Lista reglas personales del usuario
+      description: |
+        Devuelve patrones (regex/contiene/prefijo/literal) que aplican solo a este usuario.
+        Se evalúan en capa 1 del pipeline, después de memoria y antes de catálogo.
+      parameters:
+        - in: path
+          name: usuario
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 120 }
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+                        valor: { type: string, example: STRIPE }
+                        categoria_slug: { type: string, example: software }
+                        prioridad: { type: integer, example: 100 }
+                        activo: { type: boolean }
+                        descripcion: { type: string, nullable: true }
+                        hits: { type: integer }
+                        created_at: { type: string, format: date-time }
+                        updated_at: { type: string, format: date-time }
+        '400': { description: usuario_invalido }
+
+  /patrones-usuario/{usuario}/sugerencias:
+    get:
+      tags: [PatronesUsuario]
+      summary: Sugerencias de reglas basadas en correcciones repetidas
+      description: |
+        Agrupa correcciones del usuario por `nombre_normalizado + categoría`. Devuelve grupos
+        donde `veces >= umbral` (default 2). Excluye los nombres con regla activa existente.
+      parameters:
+        - in: path
+          name: usuario
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 120 }
+        - in: query
+          name: umbral
+          schema: { type: integer, minimum: 1, default: 2 }
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario: { type: string }
+                  umbral: { type: integer }
+                  sugerencias:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nombreNormalizado: { type: string }
+                        ejemplos: { type: array, items: { type: string } }
+                        categoriaSlug: { type: string }
+                        categoriaNombre: { type: string }
+                        veces: { type: integer }
+
+  /patrones-usuario:
+    post:
+      tags: [PatronesUsuario]
+      summary: Crear regla personal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, tipo, valor, categoria_slug]
+              properties:
+                usuario: { type: string, minLength: 1, maxLength: 120 }
+                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+                valor: { type: string, minLength: 2, maxLength: 500 }
+                categoria_slug: { type: string }
+                prioridad: { type: integer, minimum: 1, maximum: 10000 }
+                descripcion: { type: string, nullable: true }
+      responses:
+        '201': { description: Creado }
+        '400': { description: payload_invalido | patron_invalido | valor_muy_corto | categoria_inexistente }
+        '409': { description: patron_duplicado }
+
+  /patrones-usuario/{id}:
+    patch:
+      tags: [PatronesUsuario]
+      summary: Activar/desactivar o cambiar prioridad
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activo: { type: boolean }
+                prioridad: { type: integer, minimum: 1, maximum: 10000 }
+      responses:
+        '200': { description: Actualizado }
+        '404': { description: no_existe }
+    delete:
+      tags: [PatronesUsuario]
+      summary: Eliminar regla personal
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Eliminado }
+        '404': { description: no_existe }
+
   /patrones:
     get:
       tags: [Patrones]

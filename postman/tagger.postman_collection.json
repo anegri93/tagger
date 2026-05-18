@@ -483,6 +483,85 @@
       ]
     },
     {
+      "name": "patrones-usuario",
+      "description": "Reglas personales por usuario. Capa 1 del pipeline (después de memoria, antes de catálogo). Pueden generarse desde sugerencias basadas en correcciones repetidas.",
+      "item": [
+        {
+          "name": "GET /patrones-usuario/:usuario",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/patrones-usuario/{{usuario}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["patrones-usuario", "{{usuario}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /patrones-usuario/:usuario/sugerencias",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/patrones-usuario/{{usuario}}/sugerencias?umbral=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["patrones-usuario", "{{usuario}}", "sugerencias"],
+              "query": [{ "key": "umbral", "value": "2" }]
+            },
+            "description": "Sugerencias basadas en correcciones repetidas. `umbral` (default 2) = mínimo de veces que el usuario tuvo que corregir el mismo nombre para que aparezca como sugerencia."
+          }
+        },
+        {
+          "name": "POST /patrones-usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{API_KEY}}" },
+              { "key": "content-type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"tipo\": \"contiene\",\n  \"valor\": \"STRIPE\",\n  \"categoria_slug\": \"software\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/patrones-usuario",
+              "host": ["{{baseUrl}}"],
+              "path": ["patrones-usuario"]
+            }
+          }
+        },
+        {
+          "name": "PATCH /patrones-usuario/:id (toggle activo)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{API_KEY}}" },
+              { "key": "content-type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"activo\": false\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/patrones-usuario/{{patron_usuario_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["patrones-usuario", "{{patron_usuario_id}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /patrones-usuario/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/patrones-usuario/{{patron_usuario_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["patrones-usuario", "{{patron_usuario_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "auth-fail (sin api-key → 401)",
       "request": {
         "auth": {

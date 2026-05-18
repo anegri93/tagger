@@ -4,6 +4,9 @@ export interface CapasSincrono {
   memoria?: {
     evaluar(input: MovimientoInput, usuario: string | null): Promise<ResultadoCapa | null>;
   };
+  patronesUsuario?: {
+    evaluar(input: MovimientoInput, usuario: string | null): Promise<ResultadoCapa | null>;
+  };
   catalogo?: {
     evaluar(
       bancardId: string | null | undefined,
@@ -37,6 +40,11 @@ export async function ejecutarCascada(
   if (capas.memoria) {
     const rm = await capas.memoria.evaluar(input, opts.usuario ?? null);
     if (rm) return { resultado: rm, requiereRevision: false, requiereIa: false };
+  }
+
+  if (capas.patronesUsuario) {
+    const rpu = await capas.patronesUsuario.evaluar(input, opts.usuario ?? null);
+    if (rpu) return { resultado: rpu, requiereRevision: false, requiereIa: false };
   }
 
   if (capas.catalogo && !opts.bypassCatalogo) {

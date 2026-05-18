@@ -2,7 +2,7 @@
 
 **Servicio de categorización automática de movimientos bancarios.**
 
-Pipeline en cascada: memoria por usuario (transferencias) → catálogo precomputado → patrones (regex/contiene/prefijo/literal) → MCC oficial → MCC inferido por nombre → fallback IA (Gemma vía Ollama).
+Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (reglas personales) → catálogo precomputado → patrones (regex/contiene/prefijo/literal) → MCC oficial → MCC inferido por nombre → fallback IA (Gemma vía Ollama).
 
 ---
 
@@ -37,14 +37,15 @@ Pipeline en cascada: memoria por usuario (transferencias) → catálogo precompu
                        │ ejecutarCascada(input, capas)
                        ▼
        ┌───────────────────────────────────────────────┐
-       │ 0. MEMORIA     (usuario, destinatario) → cat   │
-       │                (solo transferencias MANGO-)    │
-       │ 1. CATÁLOGO    bancard_id+codigo (lookup exacto)│
-       │ 2. PATRONES    contiene/regex/prefijo/literal   │
-       │ 3. MCC         código MCC del input             │
-       │ 4. MCC×NOMBRE  infiere MCC vía nombre normalizado│
-       │ 5. RESPUESTA   inmediata (puede ser null)       │
-       │ 6. IA          Gemma async (fire-and-forget)    │
+       │ 0. MEMORIA       (usuario, destinatario) → cat │
+       │                  (solo transferencias MANGO-)  │
+       │ 1. PATRONES-USR  reglas personales del usuario │
+       │ 2. CATÁLOGO      bancard_id+codigo (lookup)    │
+       │ 3. PATRONES      regex/contiene/prefijo/literal│
+       │ 4. MCC           código MCC del input          │
+       │ 5. MCC×NOMBRE    infiere MCC vía nombre        │
+       │ 6. RESPUESTA     inmediata (puede ser null)    │
+       │ 7. IA            Gemma async (fire-and-forget) │
        └─────────────────────┬─────────────────────────┘
                              ▼
        ┌─────────────────────────────────────────────┐
@@ -63,7 +64,8 @@ Postgres 16 (Drizzle ORM) ─── tablas:
   ├─ movimientos             (histórico predicciones)
   ├─ correcciones_usuario    (correcciones manual cliente)
   ├─ test_ground_truth       (ground truth para validación pipeline)
-  └─ memoria_usuario_destinatario  (memoria por usuario para transferencias P2P)
+  ├─ memoria_usuario_destinatario  (memoria por usuario para transferencias P2P)
+  └─ patrones_usuario              (reglas personales por usuario + sugerencias)
 ```
 
 ---
@@ -162,6 +164,7 @@ open http://localhost:3000/ui/      # UIs
 | GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                                                                                                   |
 | GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual                                                                              |
 | GET/DELETE            | `/memoria/:usuario`       | Memoria por usuario (transferencias auto-aprendidas). DELETE `/memoria/:usuario/:destinatario` para olvidar una asociación |
+| GET/POST/PATCH/DELETE | `/patrones-usuario`       | Reglas personales por usuario (capa 1). `GET /patrones-usuario/:usuario`, `GET /patrones-usuario/:usuario/sugerencias?umbral=N`, `POST` crea, `PATCH /:id` activa/desactiva, `DELETE /:id` |
 
 ### Importación bulk
 
@@ -223,15 +226,16 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 
 | Capa pipeline  | Fuente devuelta            | Confianza  | Cuándo dispara                                                                                                                                |
 | -------------- | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. memoria     | `manual`                   | 1.00       | Solo transferencias (`MANGO-*`). Lookup `(usuario, destinatario)` en `memoria_usuario_destinatario`. Evidencia incluye `memoria_destinatario` |
-| 1. catálogo    | (hereda de la fila stored) | (hereda)   | Hit exacto `bancard_id + codigo_comercio`                                                                                                     |
-| 2. patrones    | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
-| 2. patrones    | `literal`                  | 0.95       | Patrón tipo literal matchea                                                                                                                   |
-| 2. patrones    | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
-| 2. patrones    | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
-| 3. MCC         | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
-| 4. MCC×NOMBRE  | `mcc`                      | 0.75       | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth`. Evidencia: `mcc_inferido_por_nombre: true`               |
-| 5. IA fallback | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
+| 0. memoria       | `manual`                   | 1.00       | Solo transferencias (`MANGO-*`). Lookup `(usuario, destinatario)` en `memoria_usuario_destinatario`. Evidencia incluye `memoria_destinatario` |
+| 1. patrones-usr  | `regex/literal/contiene/prefijo` | 0.80-0.95 | Reglas personales del usuario (tabla `patrones_usuario`). Solo si `usuario` presente en input. Cache LRU por usuario, TTL 60s             |
+| 2. catálogo      | (hereda de la fila stored) | (hereda)   | Hit exacto `bancard_id + codigo_comercio`                                                                                                     |
+| 3. patrones      | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
+| 3. patrones      | `literal`                  | 0.95       | Patrón tipo literal matchea                                                                                                                   |
+| 3. patrones      | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
+| 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
+| 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
+| 5. MCC×NOMBRE    | `mcc`                      | 0.75       | MCC inferido vía `nombre_normalizado` en `comercios_catalogo` / `test_ground_truth`. Evidencia: `mcc_inferido_por_nombre: true`               |
+| 6. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
 | Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si es transferencia, auto-upsert en `memoria_usuario_destinatario`                                        |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).

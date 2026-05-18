@@ -56,6 +56,12 @@ import {
 import { crearCapaMemoria } from './layers/memoria.js';
 import { memoriaRoute } from './api/routes/memoria.js';
 import {
+  crearPatronesUsuarioLoader,
+  crearPatronesUsuarioWriter,
+} from './db/repos/patrones-usuario.js';
+import { crearCapaPatronesUsuario } from './layers/patrones-usuario.js';
+import { patronesUsuarioRoute } from './api/routes/patrones-usuario.js';
+import {
   crearCategoriasReader,
   crearCategoriasLoader,
   crearCategoriaResolver,
@@ -91,14 +97,21 @@ async function main() {
   const movReader = crearMovimientoReader(db);
   const memoriaUsuarioLookup = crearMemoriaUsuarioLookup(db);
   const memoriaUsuarioWriter = crearMemoriaUsuarioWriter(db);
+  const patronesUsuarioLoader = crearPatronesUsuarioLoader(db);
   const correccionSvc = crearCorreccionService(db, memoriaUsuarioWriter);
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
   const marcasReader = crearMarcasReader(db);
 
+  // Capa patrones-usuario incrementa hits asincrónicamente al matchear.
+  const patronesUsuarioWriterParaHits = crearPatronesUsuarioWriter(db);
+  const capaPatronesUsuario = crearCapaPatronesUsuario(patronesUsuarioLoader, (id) => {
+    void patronesUsuarioWriterParaHits.incrementarHit(id).catch(() => undefined);
+  });
   const capas = {
     memoria: crearCapaMemoria(memoriaUsuarioLookup),
+    patronesUsuario: capaPatronesUsuario,
     catalogo: crearCapaCatalogo(catalogoLookup),
     patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
@@ -139,6 +152,10 @@ async function main() {
   );
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
   await app.register(memoriaRoute(memoriaUsuarioWriter));
+  const patronesUsuarioWriter = crearPatronesUsuarioWriter(db, (u) =>
+    capaPatronesUsuario.invalidar(u),
+  );
+  await app.register(patronesUsuarioRoute(patronesUsuarioWriter));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
   const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());

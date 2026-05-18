@@ -7,3 +7,4 @@ export * from './marcas_conocidas.js';
 export * from './patrones.js';
 export * from './test_ground_truth.js';
 export * from './memoria_usuario_destinatario.js';
+export * from './patrones_usuario.js';
