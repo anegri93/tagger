@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
       .container {
-        max-width: 1100px;
+        max-width: 760px;
         margin: 0 auto;
         padding: 20px;
       }
@@ -27,74 +27,31 @@
         margin: 0;
         font-size: 16px;
       }
-      .topbar .field {
-        margin: 0;
-        flex: 0 0 220px;
-      }
-      .topbar .status {
+      .topbar .user-field {
         margin-left: auto;
         display: flex;
         gap: 8px;
-        font-size: 11px;
         align-items: center;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-        background: var(--text-3);
-      }
-      .dot.ok {
-        background: var(--success);
-      }
-      .dot.err {
-        background: var(--danger);
-      }
-      .tabs {
-        display: flex;
-        gap: 4px;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 18px;
-        flex-wrap: wrap;
-      }
-      .tab {
-        padding: 10px 16px;
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        color: var(--text-3);
         font-size: 13px;
-        border-bottom: 2px solid transparent;
-        font-family: inherit;
       }
-      .tab:hover {
-        color: var(--text);
-      }
-      .tab.active {
-        color: var(--text);
-        border-bottom-color: var(--accent);
-        font-weight: 600;
-      }
-      .panel {
-        display: none;
-      }
-      .panel.active {
-        display: block;
+      .topbar .user-field input {
+        width: 180px;
       }
       .card {
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 18px;
+        padding: 20px;
         margin-bottom: 16px;
       }
       .card h2 {
-        margin: 0 0 12px;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      .card .sub {
         color: var(--text-3);
+        font-size: 13px;
+        margin-bottom: 14px;
       }
       .field {
         display: flex;
@@ -103,14 +60,14 @@
         margin-bottom: 10px;
       }
       .field label {
-        font-size: 11px;
-        text-transform: uppercase;
+        font-size: 12px;
         color: var(--text-3);
-        letter-spacing: 0.5px;
       }
       .field input,
       .field select {
         width: 100%;
+        font-size: 15px;
+        padding: 10px;
       }
       .row {
         display: flex;
@@ -127,70 +84,80 @@
         margin-top: 12px;
         flex-wrap: wrap;
       }
-      /* Pipeline tracer */
-      .tracer {
+      .btn-primary {
+        font-size: 15px;
+        padding: 10px 18px;
+      }
+      .examples {
         display: flex;
         gap: 6px;
-        margin: 12px 0;
         flex-wrap: wrap;
+        margin-bottom: 14px;
       }
-      .tracer-step {
-        flex: 1;
-        min-width: 80px;
-        padding: 8px 6px;
-        border-radius: var(--r-sm);
-        background: var(--bg-3);
+      .examples button {
+        font-size: 12px;
+        padding: 6px 12px;
+      }
+      .examples-label {
+        font-size: 12px;
+        color: var(--text-3);
+        align-self: center;
+        margin-right: 4px;
+      }
+      /* Resultado destacado */
+      .result-hero {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px;
+        background: var(--bg);
+        border-radius: var(--r-md);
         border: 1px solid var(--border);
-        text-align: center;
+        margin-bottom: 12px;
+      }
+      .result-hero .icon {
+        font-size: 38px;
+        line-height: 1;
+      }
+      .result-hero .label {
         font-size: 11px;
         color: var(--text-3);
-        transition: all 0.25s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
-      .tracer-step.skipped {
-        opacity: 0.45;
-      }
-      .tracer-step.hit {
-        background: rgba(46, 160, 67, 0.18);
-        border-color: var(--success);
-        color: var(--success);
+      .result-hero .cat {
+        font-size: 22px;
         font-weight: 600;
-        transform: scale(1.04);
+        margin: 2px 0 4px;
       }
-      .tracer-step.miss {
-        opacity: 0.55;
-      }
-      .tracer-step .n {
-        display: block;
-        font-weight: 700;
+      .result-hero .why {
         font-size: 13px;
-        margin-bottom: 2px;
+        color: var(--text-2);
       }
-      .result-line {
+      .result-hero.pendiente {
+        border-color: #e3b341;
+      }
+      .result-hero.sin {
+        border-color: var(--danger);
+      }
+      .corregir {
         display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px dashed var(--border);
-        font-size: 13px;
+        gap: 10px;
+        align-items: end;
+        flex-wrap: wrap;
+        margin-top: 12px;
       }
-      .result-line:last-child {
-        border-bottom: none;
-      }
-      .result-line .k {
-        color: var(--text-3);
-        font-size: 12px;
-      }
-      .result-line .v {
-        font-family: var(--mono);
-        font-size: 12px;
-        text-align: right;
+      .corregir .field {
+        flex: 1;
+        min-width: 200px;
+        margin: 0;
       }
       .pill {
         display: inline-block;
-        padding: 2px 8px;
+        padding: 3px 10px;
         border-radius: var(--r-sm);
-        font-size: 11px;
+        font-size: 12px;
         background: var(--bg-3);
-        font-family: var(--mono);
       }
       .pill.ok {
         background: rgba(46, 160, 67, 0.2);
@@ -204,37 +171,50 @@
         background: rgba(248, 81, 73, 0.2);
         color: var(--danger);
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
+      details.tech {
+        margin-top: 14px;
+        border-top: 1px dashed var(--border);
+        padding-top: 12px;
       }
-      th,
-      td {
-        padding: 8px 10px;
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-      }
-      th {
-        font-size: 11px;
-        text-transform: uppercase;
-        color: var(--text-3);
-        letter-spacing: 0.5px;
-      }
-      .empty {
-        color: var(--text-3);
-        font-size: 13px;
-        text-align: center;
-        padding: 30px 10px;
-      }
-      .btn-danger {
-        background: var(--danger);
-        color: white;
-        border: none;
-        padding: 4px 10px;
-        border-radius: var(--r-sm);
+      details.tech summary {
         cursor: pointer;
         font-size: 12px;
+        color: var(--text-3);
+      }
+      .tracer {
+        display: flex;
+        gap: 4px;
+        margin: 10px 0;
+        flex-wrap: wrap;
+      }
+      .tracer-step {
+        flex: 1;
+        min-width: 70px;
+        padding: 6px 4px;
+        border-radius: var(--r-sm);
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        text-align: center;
+        font-size: 10px;
+        color: var(--text-3);
+      }
+      .tracer-step.miss {
+        opacity: 0.45;
+      }
+      .tracer-step.skipped {
+        opacity: 0.35;
+      }
+      .tracer-step.hit {
+        background: rgba(46, 160, 67, 0.18);
+        border-color: var(--success);
+        color: var(--success);
+        font-weight: 600;
+      }
+      .tracer-step .n {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 1px;
       }
       pre.raw {
         background: var(--bg);
@@ -243,25 +223,94 @@
         padding: 10px;
         font-size: 11px;
         font-family: var(--mono);
-        max-height: 180px;
+        max-height: 200px;
         overflow: auto;
         white-space: pre-wrap;
         margin: 8px 0 0;
       }
-      .hint {
+      .learned-section {
+        margin-bottom: 18px;
+      }
+      .learned-section:last-child {
+        margin-bottom: 0;
+      }
+      .learned-section h3 {
+        margin: 0 0 4px;
+        font-size: 14px;
+      }
+      .learned-section .sub {
         font-size: 12px;
         color: var(--text-3);
-        margin-top: 8px;
+        margin-bottom: 8px;
       }
-      .quick-ex {
+      .learned-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .learned-list li {
+        padding: 10px 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        margin-bottom: 6px;
         display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-bottom: 14px;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
       }
-      .quick-ex button {
+      .learned-list li .item-main {
+        flex: 1;
+      }
+      .learned-list li code {
+        background: var(--bg-3);
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+      .btn-x {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-3);
+        padding: 4px 8px;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-x:hover {
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .empty {
+        color: var(--text-3);
+        font-size: 13px;
+        padding: 16px;
+        text-align: center;
+        background: var(--bg);
+        border: 1px dashed var(--border);
+        border-radius: var(--r-sm);
+      }
+      table.hist {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.hist th,
+      table.hist td {
+        padding: 6px 8px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+      table.hist th {
         font-size: 11px;
-        padding: 4px 10px;
+        color: var(--text-3);
+        text-transform: uppercase;
+      }
+      table.hist tbody tr {
+        cursor: pointer;
+      }
+      table.hist tbody tr:hover {
+        background: var(--bg-3);
       }
       /* Toast */
       .toast-host {
@@ -281,17 +330,14 @@
         border-radius: var(--r-sm);
         padding: 10px 14px;
         font-size: 13px;
-        animation: slidein 0.18s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        animation: slidein 0.18s ease;
       }
       .toast.ok {
         border-left-color: var(--success);
       }
       .toast.err {
         border-left-color: var(--danger);
-      }
-      .toast.warn {
-        border-left-color: #e3b341;
       }
       @keyframes slidein {
         from {
@@ -303,11 +349,6 @@
           transform: translateX(0);
         }
       }
-      .corregir-inline {
-        margin-top: 14px;
-        padding-top: 14px;
-        border-top: 1px solid var(--border);
-      }
     </style>
   </head>
   <body>
@@ -315,180 +356,109 @@
     <script src="/ui/shared/api.js"></script>
     <script src="/ui/shared/nav.js"></script>
 
-    <!-- Sticky top bar -->
     <div class="topbar">
-      <h1>🧪 Playground</h1>
-      <div class="field">
-        <label>usuario</label>
+      <h1>🏷️ Probar el categorizador</h1>
+      <div class="user-field">
+        <label>Tu nombre:</label>
         <input id="usuario-global" type="text" value="usuario_42" placeholder="usuario_42" />
-      </div>
-      <div class="status">
-        <span><span class="dot" id="dot-db"></span> DB</span>
-        <span><span class="dot" id="dot-ia"></span> IA</span>
       </div>
     </div>
 
     <div class="container">
-      <!-- Tabs -->
-      <div class="tabs" id="tabs">
-        <button class="tab active" data-tab="categorizar">▶ Categorizar</button>
-        <button class="tab" data-tab="memoria">💾 Memoria</button>
-        <button class="tab" data-tab="reglas">📐 Reglas</button>
-        <button class="tab" data-tab="sugerencias">💡 Sugerencias</button>
-        <button class="tab" data-tab="historial">🕓 Historial</button>
-      </div>
-
-      <!-- TAB: Categorizar -->
-      <div class="panel active" data-panel="categorizar">
-        <div class="card">
-          <h2>Movimiento</h2>
-          <div class="quick-ex">
-            <span class="hint" style="margin-top: 6px">Ejemplos rápidos:</span>
-            <button class="btn btn-ghost" data-example="mango">MANGO-PEREZ JUAN</button>
-            <button class="btn btn-ghost" data-example="farma">FARMACIA CATEDRAL</button>
-            <button class="btn btn-ghost" data-example="stripe">STRIPE*SUB</button>
-            <button class="btn btn-ghost" data-example="raro">COMERCIAL XYZ</button>
+      <!-- 1. Probar un movimiento -->
+      <div class="card">
+        <h2>1. Probá un movimiento</h2>
+        <div class="sub">Escribí el nombre del comercio (o transferencia) y el monto.</div>
+        <div class="examples">
+          <span class="examples-label">Ejemplos:</span>
+          <button class="btn btn-ghost" data-example="mango">Transferencia MANGO</button>
+          <button class="btn btn-ghost" data-example="farma">Farmacia</button>
+          <button class="btn btn-ghost" data-example="stripe">STRIPE (ambiguo)</button>
+          <button class="btn btn-ghost" data-example="raro">Comercio raro</button>
+        </div>
+        <div class="row">
+          <div class="field" style="flex: 2">
+            <label>Comercio o transferencia</label>
+            <input id="m-nombre" type="text" placeholder="FARMACIA CATEDRAL" autofocus />
           </div>
-          <div class="field">
-            <label>nombre_bancard *</label>
-            <input id="m-nombre" type="text" placeholder="MANGO-PEREZ JUAN" />
-          </div>
-          <div class="row">
-            <div class="field">
-              <label>monto</label>
-              <input id="m-monto" type="number" step="0.01" placeholder="2500000" />
-            </div>
-            <div class="field">
-              <label>mcc (opcional)</label>
-              <input id="m-mcc" type="text" placeholder="5411" />
-            </div>
-          </div>
-          <div class="actions">
-            <button id="btn-crear" class="btn btn-primary">▶ Categorizar</button>
-            <button id="btn-clear" class="btn btn-ghost">Limpiar</button>
+          <div class="field" style="flex: 1; min-width: 120px">
+            <label>Monto</label>
+            <input id="m-monto" type="number" step="1" placeholder="85000" />
           </div>
         </div>
+        <div class="actions">
+          <button id="btn-crear" class="btn btn-primary">Categorizar →</button>
+        </div>
+      </div>
 
-        <div class="card" id="card-resultado" hidden>
-          <h2>Pipeline — qué capa lo categorizó</h2>
+      <!-- 2. Resultado -->
+      <div class="card" id="card-resultado" hidden>
+        <h2>2. Resultado</h2>
+        <div class="result-hero" id="hero">
+          <div class="icon" id="hero-icon">✓</div>
+          <div style="flex: 1; min-width: 0">
+            <div class="label">Categoría asignada</div>
+            <div class="cat" id="hero-cat">—</div>
+            <div class="why" id="hero-why">—</div>
+          </div>
+        </div>
+        <div class="corregir" id="corregir-row">
+          <div class="field">
+            <label>¿No es correcto? Elegí la categoría correcta:</label>
+            <select id="c-categoria"></select>
+          </div>
+          <div>
+            <button id="btn-corregir" class="btn btn-primary">Guardar corrección</button>
+          </div>
+        </div>
+        <details class="tech">
+          <summary>Ver detalles técnicos del pipeline</summary>
           <div class="tracer" id="tracer">
             <div class="tracer-step" data-step="memoria"><span class="n">0</span>Memoria</div>
             <div class="tracer-step" data-step="patrones-usr">
-              <span class="n">1</span>Reglas usr
+              <span class="n">1</span>Reglas tuyas
             </div>
             <div class="tracer-step" data-step="catalogo"><span class="n">2</span>Catálogo</div>
-            <div class="tracer-step" data-step="patrones"><span class="n">3</span>Reglas glob</div>
+            <div class="tracer-step" data-step="patrones"><span class="n">3</span>Reglas global</div>
             <div class="tracer-step" data-step="mcc"><span class="n">4</span>MCC</div>
             <div class="tracer-step" data-step="ia"><span class="n">5</span>IA</div>
           </div>
-          <div id="resultado"></div>
-          <div class="corregir-inline" id="corregir-inline" hidden>
-            <div class="row">
-              <div class="field">
-                <label>cambiar a categoría</label>
-                <select id="c-categoria"></select>
-              </div>
-              <div class="field" style="flex: 0 0 110px; align-self: flex-end; margin-bottom: 0">
-                <button id="btn-corregir" class="btn btn-primary">✓ Corregir</button>
-              </div>
-            </div>
-          </div>
-          <details style="margin-top: 12px">
-            <summary class="hint" style="cursor: pointer">Ver JSON crudo</summary>
-            <pre class="raw" id="resultado-raw"></pre>
-          </details>
+          <pre class="raw" id="resultado-raw"></pre>
+        </details>
+      </div>
+
+      <!-- 3. Lo que aprendí de vos -->
+      <div class="card">
+        <h2>3. Lo que aprendí de vos</h2>
+        <div class="sub">
+          Estas son las cosas que recuerdo y las reglas personales que vos creaste.
+        </div>
+
+        <div class="learned-section">
+          <h3>💾 Transferencias que recuerdo</h3>
+          <div class="sub">Cuando enviás plata a estas personas, ya sé qué categoría es.</div>
+          <div id="memoria-result"><div class="empty">Cargando...</div></div>
+        </div>
+
+        <div class="learned-section">
+          <h3>📐 Tus reglas personales</h3>
+          <div class="sub">Reglas que solo aplican para vos. Ej.: "STRIPE → Software".</div>
+          <div id="pu-result"><div class="empty">Cargando...</div></div>
+        </div>
+
+        <div class="learned-section">
+          <h3>💡 Sugerencias</h3>
+          <div class="sub">Te corregí lo mismo varias veces. ¿Querés guardar como regla?</div>
+          <div id="sug-result"><div class="empty">Cargando...</div></div>
         </div>
       </div>
 
-      <!-- TAB: Memoria -->
-      <div class="panel" data-panel="memoria">
-        <div class="card">
-          <h2>Memoria del usuario (transferencias MANGO)</h2>
-          <div class="hint" style="margin-bottom: 12px">
-            Asociaciones <code>(usuario, destinatario) → categoría</code>. Se llenan automáticamente
-            al corregir transferencias MANGO-*.
-          </div>
-          <div id="memoria-result">
-            <div class="empty">Ingresá usuario arriba y se carga.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: Reglas -->
-      <div class="panel" data-panel="reglas">
-        <div class="card">
-          <h2>Mis reglas personales</h2>
-          <div class="hint" style="margin-bottom: 12px">
-            Patrones que aplican <strong>solo a este usuario</strong>. Evaluados después de memoria
-            y antes del catálogo (capa 1).
-          </div>
-          <div id="pu-result">
-            <div class="empty">Ingresá usuario arriba y se carga.</div>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Crear regla nueva</h2>
-          <div class="row">
-            <div class="field" style="max-width: 130px">
-              <label>tipo</label>
-              <select id="pu-tipo">
-                <option value="contiene">contiene</option>
-                <option value="literal">literal</option>
-                <option value="prefijo">prefijo</option>
-                <option value="regex">regex</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>valor</label>
-              <input id="pu-valor" type="text" placeholder="STRIPE" />
-            </div>
-            <div class="field">
-              <label>categoría</label>
-              <select id="pu-categoria"></select>
-            </div>
-          </div>
-          <div class="actions">
-            <button id="btn-crear-pu" class="btn btn-primary">+ Crear regla</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: Sugerencias -->
-      <div class="panel" data-panel="sugerencias">
-        <div class="card">
-          <h2>Sugerencias (correcciones repetidas)</h2>
-          <div class="hint" style="margin-bottom: 12px">
-            Cuando corregís el mismo nombre ≥N veces, aparece como sugerencia para promover a regla
-            automática.
-          </div>
-          <div class="row" style="margin-bottom: 12px">
-            <div class="field" style="max-width: 100px">
-              <label>umbral</label>
-              <input id="sug-umbral" type="number" value="2" min="1" />
-            </div>
-            <div class="field" style="flex: 0 0 130px; align-self: flex-end; margin-bottom: 0">
-              <button id="btn-cargar-sug" class="btn btn-primary">🔍 Buscar</button>
-            </div>
-          </div>
-          <div id="sug-result">
-            <div class="empty">Click "Buscar" para listar sugerencias.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: Historial -->
-      <div class="panel" data-panel="historial">
-        <div class="card">
-          <h2>Movimientos creados en esta sesión</h2>
-          <div class="hint" style="margin-bottom: 12px">
-            Click en una fila → carga ese movimiento en "Categorizar" para ver o corregir.
-          </div>
-          <div id="historial-result">
-            <div class="empty">Todavía no creaste ningún movimiento.</div>
-          </div>
-          <div class="actions">
-            <button id="btn-historial-clear" class="btn btn-ghost">🗑 Limpiar historial</button>
-          </div>
+      <!-- 4. Historial -->
+      <div class="card">
+        <h2>4. Historial reciente</h2>
+        <div class="sub">Click en una fila para volver a verla.</div>
+        <div id="historial-result">
+          <div class="empty">Todavía no probaste ningún movimiento.</div>
         </div>
       </div>
     </div>
@@ -505,7 +475,7 @@
       let categoriasCache = null;
       let historial = loadHistorial();
 
-      // --- toast ---
+      // ===== toast =====
       function toast(msg, type = 'info') {
         const el = document.createElement('div');
         el.className = 'toast ' + (type || '');
@@ -514,50 +484,20 @@
         setTimeout(() => el.remove(), 3500);
       }
 
-      // --- usuario global ---
+      // ===== usuario =====
       function getUsuario() {
         return $('usuario-global').value.trim();
-      }
-      function setUsuario(u) {
-        $('usuario-global').value = u;
-        localStorage.setItem(USUARIO_KEY, u);
       }
       try {
         const saved = localStorage.getItem(USUARIO_KEY);
         if (saved) $('usuario-global').value = saved;
       } catch {}
       $('usuario-global').addEventListener('change', () => {
-        const u = getUsuario();
-        localStorage.setItem(USUARIO_KEY, u);
-        refreshActiveTab();
+        localStorage.setItem(USUARIO_KEY, getUsuario());
+        cargarAprendido();
       });
 
-      // --- tabs ---
-      $('tabs').addEventListener('click', (e) => {
-        const t = e.target.closest('.tab');
-        if (!t) return;
-        document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
-        t.classList.add('active');
-        const name = t.getAttribute('data-tab');
-        document.querySelector(`.panel[data-panel="${name}"]`).classList.add('active');
-        refreshActiveTab();
-      });
-
-      function activeTab() {
-        return document.querySelector('.tab.active')?.getAttribute('data-tab');
-      }
-
-      function refreshActiveTab() {
-        const t = activeTab();
-        if (t === 'memoria') cargarMemoria();
-        if (t === 'reglas') cargarPatronesUsuario();
-        if (t === 'sugerencias') {
-          /* requiere click "Buscar" — no auto */
-        }
-      }
-
-      // --- historial ---
+      // ===== historial =====
       function loadHistorial() {
         try {
           return JSON.parse(localStorage.getItem(HISTORIAL_KEY) || '[]');
@@ -567,62 +507,22 @@
       }
       function saveHistorial() {
         try {
-          localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial.slice(0, 50)));
+          localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial.slice(0, 30)));
         } catch {}
       }
 
+      // ===== categorias =====
       async function cargarCategorias() {
         if (categoriasCache) return categoriasCache;
         const r = await window.taggerApi('/categorias');
         categoriasCache = r.items || [];
-        const opts = categoriasCache
+        $('c-categoria').innerHTML = categoriasCache
           .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
           .join('');
-        $('c-categoria').innerHTML = opts;
-        $('pu-categoria').innerHTML = opts;
         return categoriasCache;
       }
 
-      // --- pipeline tracer ---
-      function renderTracer(fuente) {
-        const map = {
-          manual: 'memoria',
-          regex: 'patrones',
-          literal: 'patrones',
-          prefijo: 'patrones',
-          contiene: 'patrones',
-          bancard: 'catalogo',
-          nombre: 'catalogo',
-          mcc: 'mcc',
-          ia: 'ia',
-        };
-        const order = [
-          'memoria',
-          'patrones-usr',
-          'catalogo',
-          'patrones',
-          'mcc',
-          'ia',
-        ];
-        const hitStep = fuente ? map[fuente] : null;
-        const hitIdx = hitStep ? order.indexOf(hitStep) : -1;
-        document.querySelectorAll('.tracer-step').forEach((el) => {
-          el.classList.remove('hit', 'miss', 'skipped');
-          const idx = order.indexOf(el.getAttribute('data-step'));
-          if (hitIdx < 0) {
-            el.classList.add('skipped');
-          } else if (idx < hitIdx) {
-            el.classList.add('miss');
-          } else if (idx === hitIdx) {
-            el.classList.add('hit');
-          } else {
-            el.classList.add('skipped');
-          }
-        });
-      }
-
-      // --- crear movimiento ---
-      $('btn-crear').addEventListener('click', categorizar);
+      // ===== ejemplos =====
       document.querySelectorAll('[data-example]').forEach((b) =>
         b.addEventListener('click', () => {
           const map = {
@@ -634,22 +534,30 @@
           const ex = map[b.getAttribute('data-example')];
           $('m-nombre').value = ex.nombre;
           $('m-monto').value = ex.monto;
-          $('m-mcc').value = '';
+          $('m-nombre').focus();
         }),
       );
+
+      // ===== categorizar =====
+      $('btn-crear').addEventListener('click', categorizar);
+      $('m-nombre').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') categorizar();
+      });
+      $('m-monto').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') categorizar();
+      });
 
       async function categorizar() {
         const nombre = $('m-nombre').value.trim();
         const monto = $('m-monto').value.trim();
-        const mcc = $('m-mcc').value.trim();
         const origen = getUsuario();
         if (!nombre) {
-          toast('nombre_bancard requerido', 'err');
+          toast('Falta el nombre del comercio', 'err');
+          $('m-nombre').focus();
           return;
         }
         const body = { nombre_bancard: nombre };
         if (monto) body.monto = Number(monto);
-        if (mcc) body.mcc = mcc;
         if (origen) body.origen = origen;
         try {
           const r = await window.taggerApi('/categorizar-movimiento', {
@@ -676,20 +584,18 @@
           saveHistorial();
           renderHistorial();
           await cargarCategorias();
-          if (r.fuente === null || r.fuente === 'ia') {
-            pollIaResultado(r.movimiento_id);
-          }
+          if (r.fuente === null || r.fuente === 'ia') pollIa(r.movimiento_id);
         } catch (e) {
           toast('Error: ' + (e?.message || 'falló'), 'err');
         }
       }
 
-      async function pollIaResultado(id, intentos = 15) {
+      async function pollIa(id, intentos = 15) {
         for (let i = 0; i < intentos; i++) {
           await new Promise((r) => setTimeout(r, 2000));
           try {
             const m = await window.taggerApi('/movimientos/' + id);
-            if (m && m.fuente && m.fuente !== 'pendiente_ia') {
+            if (m && m.fuente_categoria && m.fuente_categoria !== 'pendiente_ia') {
               if (lastMovimientoId === id) {
                 renderResultado({
                   movimiento_id: m.id,
@@ -699,7 +605,7 @@
                   confianza: m.confianza,
                   requiere_revision: m.requiere_revision,
                 });
-                toast('IA completó: ' + (m.categoria_predicha?.nombre ?? 'sin categoría'), 'ok');
+                toast('La IA terminó: ' + (m.categoria_predicha?.nombre ?? 'sin categoría'), 'ok');
               }
               return;
             }
@@ -707,47 +613,89 @@
         }
       }
 
-      function renderResultado(r) {
-        const cat = r.categoria;
-        const fuente = r.fuente;
-        const cls = !r.requiere_revision ? 'ok' : fuente === 'ia' ? 'warn' : 'err';
-        $('resultado').innerHTML = `
-          <div class="result-line">
-            <span class="k">categoría</span>
-            <span class="v">${cat ? `<span class="pill ok">${escapeHtml(cat.nombre)}</span>` : '<i>—</i>'}</span>
-          </div>
-          <div class="result-line">
-            <span class="k">fuente</span>
-            <span class="v"><span class="pill ${cls}">${escapeHtml(fuente ?? 'pendiente_ia')}</span></span>
-          </div>
-          <div class="result-line">
-            <span class="k">confianza</span>
-            <span class="v">${r.confianza != null ? Number(r.confianza).toFixed(2) : '—'}</span>
-          </div>
-          <div class="result-line">
-            <span class="k">requiere_revisión</span>
-            <span class="v">${r.requiere_revision ? '⚠️ sí' : '✓ no'}</span>
-          </div>
-          <div class="result-line">
-            <span class="k">movimiento_id</span>
-            <span class="v" style="font-size: 10px">${escapeHtml(r.movimiento_id || '')}</span>
-          </div>
-        `;
-        $('resultado-raw').textContent = JSON.stringify(r, null, 2);
-        $('card-resultado').hidden = false;
-        $('corregir-inline').hidden = !lastMovimientoId;
-        renderTracer(fuente);
+      // ===== renderizar resultado =====
+      function explicacion(fuente, requiereRevision) {
+        switch (fuente) {
+          case 'manual':
+            return 'Ya me acordaba de este destinatario (memoria personal tuya).';
+          case 'regex':
+          case 'literal':
+          case 'prefijo':
+          case 'contiene':
+            return 'Una regla lo reconoció exactamente.';
+          case 'bancard':
+            return 'Está en el catálogo oficial de Bancard.';
+          case 'nombre':
+            return 'El nombre coincide con un comercio del catálogo.';
+          case 'mcc':
+            return 'El código MCC del banco indica la categoría.';
+          case 'ia':
+            return 'Lo dedujo el modelo de IA (revisá si está bien).';
+          default:
+            return 'No reconocí este movimiento. Categorizalo manualmente abajo.';
+        }
       }
 
-      $('btn-clear').addEventListener('click', () => {
-        $('card-resultado').hidden = true;
-        lastMovimientoId = null;
-        $('m-nombre').value = '';
-        $('m-monto').value = '';
-        $('m-mcc').value = '';
-      });
+      function renderResultado(r) {
+        $('card-resultado').hidden = false;
+        const cat = r.categoria;
+        const fuente = r.fuente;
+        const ok = cat && !r.requiere_revision;
+        const hero = $('hero');
+        hero.classList.remove('pendiente', 'sin');
+        if (!cat) {
+          hero.classList.add('sin');
+          $('hero-icon').textContent = '❓';
+        } else if (r.requiere_revision) {
+          hero.classList.add('pendiente');
+          $('hero-icon').textContent = '⚠️';
+        } else {
+          $('hero-icon').textContent = '✅';
+        }
+        $('hero-cat').textContent = cat ? cat.nombre : 'Sin categoría aún';
+        $('hero-why').textContent = explicacion(fuente, r.requiere_revision);
+        $('resultado-raw').textContent = JSON.stringify(r, null, 2);
+        // Tracer
+        renderTracer(fuente);
+        // Si tiene categoría, preseleccionar en el select
+        if (cat?.id && $('c-categoria').options.length) {
+          $('c-categoria').value = cat.id;
+        }
+        // Scroll suave
+        $('card-resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
 
-      // --- corregir ---
+      function renderTracer(fuente) {
+        const map = {
+          manual: 'memoria',
+          regex: 'patrones',
+          literal: 'patrones',
+          prefijo: 'patrones',
+          contiene: 'patrones',
+          bancard: 'catalogo',
+          nombre: 'catalogo',
+          mcc: 'mcc',
+          ia: 'ia',
+        };
+        const order = ['memoria', 'patrones-usr', 'catalogo', 'patrones', 'mcc', 'ia'];
+        const hitStep = fuente ? map[fuente] : null;
+        const hitIdx = hitStep ? order.indexOf(hitStep) : -1;
+        document.querySelectorAll('.tracer-step').forEach((el) => {
+          el.classList.remove('hit', 'miss', 'skipped');
+          const idx = order.indexOf(el.getAttribute('data-step'));
+          if (hitIdx < 0) {
+            el.classList.add('skipped');
+          } else if (idx < hitIdx) {
+            el.classList.add('miss');
+          } else if (idx === hitIdx) {
+            el.classList.add('hit');
+          } else {
+            el.classList.add('skipped');
+          }
+        });
+      }
+
+      // ===== corregir =====
       $('btn-corregir').addEventListener('click', async () => {
         if (!lastMovimientoId) {
           toast('Categorizá un movimiento primero', 'err');
@@ -762,64 +710,71 @@
             body: JSON.stringify(body),
             headers: { 'content-type': 'application/json' },
           });
-          toast(
-            `✓ ${r.categoria_anterior?.nombre ?? '—'} → ${r.categoria_nueva?.nombre ?? '—'}`,
-            'ok',
-          );
-          // Auto-refresh memoria + sugerencias si están abiertas
-          if (activeTab() === 'memoria') cargarMemoria();
-          if (activeTab() === 'sugerencias') cargarSugerencias();
+          toast(`✓ Guardado: ahora es ${r.categoria_nueva?.nombre ?? '—'}`, 'ok');
+          // Refrescar hero
+          const nuevaCat = (categoriasCache || []).find((c) => c.id === categoria_id_nueva);
+          if (nuevaCat) {
+            $('hero-cat').textContent = nuevaCat.nombre;
+            $('hero-icon').textContent = '✅';
+            $('hero').classList.remove('pendiente', 'sin');
+            $('hero-why').textContent =
+              'Lo aprendí de vos. La próxima vez sale automático si es una transferencia, o se sugiere como regla.';
+          }
+          cargarAprendido();
         } catch (e) {
           toast('Error: ' + (e?.message || 'falló'), 'err');
         }
       });
 
-      // --- memoria ---
+      // ===== sección "lo que aprendí" =====
+      async function cargarAprendido() {
+        cargarMemoria();
+        cargarPatronesUsuario();
+        cargarSugerencias();
+      }
+
       async function cargarMemoria() {
         const u = getUsuario();
         if (!u) {
-          $('memoria-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
+          $('memoria-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
           return;
         }
-        $('memoria-result').innerHTML = '<div class="empty">Cargando...</div>';
         try {
           const data = await window.taggerApi('/memoria/' + encodeURIComponent(u));
           renderMemoria(u, data);
-        } catch (e) {
-          $('memoria-result').innerHTML =
-            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        } catch {
+          $('memoria-result').innerHTML = '<div class="empty">No pude cargar.</div>';
         }
       }
 
       function renderMemoria(usuario, data) {
         const items = data.items || [];
-        if (items.length === 0) {
+        if (!items.length) {
           $('memoria-result').innerHTML =
-            '<div class="empty">Sin memoria. Corregí una transferencia MANGO-* para empezar.</div>';
+            '<div class="empty">Todavía no recuerdo ningún destinatario. Corregí una transferencia MANGO para empezar.</div>';
           return;
         }
-        const rows = items
-          .map(
-            (it) => `
-              <tr data-dest="${escapeHtml(it.destinatario_normalizado)}">
-                <td>${escapeHtml(it.destinatario)}</td>
-                <td><span class="pill">${escapeHtml(it.categoria_nombre)}</span></td>
-                <td>${it.hits}</td>
-                <td><button class="btn-danger" data-action="olvidar">Olvidar</button></td>
-              </tr>`,
-          )
-          .join('');
-        $('memoria-result').innerHTML = `
-          <table>
-            <thead><tr><th>Destinatario</th><th>Categoría</th><th>Hits</th><th></th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>`;
+        $('memoria-result').innerHTML =
+          '<ul class="learned-list">' +
+          items
+            .map(
+              (it) => `
+            <li data-dest="${escapeHtml(it.destinatario_normalizado)}">
+              <div class="item-main">
+                Cuando enviás a <code>${escapeHtml(it.destinatario)}</code> →
+                <span class="pill">${escapeHtml(it.categoria_nombre)}</span>
+              </div>
+              <button class="btn-x" data-action="olvidar">Olvidar</button>
+            </li>`,
+            )
+            .join('') +
+          '</ul>';
         $('memoria-result')
           .querySelectorAll('[data-action="olvidar"]')
           .forEach((btn) =>
             btn.addEventListener('click', async (e) => {
-              const tr = e.target.closest('tr');
-              const dest = tr.getAttribute('data-dest');
+              const li = e.target.closest('li');
+              const dest = li.getAttribute('data-dest');
               if (!confirm(`¿Olvidar "${dest}"?`)) return;
               try {
                 await window.taggerApi(
@@ -828,79 +783,60 @@
                 );
                 toast('Olvidado', 'ok');
                 cargarMemoria();
-              } catch (e2) {
-                toast('Error: ' + (e2?.message || 'falló'), 'err');
+              } catch (err) {
+                toast('Error: ' + (err?.message || 'falló'), 'err');
               }
             }),
           );
       }
 
-      // --- patrones-usuario ---
       async function cargarPatronesUsuario() {
         const u = getUsuario();
         if (!u) {
-          $('pu-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
+          $('pu-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
           return;
         }
-        $('pu-result').innerHTML = '<div class="empty">Cargando...</div>';
         try {
           const data = await window.taggerApi('/patrones-usuario/' + encodeURIComponent(u));
           renderPatronesUsuario(u, data);
-        } catch (e) {
-          $('pu-result').innerHTML =
-            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        } catch {
+          $('pu-result').innerHTML = '<div class="empty">No pude cargar.</div>';
         }
       }
 
       function renderPatronesUsuario(usuario, data) {
         const items = data.items || [];
-        if (items.length === 0) {
+        if (!items.length) {
           $('pu-result').innerHTML =
-            '<div class="empty">Sin reglas. Creá una abajo o promové sugerencias.</div>';
+            '<div class="empty">Sin reglas personales. Acumulá correcciones para generar sugerencias.</div>';
           return;
         }
-        const rows = items
-          .map(
-            (it) => `
-              <tr data-id="${escapeHtml(it.id)}">
-                <td><code>${escapeHtml(it.tipo)}</code></td>
-                <td><code>${escapeHtml(it.valor)}</code></td>
-                <td><span class="pill">${escapeHtml(it.categoria_slug)}</span></td>
-                <td>${it.hits}</td>
-                <td>${it.activo ? '✅' : '⏸'}</td>
-                <td>
-                  <button class="btn btn-ghost" data-action="toggle">${it.activo ? 'Pausar' : 'Activar'}</button>
-                  <button class="btn-danger" data-action="eliminar">Eliminar</button>
-                </td>
-              </tr>`,
-          )
-          .join('');
-        $('pu-result').innerHTML = `
-          <table>
-            <thead><tr><th>Tipo</th><th>Valor</th><th>Categoría</th><th>Hits</th><th>Estado</th><th></th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>`;
+        $('pu-result').innerHTML =
+          '<ul class="learned-list">' +
+          items
+            .map(
+              (it) => `
+            <li data-id="${escapeHtml(it.id)}">
+              <div class="item-main">
+                Cuando ves <code>${escapeHtml(it.valor)}</code> →
+                <span class="pill">${escapeHtml(it.categoria_slug)}</span>
+                ${it.activo ? '' : '<span class="pill warn">pausada</span>'}
+              </div>
+              <button class="btn-x" data-action="eliminar">Eliminar</button>
+            </li>`,
+            )
+            .join('') +
+          '</ul>';
         $('pu-result')
-          .querySelectorAll('[data-action]')
+          .querySelectorAll('[data-action="eliminar"]')
           .forEach((btn) =>
             btn.addEventListener('click', async (e) => {
-              const tr = e.target.closest('tr');
-              const id = tr.getAttribute('data-id');
-              const action = e.target.getAttribute('data-action');
+              const li = e.target.closest('li');
+              const id = li.getAttribute('data-id');
+              if (!confirm('¿Eliminar regla?')) return;
               try {
-                if (action === 'eliminar') {
-                  if (!confirm('¿Eliminar regla?')) return;
-                  await window.taggerApi('/patrones-usuario/' + id, { method: 'DELETE' });
-                  toast('Regla eliminada', 'ok');
-                } else if (action === 'toggle') {
-                  const item = items.find((it) => it.id === id);
-                  await window.taggerApi('/patrones-usuario/' + id, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ activo: !item.activo }),
-                    headers: { 'content-type': 'application/json' },
-                  });
-                  toast(item.activo ? 'Pausada' : 'Activada', 'ok');
-                }
+                await window.taggerApi('/patrones-usuario/' + id, { method: 'DELETE' });
+                toast('Regla eliminada', 'ok');
                 cargarPatronesUsuario();
               } catch (err) {
                 toast('Error: ' + (err?.message || 'falló'), 'err');
@@ -909,83 +845,50 @@
           );
       }
 
-      $('btn-crear-pu').addEventListener('click', async () => {
-        const usuario = getUsuario();
-        const tipo = $('pu-tipo').value;
-        const valor = $('pu-valor').value.trim();
-        const catId = $('pu-categoria').value;
-        if (!usuario || !valor || !catId) {
-          toast('usuario, valor y categoría son requeridos', 'err');
-          return;
-        }
-        const cat = (categoriasCache || []).find((c) => c.id === catId);
-        if (!cat) return;
-        try {
-          await window.taggerApi('/patrones-usuario', {
-            method: 'POST',
-            body: JSON.stringify({ usuario, tipo, valor, categoria_slug: cat.slug }),
-            headers: { 'content-type': 'application/json' },
-          });
-          $('pu-valor').value = '';
-          toast('Regla creada', 'ok');
-          cargarPatronesUsuario();
-        } catch (e) {
-          toast('Error: ' + (e?.message || 'falló'), 'err');
-        }
-      });
-
-      // --- sugerencias ---
-      $('btn-cargar-sug').addEventListener('click', cargarSugerencias);
-
       async function cargarSugerencias() {
         const u = getUsuario();
-        const umbral = $('sug-umbral').value || 2;
         if (!u) {
-          $('sug-result').innerHTML = '<div class="empty">Ingresá usuario arriba.</div>';
+          $('sug-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
           return;
         }
-        $('sug-result').innerHTML = '<div class="empty">Buscando...</div>';
         try {
           const data = await window.taggerApi(
-            '/patrones-usuario/' + encodeURIComponent(u) + '/sugerencias?umbral=' + umbral,
+            '/patrones-usuario/' + encodeURIComponent(u) + '/sugerencias?umbral=2',
           );
           renderSugerencias(u, data);
-        } catch (e) {
-          $('sug-result').innerHTML =
-            '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        } catch {
+          $('sug-result').innerHTML = '<div class="empty">No pude cargar.</div>';
         }
       }
 
       function renderSugerencias(usuario, data) {
         const items = data.sugerencias || [];
-        if (items.length === 0) {
+        if (!items.length) {
           $('sug-result').innerHTML =
-            '<div class="empty">Sin sugerencias. Corregí movimientos repetidos para generar.</div>';
+            '<div class="empty">No hay sugerencias. Corregí 2 o más veces el mismo comercio y aparecerá acá.</div>';
           return;
         }
-        const rows = items
-          .map(
-            (s, i) => `
-              <tr data-i="${i}">
-                <td><code>${escapeHtml(s.nombreNormalizado)}</code></td>
-                <td>${escapeHtml(s.ejemplos.join(', '))}</td>
-                <td><span class="pill">${escapeHtml(s.categoriaSlug)}</span></td>
-                <td>${s.veces}</td>
-                <td><button class="btn btn-primary" data-action="promover">+ Regla</button></td>
-              </tr>`,
-          )
-          .join('');
-        $('sug-result').innerHTML = `
-          <table>
-            <thead><tr><th>Nombre</th><th>Ejemplos</th><th>Categoría</th><th>Veces</th><th></th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>`;
+        $('sug-result').innerHTML =
+          '<ul class="learned-list">' +
+          items
+            .map(
+              (s, i) => `
+            <li data-i="${i}">
+              <div class="item-main">
+                Corregiste <code>${escapeHtml(s.nombreNormalizado)}</code> ${s.veces} veces a
+                <span class="pill">${escapeHtml(s.categoriaSlug)}</span> — ¿guardar como regla?
+              </div>
+              <button class="btn btn-primary" data-action="promover" style="font-size:12px;padding:6px 12px">Sí, guardar</button>
+            </li>`,
+            )
+            .join('') +
+          '</ul>';
         $('sug-result')
           .querySelectorAll('[data-action="promover"]')
           .forEach((btn) =>
             btn.addEventListener('click', async (e) => {
-              const tr = e.target.closest('tr');
-              const s = items[Number(tr.getAttribute('data-i'))];
+              const li = e.target.closest('li');
+              const s = items[Number(li.getAttribute('data-i'))];
               try {
                 await window.taggerApi('/patrones-usuario', {
                   method: 'POST',
@@ -997,8 +900,9 @@
                   }),
                   headers: { 'content-type': 'application/json' },
                 });
-                toast('Regla creada desde sugerencia', 'ok');
+                toast('Regla creada', 'ok');
                 cargarSugerencias();
+                cargarPatronesUsuario();
               } catch (err) {
                 toast('Error: ' + (err?.message || 'falló'), 'err');
               }
@@ -1006,30 +910,27 @@
           );
       }
 
-      // --- historial ---
+      // ===== historial =====
       function renderHistorial() {
         const el = $('historial-result');
         if (!historial.length) {
-          el.innerHTML = '<div class="empty">Todavía no creaste ningún movimiento.</div>';
+          el.innerHTML = '<div class="empty">Todavía no probaste ningún movimiento.</div>';
           return;
         }
         const rows = historial
           .map((it, idx) => {
-            const cls = !it.requiere_revision ? 'ok' : it.fuente ? 'warn' : 'err';
             const when = new Date(it.ts).toLocaleTimeString();
             return `
-              <tr data-idx="${idx}" style="cursor: pointer">
-                <td><span style="font-size: 11px" class="mono">${when}</span></td>
+              <tr data-idx="${idx}">
+                <td><span style="font-size:11px;color:var(--text-3)">${when}</span></td>
                 <td>${escapeHtml(it.nombre_bancard)}</td>
-                <td>${it.categoria_nombre ? `<span class="pill">${escapeHtml(it.categoria_nombre)}</span>` : '<i>—</i>'}</td>
-                <td><span class="pill ${cls}">${escapeHtml(it.fuente ?? 'pendiente_ia')}</span></td>
-                <td><span style="font-size: 11px" class="mono">${it.origen ?? '—'}</span></td>
+                <td>${it.categoria_nombre ? `<span class="pill">${escapeHtml(it.categoria_nombre)}</span>` : '<i style="color:var(--text-3)">sin categoría</i>'}</td>
               </tr>`;
           })
           .join('');
         el.innerHTML = `
-          <table>
-            <thead><tr><th>Hora</th><th>Nombre</th><th>Categoría</th><th>Fuente</th><th>Usuario</th></tr></thead>
+          <table class="hist">
+            <thead><tr><th>Hora</th><th>Comercio</th><th>Categoría</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>`;
         el.querySelectorAll('tbody tr').forEach((tr) =>
@@ -1043,43 +944,18 @@
             renderResultado({
               movimiento_id: it.movimiento_id,
               categoria_id: it.categoria_id,
-              categoria: it.categoria_nombre ? { nombre: it.categoria_nombre } : null,
+              categoria: it.categoria_nombre ? { id: it.categoria_id, nombre: it.categoria_nombre } : null,
               fuente: it.fuente,
               confianza: it.confianza,
               requiere_revision: it.requiere_revision,
             });
-            // Switch tab
-            document.querySelector('[data-tab="categorizar"]').click();
+            $('m-nombre').value = it.nombre_bancard;
+            if (it.monto) $('m-monto').value = it.monto;
           }),
         );
       }
 
-      $('btn-historial-clear').addEventListener('click', () => {
-        if (historial.length === 0) return;
-        if (!confirm('¿Limpiar historial local?')) return;
-        historial = [];
-        saveHistorial();
-        renderHistorial();
-      });
-
-      // --- health ---
-      async function pingHealth() {
-        try {
-          const h = await fetch('/health/ready').then((r) => r.json());
-          $('dot-db').className = 'dot ' + (h.db === 'ok' ? 'ok' : 'err');
-          if (h.ollama === undefined) {
-            $('dot-ia').className = 'dot';
-            $('dot-ia').title = 'IA deshabilitada';
-          } else {
-            $('dot-ia').className = 'dot ' + (h.ollama === 'ok' ? 'ok' : 'err');
-          }
-        } catch {
-          $('dot-db').className = 'dot err';
-          $('dot-ia').className = 'dot err';
-        }
-      }
-
-      // --- util ---
+      // ===== util =====
       function escapeHtml(s) {
         return String(s ?? '').replace(
           /[&<>"']/g,
@@ -1088,11 +964,10 @@
         );
       }
 
-      // --- init ---
+      // ===== init =====
       cargarCategorias().catch(() => {});
+      cargarAprendido();
       renderHistorial();
-      pingHealth();
-      setInterval(pingHealth, 30_000);
     </script>
   </body>
 </html>
