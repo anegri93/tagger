@@ -20,23 +20,49 @@ async function main() {
   const out: string[] = [];
   out.push('-- tagger seed dump');
   out.push(`-- generado ${new Date().toISOString()}`);
-  out.push('-- idempotente: ON CONFLICT DO NOTHING en todas las tablas');
-  out.push('-- aplica sobre schema post-migraciones 0017-0019 (reglas + mcc_por_nombre)');
+  out.push('-- estrategia: WIPE + RELOAD completo. Fase de desarrollo: matchear local.');
+  out.push('-- esto borra: movimientos, correcciones, categorías, reglas, mcc, marcas, alias.');
+  out.push('-- todo lo seedable se recarga; movs/correcciones quedan vacíos hasta que la app genere.');
   out.push('');
   out.push('BEGIN;');
+  out.push('');
+  out.push('TRUNCATE TABLE');
+  out.push('  correcciones_usuario,');
+  out.push('  movimientos,');
+  out.push('  categorias_alias,');
+  out.push('  marcas_conocidas,');
+  out.push('  reglas,');
+  out.push('  mcc_por_nombre,');
+  out.push('  mcc_catalogo,');
+  out.push('  categorias');
+  out.push('  RESTART IDENTITY CASCADE;');
   out.push('');
 
   // ===== categorias =====
   const cats = await db.execute(sql`
-    SELECT id, slug, nombre, descripcion, activo
+    SELECT id, slug, nombre, descripcion, activo, reemplazada_por_id
     FROM categorias ORDER BY slug
   `);
-  const catCols = ['id', 'slug', 'nombre', 'descripcion', 'activo'];
+  const catCols = ['id', 'slug', 'nombre', 'descripcion', 'activo', 'reemplazada_por_id'];
   out.push(`-- categorias (${cats.rows.length})`);
   if (cats.rows.length > 0) {
     out.push(`INSERT INTO categorias (${catCols.join(', ')}) VALUES`);
     out.push(cats.rows.map((r) => values(r as Record<string, unknown>, catCols)).join(',\n'));
     out.push(`ON CONFLICT (slug) DO NOTHING;`);
+  }
+  out.push('');
+
+  // ===== categorias_alias =====
+  const aliases = await db.execute(sql`
+    SELECT slug_antiguo, categoria_id, motivo
+    FROM categorias_alias ORDER BY slug_antiguo
+  `);
+  const aliasCols = ['slug_antiguo', 'categoria_id', 'motivo'];
+  out.push(`-- categorias_alias (${aliases.rows.length})`);
+  if (aliases.rows.length > 0) {
+    out.push(`INSERT INTO categorias_alias (${aliasCols.join(', ')}) VALUES`);
+    out.push(aliases.rows.map((r) => values(r as Record<string, unknown>, aliasCols)).join(',\n'));
+    out.push(`ON CONFLICT (slug_antiguo) DO NOTHING;`);
   }
   out.push('');
 
@@ -143,6 +169,7 @@ async function main() {
   writeFileSync(path, out.join('\n'));
   console.log(`escrito ${path}`);
   console.log(`  categorias: ${cats.rows.length}`);
+  console.log(`  categorias_alias: ${aliases.rows.length}`);
   console.log(`  mcc_catalogo: ${mccs.rows.length}`);
   console.log(`  reglas: ${reglas.rows.length}`);
   console.log(`  marcas_conocidas: ${marcas.rows.length}`);

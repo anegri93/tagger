@@ -38,6 +38,9 @@ services:
       DB_POOL_MAX: ${DB_POOL_MAX:-30}
       REGLAS_CACHE_MAX: ${REGLAS_CACHE_MAX:-5000}
       REGLAS_CACHE_TTL_MS: ${REGLAS_CACHE_TTL_MS:-60000}
+      # SEED_STRATEGY: auto (default) corre seed solo si hash cambió o DB vacía.
+      # Alternativas: 'always' (cada arranque), 'never' (skip), 'skip-poblado' (legacy).
+      SEED_STRATEGY: ${SEED_STRATEGY:-auto}
     expose:
       - '3000'
 
