@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "smoke": "node scripts/smoke.mjs"
   },
   "engines": {
     "node": ">=18"

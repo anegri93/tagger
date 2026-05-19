@@ -32,8 +32,12 @@ export const categoriasRoute =
         const cat = await writer.crear(parsed.data);
         return reply.code(201).send(cat);
       } catch (err) {
+        // Detectar violación de unique constraint (slug duplicado).
+        // Drizzle envuelve el pg error en DrizzleQueryError; el código está en .cause.
+        const e = err as { code?: string; cause?: { code?: string } } | null;
+        const pgCode = e?.code ?? e?.cause?.code;
         const msg = err instanceof Error ? err.message : 'error';
-        if (/duplicate|unique/.test(msg)) {
+        if (pgCode === '23505' || /duplicate|unique/i.test(msg)) {
           return reply.code(409).send({ error: 'slug_existe' });
         }
         return reply.code(500).send({ error: msg });
