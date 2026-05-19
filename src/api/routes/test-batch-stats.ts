@@ -49,11 +49,8 @@ export interface TestBatchStats {
   }>;
   mismatches_recientes: Array<{
     nombre_bancard: string | null;
-    bancard_id: string | null;
-    codigo_comercio: string | null;
     runtime_fuente: string | null;
     runtime_categoria: string | null;
-    catalogo_fuente: string | null;
     catalogo_categoria: string | null;
   }>;
 }

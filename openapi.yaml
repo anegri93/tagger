@@ -214,18 +214,19 @@ paths:
                     items:
                       $ref: '#/components/schemas/Categoria'
 
-  /memoria/{usuario}:
+
+  /reglas:
     get:
-      tags: [Memoria]
-      summary: Listar memoria de destinatarios del usuario
+      tags: [Reglas]
+      summary: Listar reglas por scope
       description: |
-        Devuelve todas las asociaciones `destinatario → categoría` aprendidas para este usuario,
-        usadas en la capa de memoria del pipeline para transferencias P2P (MANGO-).
+        Devuelve reglas (tipo `literal`, `contiene` o `regex`) filtradas por scope.
+        Scope puede ser `global` o `usuario:<nombre>`.
       parameters:
-        - in: path
-          name: usuario
+        - in: query
+          name: scope
           required: true
-          schema: { type: string, minLength: 1, maxLength: 120 }
+          schema: { type: string, example: 'usuario:usuario_42' }
       responses:
         '200':
           description: Lista
@@ -234,91 +235,77 @@ paths:
               schema:
                 type: object
                 properties:
-                  usuario: { type: string }
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        destinatario: { type: string, example: PEREZ JUAN }
-                        destinatario_normalizado: { type: string, example: PEREZ JUAN }
-                        categoria_slug: { type: string, example: alquiler }
-                        categoria_nombre: { type: string, example: Alquiler }
-                        hits: { type: integer, example: 3 }
-                        updated_at: { type: string, format: date-time }
-        '400': { description: usuario_invalido }
-
-  /memoria/{usuario}/{destinatario}:
-    delete:
-      tags: [Memoria]
-      summary: Olvidar una asociación específica
-      description: |
-        Borra la asociación `(usuario, destinatario)` de memoria. La próxima transferencia
-        a ese destinatario vuelve a caer en la categoría por defecto del pipeline.
-      parameters:
-        - in: path
-          name: usuario
-          required: true
-          schema: { type: string, minLength: 1, maxLength: 120 }
-        - in: path
-          name: destinatario
-          required: true
-          schema: { type: string, minLength: 1, maxLength: 200 }
-      responses:
-        '204': { description: Eliminado }
-        '400': { description: usuario_invalido o destinatario_invalido }
-        '404': { description: no_existe }
-
-  /patrones-usuario/{usuario}:
-    get:
-      tags: [PatronesUsuario]
-      summary: Lista reglas personales del usuario
-      description: |
-        Devuelve patrones (regex/contiene/prefijo/literal) que aplican solo a este usuario.
-        Se evalúan en capa 1 del pipeline, después de memoria y antes de catálogo.
-      parameters:
-        - in: path
-          name: usuario
-          required: true
-          schema: { type: string, minLength: 1, maxLength: 120 }
-      responses:
-        '200':
-          description: Lista
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  usuario: { type: string }
+                  scope: { type: string }
                   items:
                     type: array
                     items:
                       type: object
                       properties:
                         id: { type: string, format: uuid }
-                        tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
-                        valor: { type: string, example: STRIPE }
-                        categoria_slug: { type: string, example: software }
-                        prioridad: { type: integer, example: 100 }
+                        scope: { type: string }
+                        tipo: { type: string, enum: [literal, contiene, regex] }
+                        valor: { type: string }
+                        valor_normalizado: { type: string }
+                        categoria_slug: { type: string }
+                        prioridad: { type: integer }
                         activo: { type: boolean }
-                        descripcion: { type: string, nullable: true }
                         hits: { type: integer }
+                        origen: { type: string, example: manual }
+                        descripcion: { type: string, nullable: true }
                         created_at: { type: string, format: date-time }
                         updated_at: { type: string, format: date-time }
-        '400': { description: usuario_invalido }
+        '400': { description: scope_requerido }
+    post:
+      tags: [Reglas]
+      summary: Crear regla
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scope, tipo, valor, categoria_slug]
+              properties:
+                scope: { type: string, example: 'usuario:usuario_42' }
+                tipo: { type: string, enum: [literal, contiene, regex] }
+                valor: { type: string, minLength: 2, maxLength: 500 }
+                categoria_slug: { type: string }
+                prioridad: { type: integer, minimum: 1, maximum: 10000 }
+                descripcion: { type: string, nullable: true }
+                origen: { type: string, example: manual }
+      responses:
+        '201': { description: Creada }
+        '400': { description: payload_invalido | regex_invalido | valor_muy_corto | categoria_inexistente }
+        '409': { description: regla_duplicada }
+    delete:
+      tags: [Reglas]
+      summary: Eliminar regla por scope + valor (alternativa a DELETE /reglas/:id)
+      parameters:
+        - in: query
+          name: scope
+          required: true
+          schema: { type: string }
+        - in: query
+          name: valor
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Eliminada }
+        '400': { description: scope_y_valor_requeridos | valor_invalido }
+        '404': { description: no_existe }
 
-  /patrones-usuario/{usuario}/sugerencias:
+  /reglas/sugerencias:
     get:
-      tags: [PatronesUsuario]
-      summary: Sugerencias de reglas basadas en correcciones repetidas
+      tags: [Reglas]
+      summary: Sugerencias de reglas user-scope basadas en correcciones repetidas
       description: |
         Agrupa correcciones del usuario por `nombre_normalizado + categoría`. Devuelve grupos
         donde `veces >= umbral` (default 2). Excluye los nombres con regla activa existente.
       parameters:
-        - in: path
+        - in: query
           name: usuario
           required: true
-          schema: { type: string, minLength: 1, maxLength: 120 }
+          schema: { type: string }
         - in: query
           name: umbral
           schema: { type: integer, minimum: 1, default: 2 }
@@ -337,38 +324,17 @@ paths:
                     items:
                       type: object
                       properties:
-                        nombreNormalizado: { type: string }
-                        ejemplos: { type: array, items: { type: string } }
+                        scope: { type: string }
+                        valor: { type: string }
+                        valorNormalizado: { type: string }
                         categoriaSlug: { type: string }
                         categoriaNombre: { type: string }
                         veces: { type: integer }
+                        ejemplos: { type: array, items: { type: string } }
 
-  /patrones-usuario:
-    post:
-      tags: [PatronesUsuario]
-      summary: Crear regla personal
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [usuario, tipo, valor, categoria_slug]
-              properties:
-                usuario: { type: string, minLength: 1, maxLength: 120 }
-                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
-                valor: { type: string, minLength: 2, maxLength: 500 }
-                categoria_slug: { type: string }
-                prioridad: { type: integer, minimum: 1, maximum: 10000 }
-                descripcion: { type: string, nullable: true }
-      responses:
-        '201': { description: Creado }
-        '400': { description: payload_invalido | patron_invalido | valor_muy_corto | categoria_inexistente }
-        '409': { description: patron_duplicado }
-
-  /patrones-usuario/{id}:
+  /reglas/{id}:
     patch:
-      tags: [PatronesUsuario]
+      tags: [Reglas]
       summary: Activar/desactivar o cambiar prioridad
       parameters:
         - in: path
@@ -385,157 +351,19 @@ paths:
                 activo: { type: boolean }
                 prioridad: { type: integer, minimum: 1, maximum: 10000 }
       responses:
-        '200': { description: Actualizado }
+        '200': { description: Actualizada }
         '404': { description: no_existe }
     delete:
-      tags: [PatronesUsuario]
-      summary: Eliminar regla personal
+      tags: [Reglas]
+      summary: Eliminar regla por id
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '204': { description: Eliminado }
+        '204': { description: Eliminada }
         '404': { description: no_existe }
-
-  /patrones:
-    get:
-      tags: [Patrones]
-      summary: Lista patrones
-      parameters:
-        - in: query
-          name: tipo
-          schema: { type: string, enum: [regex, literal, prefijo, contiene] }
-        - in: query
-          name: categoria_slug
-          schema: { type: string }
-        - in: query
-          name: activo
-          schema: { type: boolean }
-      responses:
-        '200':
-          description: Lista
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items: { $ref: '#/components/schemas/Patron' }
-    post:
-      tags: [Patrones]
-      summary: Crear patrón
-      description: |
-        Crea un patrón nuevo. Tipos: `regex` (conf 0.95), `literal` (0.95), `prefijo` (0.90), `contiene` (0.80).
-        409 si ya existe `tipo + valor + categoria_slug`.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo, valor, categoria_slug]
-              properties:
-                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
-                valor: { type: string, minLength: 1, maxLength: 500, example: '\bBIGGIE\b' }
-                categoria_slug: { type: string, example: supermercado }
-                prioridad: { type: integer, minimum: 0, maximum: 10000, default: 100 }
-                descripcion: { type: string, maxLength: 200 }
-      responses:
-        '201':
-          description: Creado
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Patron' }
-        '409': { description: patron_duplicado }
-        '422': { description: patron_invalido }
-
-  /patrones/{id}:
-    get:
-      tags: [Patrones]
-      summary: Detalle patrón
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Detalle
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Patron' }
-        '404': { $ref: '#/components/responses/NotFound' }
-    patch:
-      tags: [Patrones]
-      summary: Actualizar patrón
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                valor: { type: string, minLength: 1, maxLength: 500 }
-                prioridad: { type: integer, minimum: 0, maximum: 10000 }
-                descripcion: { type: string, maxLength: 200, nullable: true }
-                activo: { type: boolean }
-                categoria_slug: { type: string }
-      responses:
-        '200':
-          description: Actualizado
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Patron' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '422': { description: patron_invalido }
-    delete:
-      tags: [Patrones]
-      summary: Borrar patrón
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204': { description: Borrado }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /patrones/test:
-    post:
-      tags: [Patrones]
-      summary: Probar match sin persistir
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo, valor, texto]
-              properties:
-                tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
-                valor: { type: string, minLength: 1, maxLength: 500 }
-                texto: { type: string, minLength: 1, maxLength: 500 }
-      responses:
-        '200':
-          description: Resultado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  match: { type: boolean }
-                  valor_normalizado: { type: string }
-                  texto_normalizado: { type: string }
-        '422': { description: patron_invalido }
-
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -547,21 +375,20 @@ components:
     Fuente:
       type: string
       enum:
-        - regex # patron tipo regex (0.95)
-        - literal # patron tipo literal (0.95)
-        - contiene # patron tipo contiene (0.90)
-        - prefijo # patron tipo prefijo (0.90)
-        - mcc # MCC mapeado (0.75)
-        - ia # Ollama fallback (cap 0.70)
-        - manual # corrección usuario (1.0)
+        - regex # regla tipo regex (0.95)
+        - literal # regla tipo literal (0.95)
+        - contiene # regla tipo contiene (0.80)
+        - mcc # MCC mapeado (0.75) o MCC inferido por nombre vía mcc_por_nombre
+        - ia # Ollama fallback (cap 0.50)
+        - manual # corrección usuario o memoria personal (1.0)
         - bancard # legacy
         - nombre # legacy
         - patrones # legacy
+        - prefijo # legacy
       description: |
         Fuente que asignó la categoría.
-        Pipeline actual produce: `regex`, `literal`, `contiene`, `prefijo`, `mcc`, `ia`.
-        Capa catálogo (lookup directo) hereda la fuente almacenada en `comercios_catalogo`.
-        Valores legacy (`bancard`, `nombre`, `patrones`) aparecen solo en movimientos antiguos.
+        Pipeline actual produce: `regex`, `literal`, `contiene`, `mcc`, `manual`, `ia`.
+        Valores legacy (`bancard`, `nombre`, `patrones`, `prefijo`) aparecen solo en movimientos antiguos.
 
     CategorizarRequest:
       type: object
@@ -656,18 +483,21 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
-    Patron:
+    Regla:
       type: object
-      required: [id, tipo, valor, categoria_id, prioridad, activo]
+      required: [id, scope, tipo, valor, categoria_slug, prioridad, activo]
       properties:
         id: { type: string, format: uuid }
-        tipo: { type: string, enum: [regex, literal, prefijo, contiene] }
+        scope: { type: string, example: 'usuario:usuario_42' }
+        tipo: { type: string, enum: [literal, contiene, regex] }
         valor: { type: string }
+        valor_normalizado: { type: string }
         categoria_id: { type: string, format: uuid }
         categoria_slug: { type: string }
         prioridad: { type: integer }
         descripcion: { type: string, nullable: true }
-        fuente: { type: string, enum: [manual, catalogo_bancard, auto] }
+        origen: { type: string, example: manual }
+        hits: { type: integer }
         activo: { type: boolean }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }

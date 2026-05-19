@@ -2,7 +2,7 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Db } from '../client.js';
-import { categorias, mccCatalogo, comerciosCatalogo, movimientos } from '../schema/index.js';
+import { categorias, mccCatalogo, mccPorNombre, movimientos } from '../schema/index.js';
 import type { CategoriasReader, CategoriaPublica } from '../../api/routes/categorias.js';
 import type { CategoriasLoader, CategoriaActiva } from '../../layers/ia.js';
 
@@ -102,8 +102,8 @@ export function crearCategoriaWriter(db: Db, resolver?: { invalidar(): void }): 
           ),
         db
           .select({ c: sql<number>`count(*)::int` })
-          .from(comerciosCatalogo)
-          .where(eq(comerciosCatalogo.categoriaId, id)),
+          .from(mccPorNombre)
+          .where(eq(mccPorNombre.categoriaId, id)),
         db
           .select({ c: sql<number>`count(*)::int` })
           .from(mccCatalogo)

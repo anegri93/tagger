@@ -414,14 +414,14 @@
         <details class="tech">
           <summary>Ver detalles técnicos del pipeline</summary>
           <div class="tracer" id="tracer">
-            <div class="tracer-step" data-step="memoria"><span class="n">0</span>Memoria</div>
-            <div class="tracer-step" data-step="patrones-usr">
-              <span class="n">1</span>Reglas tuyas
+            <div class="tracer-step" data-step="reglas-usr">
+              <span class="n">0</span>Reglas tuyas
             </div>
-            <div class="tracer-step" data-step="catalogo"><span class="n">2</span>Catálogo</div>
-            <div class="tracer-step" data-step="patrones"><span class="n">3</span>Reglas global</div>
-            <div class="tracer-step" data-step="mcc"><span class="n">4</span>MCC</div>
-            <div class="tracer-step" data-step="ia"><span class="n">5</span>IA</div>
+            <div class="tracer-step" data-step="reglas-global">
+              <span class="n">1</span>Reglas globales
+            </div>
+            <div class="tracer-step" data-step="mcc"><span class="n">2</span>MCC</div>
+            <div class="tracer-step" data-step="ia"><span class="n">3</span>IA</div>
           </div>
           <pre class="raw" id="resultado-raw"></pre>
         </details>
@@ -669,18 +669,18 @@
       }
 
       function renderTracer(fuente) {
+        // Heurística: fuente='manual' viene de reglas user-scope con origen correccion/manual.
+        // Otros tipos pueden venir de reglas user o global — sin info adicional no distinguible.
+        // Por simplicidad: 'manual' → reglas-usr, regex/literal/contiene → reglas-global.
         const map = {
-          manual: 'memoria',
-          regex: 'patrones',
-          literal: 'patrones',
-          prefijo: 'patrones',
-          contiene: 'patrones',
-          bancard: 'catalogo',
-          nombre: 'catalogo',
+          manual: 'reglas-usr',
+          regex: 'reglas-global',
+          literal: 'reglas-global',
+          contiene: 'reglas-global',
           mcc: 'mcc',
           ia: 'ia',
         };
-        const order = ['memoria', 'patrones-usr', 'catalogo', 'patrones', 'mcc', 'ia'];
+        const order = ['reglas-usr', 'reglas-global', 'mcc', 'ia'];
         const hitStep = fuente ? map[fuente] : null;
         const hitIdx = hitStep ? order.indexOf(hitStep) : -1;
         document.querySelectorAll('.tracer-step').forEach((el) => {
@@ -729,29 +729,30 @@
         }
       });
 
-      // ===== sección "lo que aprendí" =====
+      // ===== sección "lo que aprendí" — endpoint unificado /reglas =====
       async function cargarAprendido() {
-        cargarMemoria();
-        cargarPatronesUsuario();
-        cargarSugerencias();
-      }
-
-      async function cargarMemoria() {
         const u = getUsuario();
         if (!u) {
           $('memoria-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
+          $('pu-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
+          $('sug-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
           return;
         }
         try {
-          const data = await window.taggerApi('/memoria/' + encodeURIComponent(u));
-          renderMemoria(u, data);
+          const data = await window.taggerApi(
+            '/reglas?scope=' + encodeURIComponent('usuario:' + u),
+          );
+          const items = data.items || [];
+          renderMemoria(u, items.filter((r) => r.tipo === 'literal'));
+          renderReglas(u, items.filter((r) => r.tipo !== 'literal'));
         } catch {
           $('memoria-result').innerHTML = '<div class="empty">No pude cargar.</div>';
+          $('pu-result').innerHTML = '<div class="empty">No pude cargar.</div>';
         }
+        cargarSugerencias();
       }
 
-      function renderMemoria(usuario, data) {
-        const items = data.items || [];
+      function renderMemoria(usuario, items) {
         if (!items.length) {
           $('memoria-result').innerHTML =
             '<div class="empty">Todavía no recuerdo nada. Corregí un movimiento para empezar.</div>';
@@ -762,10 +763,10 @@
           items
             .map(
               (it) => `
-            <li data-dest="${escapeHtml(it.destinatario_normalizado)}">
+            <li data-id="${escapeHtml(it.id)}">
               <div class="item-main">
-                <code>${escapeHtml(it.destinatario)}</code> →
-                <span class="pill">${escapeHtml(it.categoria_nombre)}</span>
+                <code>${escapeHtml(it.valor)}</code> →
+                <span class="pill">${escapeHtml(it.categoria_slug)}</span>
               </div>
               <button class="btn-x" data-action="olvidar">Olvidar</button>
             </li>`,
@@ -777,15 +778,12 @@
           .forEach((btn) =>
             btn.addEventListener('click', async (e) => {
               const li = e.target.closest('li');
-              const dest = li.getAttribute('data-dest');
-              if (!confirm(`¿Olvidar "${dest}"?`)) return;
+              const id = li.getAttribute('data-id');
+              if (!confirm('¿Olvidar?')) return;
               try {
-                await window.taggerApi(
-                  '/memoria/' + encodeURIComponent(usuario) + '/' + encodeURIComponent(dest),
-                  { method: 'DELETE' },
-                );
+                await window.taggerApi('/reglas/' + id, { method: 'DELETE' });
                 toast('Olvidado', 'ok');
-                cargarMemoria();
+                cargarAprendido();
               } catch (err) {
                 toast('Error: ' + (err?.message || 'falló'), 'err');
               }
@@ -793,25 +791,10 @@
           );
       }
 
-      async function cargarPatronesUsuario() {
-        const u = getUsuario();
-        if (!u) {
-          $('pu-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
-          return;
-        }
-        try {
-          const data = await window.taggerApi('/patrones-usuario/' + encodeURIComponent(u));
-          renderPatronesUsuario(u, data);
-        } catch {
-          $('pu-result').innerHTML = '<div class="empty">No pude cargar.</div>';
-        }
-      }
-
-      function renderPatronesUsuario(usuario, data) {
-        const items = data.items || [];
+      function renderReglas(usuario, items) {
         if (!items.length) {
           $('pu-result').innerHTML =
-            '<div class="empty">Sin reglas personales. Acumulá correcciones para generar sugerencias.</div>';
+            '<div class="empty">Sin reglas regex/contiene. Promové sugerencias o creá manualmente.</div>';
           return;
         }
         $('pu-result').innerHTML =
@@ -821,7 +804,7 @@
               (it) => `
             <li data-id="${escapeHtml(it.id)}">
               <div class="item-main">
-                Cuando ves <code>${escapeHtml(it.valor)}</code> →
+                Cuando ves <code>${escapeHtml(it.valor)}</code> (${escapeHtml(it.tipo)}) →
                 <span class="pill">${escapeHtml(it.categoria_slug)}</span>
                 ${it.activo ? '' : '<span class="pill warn">pausada</span>'}
               </div>
@@ -838,9 +821,9 @@
               const id = li.getAttribute('data-id');
               if (!confirm('¿Eliminar regla?')) return;
               try {
-                await window.taggerApi('/patrones-usuario/' + id, { method: 'DELETE' });
+                await window.taggerApi('/reglas/' + id, { method: 'DELETE' });
                 toast('Regla eliminada', 'ok');
-                cargarPatronesUsuario();
+                cargarAprendido();
               } catch (err) {
                 toast('Error: ' + (err?.message || 'falló'), 'err');
               }
@@ -850,13 +833,10 @@
 
       async function cargarSugerencias() {
         const u = getUsuario();
-        if (!u) {
-          $('sug-result').innerHTML = '<div class="empty">Ingresá tu nombre arriba.</div>';
-          return;
-        }
+        if (!u) return;
         try {
           const data = await window.taggerApi(
-            '/patrones-usuario/' + encodeURIComponent(u) + '/sugerencias?umbral=2',
+            '/reglas/sugerencias?usuario=' + encodeURIComponent(u) + '&umbral=2',
           );
           renderSugerencias(u, data);
         } catch {
@@ -878,7 +858,7 @@
               (s, i) => `
             <li data-i="${i}">
               <div class="item-main">
-                Corregiste <code>${escapeHtml(s.nombreNormalizado)}</code> ${s.veces} veces a
+                Corregiste <code>${escapeHtml(s.valorNormalizado)}</code> ${s.veces} veces a
                 <span class="pill">${escapeHtml(s.categoriaSlug)}</span> — ¿guardar como regla?
               </div>
               <button class="btn btn-primary" data-action="promover" style="font-size:12px;padding:6px 12px">Sí, guardar</button>
@@ -893,19 +873,18 @@
               const li = e.target.closest('li');
               const s = items[Number(li.getAttribute('data-i'))];
               try {
-                await window.taggerApi('/patrones-usuario', {
+                await window.taggerApi('/reglas', {
                   method: 'POST',
                   body: JSON.stringify({
-                    usuario,
+                    scope: 'usuario:' + usuario,
                     tipo: 'contiene',
-                    valor: s.nombreNormalizado,
+                    valor: s.valorNormalizado,
                     categoria_slug: s.categoriaSlug,
                   }),
                   headers: { 'content-type': 'application/json' },
                 });
                 toast('Regla creada', 'ok');
-                cargarSugerencias();
-                cargarPatronesUsuario();
+                cargarAprendido();
               } catch (err) {
                 toast('Error: ' + (err?.message || 'falló'), 'err');
               }

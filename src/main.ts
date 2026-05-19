@@ -24,21 +24,14 @@ import { db, pool } from './db/client.js';
 import { env } from './config/env.js';
 import { crearOllamaClient } from './lib/ollama.js';
 import { logger } from './lib/logger.js';
-import { crearCapaCatalogo } from './layers/catalogo.js';
 import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
-import { crearPatronesLoader, crearPatronWriter } from './db/repos/patrones.js';
-import { crearCapaPatrones } from './layers/patrones.js';
-import { patronesRoute } from './api/routes/patrones.js';
-import { recategorizarCatalogoRoute } from './api/routes/recategorizar-catalogo.js';
-import { tokensSinCategoriaRoute } from './api/routes/tokens-sin-categoria.js';
-import { aplicarDiffRoute } from './api/routes/aplicar-diff.js';
-import { sugerenciasPatronesRoute } from './api/routes/sugerencias-patrones.js';
-import { sugerenciasIaRoute } from './api/routes/sugerencias-ia.js';
-import { marcasCandidatasRoute } from './api/routes/marcas-candidatas.js';
+import { crearReglasLoader, crearReglasWriter } from './db/repos/reglas.js';
+import { crearCapaReglas } from './layers/reglas.js';
+import { reglasRoute } from './api/routes/reglas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
-import { crearCatalogoLookup } from './db/repos/comercios.js';
+import { crearMccPorNombreLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
 import {
   crearMovimientoRepository,
@@ -47,19 +40,10 @@ import {
   crearMovimientoInputReader,
   crearMovimientoReprocesador,
 } from './db/repos/movimientos.js';
-import { crearCorreccionService } from './db/repos/correccion.js';
 import {
-  crearMemoriaUsuarioLookup,
-  crearMemoriaUsuarioWriter,
-} from './db/repos/memoria-usuario.js';
-import { crearCapaMemoria } from './layers/memoria.js';
-import { memoriaRoute } from './api/routes/memoria.js';
-import {
-  crearPatronesUsuarioLoader,
-  crearPatronesUsuarioWriter,
-} from './db/repos/patrones-usuario.js';
-import { crearCapaPatronesUsuario } from './layers/patrones-usuario.js';
-import { patronesUsuarioRoute } from './api/routes/patrones-usuario.js';
+  crearCorreccionService,
+  crearCorreccionMemoriaWriter,
+} from './db/repos/correccion.js';
 import {
   crearCategoriasReader,
   crearCategoriasLoader,
@@ -79,41 +63,38 @@ async function pingDb(): Promise<boolean> {
 
 async function main() {
   const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
-  // Cliente con timeout largo para batch (sugerencias IA con prompts grandes)
-  const ollamaBatch = crearOllamaClient({
-    url: env.OLLAMA_URL,
-    model: env.OLLAMA_MODEL,
-    timeoutMs: 300_000, // 5 min
-    retries: 0,
-  });
 
-  const patronesLoader = crearPatronesLoader(db);
-  const catalogoLookup = crearCatalogoLookup(db);
+  const reglasLoader = crearReglasLoader(db);
+  const mccPorNombreLookup = crearMccPorNombreLookup(db);
   const mccLookup = crearMccLookup(db);
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
-  const memoriaUsuarioLookup = crearMemoriaUsuarioLookup(db);
-  const memoriaUsuarioWriter = crearMemoriaUsuarioWriter(db);
-  const patronesUsuarioLoader = crearPatronesUsuarioLoader(db);
-  const correccionSvc = crearCorreccionService(db, memoriaUsuarioWriter);
+  const correccionMemoria = crearCorreccionMemoriaWriter(db);
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
   const marcasReader = crearMarcasReader(db);
 
-  // Capa patrones-usuario incrementa hits asincrónicamente al matchear.
-  const patronesUsuarioWriterParaHits = crearPatronesUsuarioWriter(db);
-  const capaPatronesUsuario = crearCapaPatronesUsuario(patronesUsuarioLoader, (id) => {
-    void patronesUsuarioWriterParaHits.incrementarHit(id).catch(() => undefined);
+  // Writer separado para incrementar hits async sin invalidar cache.
+  const reglasWriterParaHits = crearReglasWriter(db);
+  const capaReglas = crearCapaReglas(reglasLoader, {
+    ttlMs: env.REGLAS_CACHE_TTL_MS,
+    maxEntries: env.REGLAS_CACHE_MAX,
+    onHit: (id) => {
+      void reglasWriterParaHits.incrementarHit(id).catch(() => undefined);
+    },
   });
+
   const capas = {
-    memoria: crearCapaMemoria(memoriaUsuarioLookup),
-    patronesUsuario: capaPatronesUsuario,
-    catalogo: crearCapaCatalogo(catalogoLookup),
-    patrones: crearCapaPatrones(patronesLoader),
-    mcc: crearCapaMcc(mccLookup),
+    reglas: capaReglas,
+    mcc: crearCapaMcc(mccLookup, mccPorNombreLookup),
   };
+
+  const correccionSvc = crearCorreccionService(db, correccionMemoria, (scope) =>
+    capaReglas.invalidar(scope),
+  );
+
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
   const iaFallback = env.IA_ENABLED
     ? crearIaFallback({
@@ -148,23 +129,12 @@ async function main() {
     }),
   );
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
-  await app.register(memoriaRoute(memoriaUsuarioWriter));
-  const patronesUsuarioWriter = crearPatronesUsuarioWriter(db, (u) =>
-    capaPatronesUsuario.invalidar(u),
-  );
-  await app.register(patronesUsuarioRoute(patronesUsuarioWriter));
+  const reglasWriter = crearReglasWriter(db, (scope) => capaReglas.invalidar(scope));
+  await app.register(reglasRoute(reglasWriter));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
-  const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());
-  await app.register(patronesRoute(patronWriter));
-  await app.register(recategorizarCatalogoRoute(db, capas));
   await app.register(importarCatalogoRoute(db, capas));
   await app.register(importarMovimientosRoute(capas, movRepo));
-  await app.register(tokensSinCategoriaRoute(db));
-  await app.register(aplicarDiffRoute(db));
-  await app.register(sugerenciasPatronesRoute(db, patronWriter));
-  await app.register(sugerenciasIaRoute(db, ollamaBatch, patronWriter));
-  await app.register(marcasCandidatasRoute(db));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
   const marcaWriter = crearMarcaWriter(db, marcasReader);

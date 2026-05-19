@@ -2,7 +2,7 @@
 
 **Servicio de categorización automática de movimientos bancarios.**
 
-Pipeline en cascada: memoria por usuario (transferencias) → patrones-usuario (reglas personales) → catálogo (bancard+codigo o nombre normalizado) → patrones (regex/contiene/prefijo/literal) → MCC oficial → fallback IA (Gemma vía Ollama).
+Pipeline en cascada (4 capas): reglas por usuario → reglas globales → MCC inteligente (directo o inferido por nombre) → fallback IA (Gemma vía Ollama).
 
 ---
 
@@ -35,14 +35,12 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 
 | # | Estación | Qué hace | Tabla(s) que consulta | Ejemplo |
 |---|----------|----------|-----------------------|---------|
-| 0 | **Memoria del usuario** | Recuerda movimientos que el usuario ya corrigió (transferencias MANGO y/o comercios). Si el mismo nombre vuelve a aparecer para ese usuario, sale automático | `memoria_usuario_destinatario` (+ `categorias` para resolver el nombre) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler", o "usuario_42 marcó BMW como Transporte" |
-| 1 | **Reglas personales** | Reglas que solo aplican a un usuario | `patrones_usuario` (+ `categorias`) | "Para usuario_42, todo lo que contenga STRIPE es Software" |
-| 2 | **Catálogo de comercios** | Lista oficial de Bancard (~25k comercios) + match por nombre normalizado del comercio | `comercios_catalogo` (+ `categorias`) | "Bancard ID 12345 + código 678 = Supermercado Stock", o "nombre 'SHELL LDM' coincide con catálogo" |
-| 3 | **Reglas globales** | Reglas compartidas entre todos | `patrones` (+ `categorias`) | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
-| 4 | **MCC** | Código de categoría que viene en la tarjeta (estándar Visa/Master) | `mcc_catalogo` (+ `categorias`) | "MCC 5411 = Supermercado" |
-| 5 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | `categorias` (lista de opciones) + opcional `marcas_conocidas` (hints) — no consulta tablas de matching | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+| 0 | **Reglas tuyas** | Reglas y memoria que aplican **solo a este usuario**. Tipo `literal` (memoria de un nombre exacto), `contiene` o `regex`. Se crean automático al corregir o vía sugerencias | `reglas WHERE scope='usuario:<X>'` (+ `categorias`) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler" o "Para usuario_42, todo lo que contenga STRIPE es Software" |
+| 1 | **Reglas globales** | Reglas compartidas entre todos (~300 reglas curadas) | `reglas WHERE scope='global'` (+ `categorias`) | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
+| 2 | **MCC inteligente** | Categoría a partir del código MCC. Primero busca el MCC del input, si no viene busca por nombre en `mcc_por_nombre` (~65k nombres mapeados a MCC) | `mcc_catalogo` + `mcc_por_nombre` (+ `categorias`) | "MCC 5411 = Supermercado", o "nombre SHELL LDM no trae MCC, pero otros movs con ese nombre usan 5541 → Gasolinera" |
+| 3 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | `categorias` (lista de opciones) + opcional `marcas_conocidas` (hints) — no consulta tablas de matching | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
 
-> Toda categoría resuelta termina escrita en la tabla `movimientos` (campos `categoria_predicha_id`, `fuente_categoria`, `confianza`, `evidencia`, `requiere_revision`). Las correcciones manuales se persisten en `correcciones_usuario` y, según el caso, retroalimentan `memoria_usuario_destinatario` o las sugerencias de `patrones_usuario`.
+> Toda categoría resuelta termina escrita en la tabla `movimientos` (campos `categoria_predicha_id`, `fuente_categoria`, `confianza`, `evidencia`, `requiere_revision`). Las correcciones manuales se persisten en `correcciones_usuario` y retroalimentan la tabla `reglas` (capa 0) o aparecen como sugerencias para promover a regla global.
 
 **Cómo aprende sin re-entrenar.** Tagger mejora solo, a medida que se usa, por 3 vías:
 
@@ -50,17 +48,17 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 2. **El usuario corrige el mismo comercio varias veces** → aparece como sugerencia para crear una regla personal. Si aprueba, futuras compras en ese comercio salen automático (estación 1).
 3. **Un equipo de operaciones agrega reglas globales o catálogo Bancard** → afecta a todos los usuarios (estaciones 2 y 3).
 
-**Por qué 6 estaciones y no una sola IA.** Costo, velocidad y trazabilidad:
+**Por qué 4 estaciones y no una sola IA.** Costo, velocidad y trazabilidad:
 
-- Estaciones 0-4 son consultas a base de datos: tardan menos de 10 milisegundos.
+- Estaciones 0-2 son consultas a base de datos: tardan menos de 10 milisegundos.
 - IA tarda 1 a 5 segundos por movimiento y consume CPU/memoria del modelo.
-- Estaciones 0-4 cubren ~70% del volumen real. IA solo procesa el 30% restante.
-- Cada movimiento queda con un registro de **qué estación lo categorizó** y **con qué evidencia** (regex usada, MCC, id del comercio, etc.). Esto permite auditar y corregir errores sistemáticamente.
+- Estaciones 0-2 cubren ~99% del volumen real (medido contra ground truth). IA solo procesa el resto.
+- Cada movimiento queda con un registro de **qué estación lo categorizó** y **con qué evidencia** (regex usada, MCC, regla_id, etc.). Esto permite auditar y corregir errores sistemáticamente.
 
 **Niveles de confianza.** No todas las estaciones tienen la misma certeza:
 
-- Memoria del usuario y correcciones manuales: **1.00** (máxima)
-- Catálogo, regex, reglas: **0.80 a 0.95**
+- Correcciones manuales y memoria personal (`fuente='manual'`): **1.00**
+- Regex, literal, contiene: **0.80 a 0.95**
 - MCC: **0.75**
 - IA: **0.50** (siempre marca el movimiento como "requiere revisión")
 
@@ -73,29 +71,24 @@ conocidos en milisegundos, y solo molesta a la IA cuando no tiene mejor opción.
 
 ```mermaid
 flowchart LR
-    IN([Movimiento]) --> C0[0 · Memoria usuario]
+    IN([Movimiento]) --> C0[0 · Reglas tuyas]
     C0 -->|hit| OK([Categoría asignada])
-    C0 -->|no| C1[1 · Reglas personales]
+    C0 -->|no| C1[1 · Reglas globales]
     C1 -->|hit| OK
-    C1 -->|no| C2[2 · Catálogo Bancard + nombre]
+    C1 -->|no| C2[2 · MCC inteligente]
     C2 -->|hit| OK
-    C2 -->|no| C3[3 · Reglas globales]
-    C3 -->|hit| OK
-    C3 -->|no| C4[4 · MCC oficial]
-    C4 -->|hit| OK
-    C4 -->|no| C5[5 · IA Gemma async]
-    C5 --> OK
+    C2 -->|no| C3[3 · IA Gemma async]
+    C3 --> OK
 ```
 
 **Bucle de aprendizaje** — qué pasa cuando un usuario corrige un movimiento:
 
 ```mermaid
 flowchart LR
-    U([Usuario corrige]) --> Q{Tipo de movimiento}
-    Q -->|transferencia MANGO| M[(memoria_usuario_<br/>destinatario)]
-    Q -->|comercio repetido| S[(sugerencia<br/>patrones-usuario)]
-    M -->|próxima vez| C0[Capa 0]
-    S -->|usuario aprueba| C1[Capa 1]
+    U([Usuario corrige]) --> R[(reglas scope='usuario:X')]
+    R -->|próxima vez| C0[Capa 0]
+    U --> S[(sugerencia para regla global)]
+    S -->|admin aprueba| C1[Capa 1]
 ```
 
 **Cómo leerlo.** El primer diagrama es el flujo de categorización: el movimiento entra por la izquierda y va pasando por las capas hasta que alguna lo reconoce (`hit`). El segundo es el bucle de aprendizaje: las correcciones del usuario vuelven a alimentar las capas 0 y 1, para que esos mismos movimientos salgan automáticos la próxima vez.
@@ -119,14 +112,14 @@ flowchart LR
                        │ ejecutarCascada(input, capas)
                        ▼
        ┌───────────────────────────────────────────────┐
-       │ 0. MEMORIA       (usuario, destinatario) → cat │
-       │                  (solo transferencias MANGO-)  │
-       │ 1. PATRONES-USR  reglas personales del usuario │
-       │ 2. CATÁLOGO      bancard+codigo o nombre exacto│
-       │ 3. PATRONES      regex/contiene/prefijo/literal│
-       │ 4. MCC           código MCC del input          │
-       │ 5. RESPUESTA     inmediata (puede ser null)    │
-       │ 6. IA            Gemma async (fire-and-forget) │
+       │ 0. REGLAS USR    scope='usuario:X' literal/    │
+       │                  contiene/regex                │
+       │ 1. REGLAS GLOBAL scope='global'                │
+       │ 2. MCC           input.mcc → mcc_catalogo, o   │
+       │                  nombre → mcc_por_nombre →     │
+       │                  mcc_catalogo                  │
+       │ 3. RESPUESTA     inmediata (puede ser null)    │
+       │ 4. IA            Gemma async (fire-and-forget) │
        └─────────────────────┬─────────────────────────┘
                              ▼
        ┌─────────────────────────────────────────────┐
@@ -138,15 +131,13 @@ flowchart LR
 
 Postgres 16 (Drizzle ORM) ─── tablas:
   ┌─ categorias              (slug PK, nombre)
-  ├─ patrones                (tipo + valor → categoría)
+  ├─ reglas                  (scope + tipo + valor → categoría — unifica patrones globales + personales + memoria)
   ├─ mcc_catalogo            (cod_mcc → categoría)
-  ├─ comercios_catalogo      (bancard+codigo o nombre normalizado, incluye recategorización shadow)
+  ├─ mcc_por_nombre          (~65k nombres → MCC + categoría inferida)
   ├─ marcas_conocidas        (IA hints dinámicos)
   ├─ movimientos             (histórico predicciones)
   ├─ correcciones_usuario    (correcciones manual cliente)
-  ├─ test_ground_truth       (ground truth para validación pipeline)
-  ├─ memoria_usuario_destinatario  (memoria por usuario — transferencias MANGO y comercios)
-  └─ patrones_usuario              (reglas personales por usuario + sugerencias)
+  └─ test_ground_truth       (ground truth para validación pipeline)
 ```
 
 ---
@@ -201,11 +192,11 @@ open http://localhost:3000/ui/      # UIs
 
 - 35 categorías
 - 215 MCCs mapeados
-- 291 patrones
+- ~315 reglas (`scope='global'` curadas + `scope='usuario:X'` aprendidas de correcciones)
 - 76 marcas conocidas
-- ~65k comercios (sheet TuFi, `bancard_id` NULL, match por nombre)
+- ~65k mapeos nombre → MCC (sheet TuFi)
 
-**Catálogo de comercios** (`comercios_catalogo`): cargado automático por seed (incluye sheet TuFi: ~65k nombres → MCC). Match por `bancard_id+codigo_comercio` o por `nombre_normalizado`. Para sincronizar desde XLSX nuevo: `pnpm tsx scripts/sync-comercios-tufi.ts --apply`. Para importar CSV manual: `/ui/importar/`.
+**MCC por nombre** (`mcc_por_nombre`): cargado automático por seed (sheet TuFi: ~65k nombres → MCC). Match por `nombre_normalizado`. Para sincronizar desde XLSX nuevo: `pnpm tsx scripts/sync-comercios-tufi.ts --apply`. Para importar CSV manual: `/ui/importar/`.
 
 ### Variables de entorno (`.env`)
 
@@ -240,44 +231,20 @@ open http://localhost:3000/ui/      # UIs
 | Método                | Path                      | Función                                                                                                                    |
 | --------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                                                                                            |
-| GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/comercios/mcc)                                                                                    |
-| GET/POST/PATCH/DELETE | `/patrones`               | CRUD patrones (contiene/regex/prefijo/literal)                                                                             |
+| GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/mcc_por_nombre/mcc_catalogo)                                                                      |
+| GET/POST/PATCH/DELETE | `/reglas`                 | CRUD reglas. `GET /reglas?scope=global` o `scope=usuario:<X>`. `GET /reglas/sugerencias?usuario=X&umbral=N` lista sugerencias agrupando correcciones repetidas. `POST` crea regla, `PATCH /:id` activa/desactiva o cambia prioridad, `DELETE /:id` o `DELETE /reglas?scope=&valor=`. Tipos: `literal` / `contiene` / `regex` |
 | GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                                                                                                           |
 | GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                                                                                                   |
-| GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual                                                                              |
-| GET/DELETE            | `/memoria/:usuario`       | Memoria por usuario (transferencias auto-aprendidas). DELETE `/memoria/:usuario/:destinatario` para olvidar una asociación |
-| GET/POST/PATCH/DELETE | `/patrones-usuario`       | Reglas personales por usuario (capa 1). `GET /patrones-usuario/:usuario`, `GET /patrones-usuario/:usuario/sugerencias?umbral=N`, `POST` crea, `PATCH /:id` activa/desactiva, `DELETE /:id` |
+| GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual (sobre `mcc_por_nombre`)                                                     |
 
 ### Importación bulk
 
 | Método | Path                           | Función                                                                               |
 | ------ | ------------------------------ | ------------------------------------------------------------------------------------- |
-| POST   | `/catalogo/importar`           | Importa rows a `comercios_catalogo` (chunked, async). Body: `{rows, correr_cascada?}` |
+| POST   | `/catalogo/importar`           | Importa rows a `mcc_por_nombre` (chunked, async). Body: `{rows, correr_cascada?}`     |
 | GET    | `/catalogo/importar/status`    | Estado import                                                                         |
 | POST   | `/movimientos/importar`        | Importa rows a `movimientos` ejecutando cascada (async). Body: `{rows, batch_id?, bypass_catalogo?}` |
 | GET    | `/movimientos/importar/status` | Estado import                                                                         |
-
-### Recategorización catálogo
-
-| Método | Path                                                         | Función                                                                            |
-| ------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| POST   | `/catalogo/recategorizar`                                    | Recategoriza `comercios_catalogo` con cascada actual a columnas shadow (`*_nueva`) |
-| GET    | `/catalogo/recategorizar/status`                             | Progreso                                                                           |
-| GET    | `/catalogo/recategorizar/comparacion`                        | Totales: match / diff / sin_categoria + top diffs                                  |
-| GET    | `/catalogo/recategorizar/diff-detalle?actual=&nueva=&limit=` | Rows diff entre dos categorías                                                     |
-| POST   | `/catalogo/aplicar-diff`                                     | Aplica `categoria_nueva_id → categoria_id`                                         |
-| POST   | `/catalogo/aplicar-diff-patron`                              | Aplica diff filtrado por patrón                                                    |
-
-### Sugerencias / IA
-
-| Método | Path                               | Función                                                                                                              |
-| ------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/patrones/sugerencias`            | Lista sugerencias rule-based desde sin-cat (params: freq_min, pureza_min, longitud_min, impacto_min, categoria_slug) |
-| POST   | `/patrones/sugerencias/aplicar`    | Aplica sugerencias seleccionadas                                                                                     |
-| POST   | `/patrones/sugerencias-ia/run`     | Dispara run IA iterativo                                                                                             |
-| GET    | `/patrones/sugerencias-ia/status`  | Estado run IA                                                                                                        |
-| POST   | `/patrones/sugerencias-ia/aplicar` | Aplica sugerencias IA seleccionadas                                                                                  |
-| GET    | `/datasets/marcas-candidatas`      | Prefijos frecuentes candidatos a patrón                                                                              |
 
 ### Test masivo / Validación pipeline
 
@@ -308,22 +275,20 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 
 | Capa pipeline  | Fuente devuelta            | Confianza  | Cuándo dispara                                                                                                                                |
 | -------------- | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. memoria       | `manual`                   | 1.00       | Lookup `(usuario, clave_normalizada)` en `memoria_usuario_destinatario`. Clave: si nombre es `MANGO-*` usa destinatario; sino usa `nombreComercio` / `nombreBancard` / `descripcion`. Evidencia incluye `memoria_destinatario` (nombre crudo de la clave) |
-| 1. patrones-usr  | `regex/literal/contiene/prefijo` | 0.80-0.95 | Reglas personales del usuario (tabla `patrones_usuario`). Solo si `usuario` presente en input. Cache LRU por usuario, TTL 60s             |
-| 2. catálogo      | (hereda de la fila stored) | (hereda)   | Hit exacto por `bancard_id + codigo_comercio` o por `nombre_normalizado`. Evidencia: `match_type: 'bancard' \| 'nombre_exacto'`                |
-| 3. patrones      | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
-| 3. patrones      | `literal`                  | 0.95       | Patrón tipo literal matchea                                                                                                                   |
-| 3. patrones      | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
+| 0. reglas usuario | `manual` (origen correccion/manual) o `literal/contiene/regex` | 1.00 / 0.80-0.95 | Lookup en `reglas WHERE scope='usuario:<X>' AND activo=true`. Cache LRU por scope, TTL 60s. Si origen='correccion' o 'manual' devuelve fuente='manual' confianza=1.0 |
+| 1. reglas global  | `literal`                  | 0.95       | Match exacto contra `valor_normalizado` (mayúsculas, sin acentos)                                                                             |
+| 1. reglas global  | `regex`                    | 0.95       | Patrón tipo regex matchea                                                                                                                     |
+| 1. reglas global  | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
 | 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
 | 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
 | 5. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
-| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si hay usuario y se puede derivar una clave (transferencia MANGO o nombre comercio), auto-upsert en `memoria_usuario_destinatario`. Aporta a sugerencias de `patrones_usuario` |
+| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si hay usuario y se puede derivar una clave (transferencia MANGO o nombre comercio), auto-upsert en `reglas` con `scope='usuario:X' tipo='literal' origen='correccion'`. Si se repite ≥N veces el mismo nombre aparece en `GET /reglas/sugerencias` para promover a regla global |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 
 **Threshold revisión**: confianza < 0.70 → `requiere_revision=true`.
 
-**Bypass catálogo** (testing): flag `bypass_catalogo=true` salta capa catálogo → fuerza cascada pura.
+**Bypass MCC por nombre** (testing): flag `bypass_catalogo=true` (nombre legacy) salta el fallback MCC-por-nombre dentro de capa MCC → solo MCC directo del input. Útil para medir el impacto del catálogo precomputado.
 
 **IA fire-and-forget**: cuando todas las capas sync devuelven null, response inmediato es null + revisión, y `setImmediate` dispara IA. Cliente debe re-fetchear `/movimientos/:id` después para ver categoría asignada por IA.
 
@@ -333,16 +298,13 @@ Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `
 
 ```sql
 categorias       (id uuid PK, slug unique, nombre, descripcion, activo)
-patrones         (id, tipo enum [regex|contiene|prefijo|literal], valor,
-                  categoria_id FK, prioridad, descripcion, fuente, activo)
+reglas           (id, scope text, tipo text [literal|contiene|regex], valor,
+                  valor_normalizado, categoria_id FK, prioridad, activo, hits,
+                  origen, descripcion,
+                  UNIQUE (scope, tipo, valor_normalizado))
 mcc_catalogo     (cod_mcc PK, descripcion, categoria_id FK, ambiguo)
-comercios_catalogo (id, nombre, nombre_normalizado, bancard_id, codigo_comercio,
-                   categoria_id, mcc_original, fuente_categoria,
-                   confianza, requiere_revision, evidencia jsonb,
-                   marca, mcc_inferido,
-                   -- columnas shadow para recategorización:
-                   categoria_nueva_id, fuente_nueva, confianza_nueva,
-                   evidencia_nueva jsonb, recategorizado_at)
+mcc_por_nombre   (id, nombre, nombre_normalizado UNIQUE, mcc, categoria_id FK,
+                  requiere_revision)
 marcas_conocidas (id, marca unique, categoria_id FK, descripcion)
 movimientos      (id, descripcion, nombre_comercio, nombre_bancard, mcc, monto,
                   categoria_predicha_id, categoria_confirmada_id,
@@ -352,15 +314,21 @@ movimientos      (id, descripcion, nombre_comercio, nombre_bancard, mcc, monto,
                   created_at, updated_at)
 correcciones_usuario (id, movimiento_id FK, categoria_anterior_id, categoria_nueva_id,
                       usuario, motivo)
-memoria_usuario_destinatario (id, usuario, destinatario, destinatario_normalizado,
-                              categoria_id FK, origen, hits,
-                              UNIQUE (usuario, destinatario_normalizado))
 test_ground_truth (id, batch_id, nombre, nombre_normalizado, bancard_id,
                    codigo_comercio, mcc, combined_mcc, categoria_xlsx,
                    sector_xlsx, cantidad, fuente_origen)
 ```
 
-Índices clave: `comercios_catalogo (bancard_id, codigo_comercio)` único parcial, `patrones (categoria_id)`, `movimientos (batch_id)`. Ver `src/db/schema/`.
+Índices clave:
+- `reglas (scope, tipo, valor_normalizado)` único — evita duplicados por scope
+- `reglas (scope, activo, prioridad)` — load por scope con cache LRU 60s
+- `reglas (valor_normalizado)` — lookup literal cross-scope
+- `mcc_por_nombre (nombre_normalizado)` único — lookup MCC inferido
+- `movimientos (batch_id)` — query test masivo
+
+`scope` puede ser `'global'` o `'usuario:<X>'` (texto libre, no enum, para soportar miles de usuarios sin migrar enum).
+
+Ver `src/db/schema/` para definición drizzle.
 
 ---
 
@@ -372,8 +340,7 @@ Todas servidas por mismo Fastify (mismo origen, sin CORS).
 | ------------------- | ---------------------------------------------------------------------------------- |
 | `/ui/`              | Landing con health + counts                                                        |
 | `/ui/categorias/`   | CRUD categorías + patrones + MCC + marcas + comercios                              |
-| `/ui/importar/`     | Importa XLSX/CSV a `comercios_catalogo` o `movimientos` con mapping de campos      |
-| `/ui/recat/`        | Recategorizar catálogo + ver diffs + aplicar + sugerencias IA + marcas candidatas  |
+| `/ui/importar/`     | Importa XLSX/CSV a `mcc_por_nombre` o `movimientos` con mapping de campos          |
 | `/ui/test-monitor/` | Dashboard tests masivos realtime                                                   |
 | `/ui/memoria/`      | Playground end-to-end: crear movimiento, corregir, ver memoria por usuario         |
 | `/ui/api/`          | Swagger UI sobre `openapi.yaml` con "Try it out" + Postman collection downloadable |
@@ -459,31 +426,28 @@ curl http://localhost:3000/test-batch/mi-test-2026-05/analisis \
 tagger/
 ├── src/
 │   ├── api/
-│   │   ├── routes/         (categorizar, categorias, patrones, mcc, marcas,
-│   │   │                    comercios, importar-*, recategorizar-catalogo,
-│   │   │                    sugerencias-*, test-batch-*, health, ...)
+│   │   ├── routes/         (categorizar, categorias, reglas, mcc, marcas,
+│   │   │                    comercios, importar-*, test-batch-*, health, ...)
 │   │   ├── schemas/        (zod schemas request/response)
 │   │   └── plugins/        (auth API key, request-log)
 │   ├── config/             (env zod validation)
 │   ├── db/
 │   │   ├── client.ts       (Drizzle pool)
-│   │   ├── schema/         (tablas Drizzle)
+│   │   ├── schema/         (tablas Drizzle: categorias, reglas, mcc_catalogo, mcc_por_nombre, ...)
 │   │   ├── repos/          (CRUD writers/readers + cache)
 │   │   ├── loaders/        (csv stream helper)
 │   │   └── migrations/     (drizzle-kit generated)
 │   ├── domain/             (types, normalize, brand, confianza)
-│   ├── layers/             (memoria, catalogo, patrones, mcc, ia)
+│   ├── layers/             (reglas, mcc, ia)
 │   ├── pipeline/           (categorizar, persistir, ia-fallback)
 │   ├── lib/                (ollama client, logger)
-│   ├── services/           (recategorizar-catalogo, sugerir-patrones-*)
 │   ├── test-batch/         (worker masivo)
 │   └── main.ts             (wire-up + listen)
 ├── ui/
 │   ├── index.html          (landing)
 │   ├── shared/             (theme + state + api + nav)
 │   ├── categorias/         (CRUD + detalle tabs)
-│   ├── importar/           (XLSX/CSV → catalogo/movimientos)
-│   ├── recat/              (recat + diffs + sugerencias)
+│   ├── importar/           (XLSX/CSV → mcc_por_nombre/movimientos)
 │   ├── test-monitor/       (dashboard masivo realtime)
 │   ├── memoria/            (playground end-to-end)
 │   └── api/                (Swagger UI sobre openapi.yaml)

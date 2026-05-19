@@ -162,8 +162,8 @@ async function loadStats(db: Db, batchId: string): Promise<TestBatchStats> {
     WITH joined AS (
       SELECT m.categoria_predicha_id AS pred, c.categoria_id AS cat
       FROM movimientos m
-      LEFT JOIN comercios_catalogo c
-        ON c.bancard_id = m.bancard_id AND c.codigo_comercio = m.codigo_comercio
+      LEFT JOIN mcc_por_nombre c
+        ON c.nombre_normalizado = UPPER(REGEXP_REPLACE(COALESCE(m.nombre_bancard, m.nombre_comercio, ''), '[^A-Za-z0-9 ]', '', 'g'))
       WHERE m.batch_id = ${batchId}
     )
     SELECT
@@ -219,12 +219,12 @@ async function loadStats(db: Db, batchId: string): Promise<TestBatchStats> {
   }));
 
   const misRes = await db.execute(sql`
-    SELECT m.nombre_bancard, m.bancard_id, m.codigo_comercio,
+    SELECT m.nombre_bancard,
            m.fuente_categoria AS rt_fuente, cat_pred.slug AS rt_categoria,
-           c.fuente_categoria AS cat_fuente, cat_cat.slug AS cat_categoria
+           cat_cat.slug AS cat_categoria
     FROM movimientos m
-    JOIN comercios_catalogo c
-      ON c.bancard_id = m.bancard_id AND c.codigo_comercio = m.codigo_comercio
+    JOIN mcc_por_nombre c
+      ON c.nombre_normalizado = UPPER(REGEXP_REPLACE(COALESCE(m.nombre_bancard, m.nombre_comercio, ''), '[^A-Za-z0-9 ]', '', 'g'))
     LEFT JOIN categorias cat_pred ON cat_pred.id = m.categoria_predicha_id
     LEFT JOIN categorias cat_cat ON cat_cat.id = c.categoria_id
     WHERE m.batch_id = ${batchId}
@@ -235,20 +235,14 @@ async function loadStats(db: Db, batchId: string): Promise<TestBatchStats> {
   const mismatches_recientes = (
     misRes.rows as Array<{
       nombre_bancard: string | null;
-      bancard_id: string | null;
-      codigo_comercio: string | null;
       rt_fuente: string | null;
       rt_categoria: string | null;
-      cat_fuente: string | null;
       cat_categoria: string | null;
     }>
   ).map((r) => ({
     nombre_bancard: r.nombre_bancard,
-    bancard_id: r.bancard_id,
-    codigo_comercio: r.codigo_comercio,
     runtime_fuente: r.rt_fuente,
     runtime_categoria: r.rt_categoria,
-    catalogo_fuente: r.cat_fuente,
     catalogo_categoria: r.cat_categoria,
   }));
 

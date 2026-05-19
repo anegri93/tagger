@@ -117,132 +117,114 @@
       ]
     },
     {
-      "name": "patrones",
-      "description": "CRUD patrones (regex/literal/prefijo/contiene).",
+      "name": "reglas",
+      "description": "CRUD reglas (literal/contiene/regex) con scope global o usuario:X. Unifica memoria + patrones globales + patrones-usuario.",
       "item": [
         {
-          "name": "GET /patrones",
+          "name": "GET /reglas?scope=global",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              }
-            ],
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
             "url": {
-              "raw": "{{baseUrl}}/patrones",
+              "raw": "{{baseUrl}}/reglas?scope=global",
               "host": ["{{baseUrl}}"],
-              "path": ["patrones"]
+              "path": ["reglas"],
+              "query": [{ "key": "scope", "value": "global" }]
             }
           }
         },
         {
-          "name": "POST /patrones (crear)",
+          "name": "GET /reglas?scope=usuario:X",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/reglas?scope=usuario:{{usuario}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reglas"],
+              "query": [{ "key": "scope", "value": "usuario:{{usuario}}" }]
+            }
+          }
+        },
+        {
+          "name": "GET /reglas/sugerencias?usuario=X",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/reglas/sugerencias?usuario={{usuario}}&umbral=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["reglas", "sugerencias"],
+              "query": [
+                { "key": "usuario", "value": "{{usuario}}" },
+                { "key": "umbral", "value": "2" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /reglas (regla global)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              },
-              {
-                "key": "content-type",
-                "value": "application/json"
-              }
+              { "key": "x-api-key", "value": "{{API_KEY}}" },
+              { "key": "content-type", "value": "application/json" }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/patrones",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones"]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tipo\": \"regex\",\n  \"valor\": \"\\\\\\\\bBIGGIE\\\\\\\\b\",\n  \"categoria_slug\": \"supermercado\",\n  \"prioridad\": 100,\n  \"descripcion\": \"Cadena Biggie\"\n}"
-            }
-          }
-        },
-        {
-          "name": "GET /patrones/:id",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              }
-            ],
+              "raw": "{\n  \"scope\": \"global\",\n  \"tipo\": \"contiene\",\n  \"valor\": \"BIGGIE\",\n  \"categoria_slug\": \"supermercado\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "raw": "{{baseUrl}}/reglas",
               "host": ["{{baseUrl}}"],
-              "path": ["patrones", "{{patron_id}}"]
+              "path": ["reglas"]
             }
           }
         },
         {
-          "name": "PATCH /patrones/:id",
+          "name": "POST /reglas (regla personal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{API_KEY}}" },
+              { "key": "content-type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": \"usuario:{{usuario}}\",\n  \"tipo\": \"contiene\",\n  \"valor\": \"STRIPE\",\n  \"categoria_slug\": \"software\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reglas",
+              "host": ["{{baseUrl}}"],
+              "path": ["reglas"]
+            }
+          }
+        },
+        {
+          "name": "PATCH /reglas/:id",
           "request": {
             "method": "PATCH",
             "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              },
-              {
-                "key": "content-type",
-                "value": "application/json"
-              }
+              { "key": "x-api-key", "value": "{{API_KEY}}" },
+              { "key": "content-type", "value": "application/json" }
             ],
+            "body": { "mode": "raw", "raw": "{\n  \"activo\": false\n}" },
             "url": {
-              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "raw": "{{baseUrl}}/reglas/{{regla_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["patrones", "{{patron_id}}"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"prioridad\": 50,\n  \"activo\": true\n}"
+              "path": ["reglas", "{{regla_id}}"]
             }
           }
         },
         {
-          "name": "DELETE /patrones/:id",
+          "name": "DELETE /reglas/:id",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              }
-            ],
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
             "url": {
-              "raw": "{{baseUrl}}/patrones/{{patron_id}}",
+              "raw": "{{baseUrl}}/reglas/{{regla_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["patrones", "{{patron_id}}"]
-            }
-          }
-        },
-        {
-          "name": "POST /patrones/test (probar sin persistir)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              },
-              {
-                "key": "content-type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/patrones/test",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones", "test"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tipo\": \"regex\",\n  \"valor\": \"\\\\\\\\bBIGGIE\\\\\\\\b\",\n  \"texto\": \"BIGGIE-SHOPPING DEL SOL\"\n}"
+              "path": ["reglas", "{{regla_id}}"]
             }
           }
         }
@@ -438,125 +420,6 @@
               "path": ["movimientos", "{{movimientoId}}", "reprocesar"]
             },
             "description": "Re-ejecuta cascada (catalogo → patrones → MCC) + IA fallback sobre un movimiento existente.\n\n**Casos de uso:**\n- Movimientos viejos creados antes de agregar patrones/MCCs nuevos\n- Movimientos que quedaron con `categoria_id: null` por IA fallida (ej. Ollama down al momento de POST inicial)\n- Cliente mobile permite \"re-categorizar este movimiento\"\n\n**Body (opcional):**\n```json\n{\n  \"bypass_catalogo\": false\n}\n```\n- `bypass_catalogo` (bool) — si true, salta capa 1 → fuerza cascada pura (testing).\n\n**Response 200:**\n```json\n{\n  \"movimiento_id\": \"uuid\",\n  \"categoria_id\": \"uuid | null\",\n  \"categoria\": { \"id\": \"...\", \"slug\": \"azar\", \"nombre\": \"Azar y apuestas\" } | null,\n  \"fuente\": \"regex | contiene | ... | null\",\n  \"confianza\": 0.95,\n  \"requiere_revision\": false,\n  \"ia_disparada\": true\n}\n```\n\n**`ia_disparada: true`** → cascada agotada, IA corriendo async. Cliente debe poll `GET /movimientos/:id` para ver categoría final.\n\n**Errores:**\n- 400 `invalid_id` — id no es UUID\n- 404 `no_existe` — movimiento no encontrado"
-          }
-        }
-      ]
-    },
-    {
-      "name": "memoria",
-      "description": "Memoria por usuario+destinatario para transferencias P2P. Auto-aprende de correcciones.",
-      "item": [
-        {
-          "name": "GET /memoria/:usuario",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/memoria/{{usuario}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["memoria", "{{usuario}}"]
-            }
-          }
-        },
-        {
-          "name": "DELETE /memoria/:usuario/:destinatario",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "{{API_KEY}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/memoria/{{usuario}}/PEREZ JUAN",
-              "host": ["{{baseUrl}}"],
-              "path": ["memoria", "{{usuario}}", "PEREZ JUAN"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "patrones-usuario",
-      "description": "Reglas personales por usuario. Capa 1 del pipeline (después de memoria, antes de catálogo). Pueden generarse desde sugerencias basadas en correcciones repetidas.",
-      "item": [
-        {
-          "name": "GET /patrones-usuario/:usuario",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/patrones-usuario/{{usuario}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones-usuario", "{{usuario}}"]
-            }
-          }
-        },
-        {
-          "name": "GET /patrones-usuario/:usuario/sugerencias",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/patrones-usuario/{{usuario}}/sugerencias?umbral=2",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones-usuario", "{{usuario}}", "sugerencias"],
-              "query": [{ "key": "umbral", "value": "2" }]
-            },
-            "description": "Sugerencias basadas en correcciones repetidas. `umbral` (default 2) = mínimo de veces que el usuario tuvo que corregir el mismo nombre para que aparezca como sugerencia."
-          }
-        },
-        {
-          "name": "POST /patrones-usuario",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "x-api-key", "value": "{{API_KEY}}" },
-              { "key": "content-type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"tipo\": \"contiene\",\n  \"valor\": \"STRIPE\",\n  \"categoria_slug\": \"software\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/patrones-usuario",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones-usuario"]
-            }
-          }
-        },
-        {
-          "name": "PATCH /patrones-usuario/:id (toggle activo)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "x-api-key", "value": "{{API_KEY}}" },
-              { "key": "content-type", "value": "application/json" }
-            ],
-            "body": { "mode": "raw", "raw": "{\n  \"activo\": false\n}" },
-            "url": {
-              "raw": "{{baseUrl}}/patrones-usuario/{{patron_usuario_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones-usuario", "{{patron_usuario_id}}"]
-            }
-          }
-        },
-        {
-          "name": "DELETE /patrones-usuario/:id",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/patrones-usuario/{{patron_usuario_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["patrones-usuario", "{{patron_usuario_id}}"]
-            }
           }
         }
       ]
