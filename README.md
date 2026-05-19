@@ -254,7 +254,7 @@ open http://localhost:3000/ui/      # UIs
 | ------ | ------------------------------ | ------------------------------------------------------------------------------------- |
 | POST   | `/catalogo/importar`           | Importa rows a `comercios_catalogo` (chunked, async). Body: `{rows, correr_cascada?}` |
 | GET    | `/catalogo/importar/status`    | Estado import                                                                         |
-| POST   | `/movimientos/importar`        | Importa rows a `movimientos` ejecutando cascada (async). Body: `{rows, batch_id?}`    |
+| POST   | `/movimientos/importar`        | Importa rows a `movimientos` ejecutando cascada (async). Body: `{rows, batch_id?, bypass_catalogo?}` |
 | GET    | `/movimientos/importar/status` | Estado import                                                                         |
 
 ### Recategorización catálogo

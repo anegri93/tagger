@@ -43,6 +43,7 @@ const rowSchema = z.object({
 const bodySchema = z.object({
   rows: z.array(rowSchema).min(1).max(200000),
   batch_id: z.string().min(1).max(100).optional(),
+  bypass_catalogo: z.boolean().optional(),
 });
 
 function cleanMcc(v: string | null | undefined): string | undefined {
@@ -58,6 +59,7 @@ async function ejecutarImport(
   repo: MovimientoRepository,
   rows: z.infer<typeof rowSchema>[],
   batchId: string,
+  bypassCatalogo: boolean,
 ): Promise<void> {
   if (!current) return;
   current.stats.total = rows.length;
@@ -72,7 +74,13 @@ async function ejecutarImport(
         monto: r.monto ?? undefined,
         rawInput: r as Record<string, unknown>,
       };
-      const pipeline = await ejecutarCascada(input, capas);
+      const pipeline = await ejecutarCascada(input, capas, { bypassCatalogo });
+      if (pipeline.resultado && bypassCatalogo) {
+        pipeline.resultado.evidencia = {
+          ...(pipeline.resultado.evidencia ?? {}),
+          bypass_catalogo: true,
+        };
+      }
       const latency = Date.now() - t0;
       const out = await persistirMovimiento(input, pipeline, repo, {
         origen: 'import',
@@ -121,7 +129,13 @@ export const importarMovimientosRoute =
         estado: 'running',
         batchId,
       };
-      void ejecutarImport(capas, repo, parsed.data.rows, batchId)
+      void ejecutarImport(
+        capas,
+        repo,
+        parsed.data.rows,
+        batchId,
+        parsed.data.bypass_catalogo === true,
+      )
         .then(() => {
           if (current) {
             current.estado = 'done';
