@@ -35,6 +35,9 @@ services:
       API_KEY: ${API_KEY:?API_KEY required}
       CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_POOL_MAX: ${DB_POOL_MAX:-30}
+      REGLAS_CACHE_MAX: ${REGLAS_CACHE_MAX:-5000}
+      REGLAS_CACHE_TTL_MS: ${REGLAS_CACHE_TTL_MS:-60000}
     expose:
       - '3000'
 
