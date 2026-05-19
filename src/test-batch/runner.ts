@@ -43,7 +43,7 @@ interface RawRow extends Record<string, string> {
 interface SourceRow {
   raw: RawRow;
   /** Si la row viene de DB, su id + tabla destino para writeback */
-  writeback?: { table: 'comercios_catalogo'; id: string };
+  writeback?: { table: 'mcc_por_nombre'; id: string };
 }
 
 const DEFAULT_FILES = ['data/comercios-bancard-staged.tsv', 'data/mango-p2p.tsv'];
@@ -127,17 +127,17 @@ export class TestBatchRunner {
     const db = this.deps.db;
     if (!db) throw new Error('DB no disponible para source DB');
     const PAGE = 1000;
-    if (src === 'catalogo' || src === 'comercios_catalogo') {
+    if (src === 'catalogo' || src === 'mcc_por_nombre') {
       let offset = 0;
       while (true) {
         const r = await db.execute(
-          sql`SELECT id, nombre FROM comercios_catalogo ORDER BY id LIMIT ${PAGE} OFFSET ${offset}`,
+          sql`SELECT id, nombre FROM mcc_por_nombre ORDER BY id LIMIT ${PAGE} OFFSET ${offset}`,
         );
         if (r.rows.length === 0) return;
         for (const row of r.rows as { id: string; nombre: string }[]) {
           yield {
             raw: { Nombre: row.nombre, BancardId: '', CodigoComercio: '', MCC: '' } as RawRow,
-            writeback: { table: 'comercios_catalogo', id: row.id },
+            writeback: { table: 'mcc_por_nombre', id: row.id },
           };
         }
         offset += PAGE;

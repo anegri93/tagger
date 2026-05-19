@@ -77,13 +77,8 @@ async function ejecutarImport(
         const nombre = r.nombre.trim();
         const nombreNorm = normalize(nombre);
         const mcc = cleanMcc(r.mcc);
-        const bancardId = r.bancard_id?.trim() || null;
-        const codigo = r.codigo_comercio?.trim() || null;
 
         let categoriaId = fallbackId;
-        let fuente: string | null = null;
-        let confianza: string | null = null;
-        let evidencia: unknown = null;
         let revision = false;
 
         if (correrCascada) {
@@ -94,15 +89,9 @@ async function ejecutarImport(
           );
           if (result.resultado) {
             categoriaId = result.resultado.categoriaId;
-            fuente = result.resultado.fuente;
-            confianza =
-              result.resultado.confianza != null ? String(result.resultado.confianza) : null;
-            evidencia = result.resultado.evidencia;
             revision = (result.resultado.confianza ?? 0) < 0.7;
             current.stats.con_categoria++;
           } else {
-            // sin categoría — usar fallback con revision
-            fuente = null;
             revision = true;
             current.stats.sin_categoria++;
           }
@@ -111,23 +100,24 @@ async function ejecutarImport(
           current.stats.sin_categoria++;
         }
 
+        const finalMcc = mcc ?? '0000';
+        const finalCategoriaId = categoriaId;
+        if (!finalCategoriaId) {
+          // Sin categoría no podemos insertar (categoria_id es NOT NULL en mcc_por_nombre)
+          current.stats.sin_categoria++;
+          current.stats.procesados++;
+          continue;
+        }
         const ins = await db.execute(sql`
-          INSERT INTO comercios_catalogo
-            (nombre, nombre_normalizado, bancard_id, codigo_comercio, mcc, mcc_original,
-             categoria_id, fuente_categoria, confianza, evidencia, requiere_revision)
+          INSERT INTO mcc_por_nombre
+            (nombre, nombre_normalizado, mcc, categoria_id, requiere_revision)
           VALUES
-            (${nombre}, ${nombreNorm}, ${bancardId}, ${codigo}, ${mcc}, ${mcc},
-             ${categoriaId}, ${fuente}::fuente_categoria, ${confianza}, ${evidencia ? JSON.stringify(evidencia) : null}::jsonb, ${revision})
-          ON CONFLICT (bancard_id, codigo_comercio) WHERE bancard_id IS NOT NULL
+            (${nombre}, ${nombreNorm}, ${finalMcc}, ${finalCategoriaId}, ${revision})
+          ON CONFLICT (nombre_normalizado)
           DO UPDATE SET
             nombre = EXCLUDED.nombre,
-            nombre_normalizado = EXCLUDED.nombre_normalizado,
             mcc = EXCLUDED.mcc,
-            mcc_original = EXCLUDED.mcc_original,
             categoria_id = EXCLUDED.categoria_id,
-            fuente_categoria = EXCLUDED.fuente_categoria,
-            confianza = EXCLUDED.confianza,
-            evidencia = EXCLUDED.evidencia,
             requiere_revision = EXCLUDED.requiere_revision,
             updated_at = now()
           RETURNING (xmax = 0) AS inserted
