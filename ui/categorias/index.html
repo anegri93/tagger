@@ -135,10 +135,15 @@
             path: '/categorias',
             body: { slug: 'transporte', nombre: 'Transporte', descripcion: '...' },
           },
-          { name: 'Listar patrones', method: 'GET', path: '/patrones' },
+          { name: 'Listar reglas globales', method: 'GET', path: '/reglas?scope=global' },
           { name: 'Listar comercios', method: 'GET', path: '/comercios?limit=50' },
           { name: 'Listar marcas IA', method: 'GET', path: '/marcas' },
-          { name: 'Reprocesar catálogo', method: 'POST', path: '/admin/recat/catalogo' },
+          { name: 'Stats pipeline', method: 'GET', path: '/stats/pipeline?ventana=24h' },
+          {
+            name: 'Sugerencias globales',
+            method: 'GET',
+            path: '/reglas/sugerencias-globales?min_usuarios=3&min_total=5',
+          },
         ]);
     </script>
   </body>

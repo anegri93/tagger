@@ -359,14 +359,13 @@
           <span class="doc-kicker">Para operadores y devops</span>
           <h3>Runbook operacional</h3>
           <p class="doc-desc">
-            Procedimientos de deploy, importación de catálogo, recategorización masiva,
-            mantenimiento de DB y troubleshooting de errores frecuentes (401, IA timeout, sin
-            categoría).
+            Procedimientos de deploy, importación de catálogo, mantenimiento de DB y
+            troubleshooting de errores frecuentes (401, IA timeout, sin categoría).
           </p>
           <ul class="toc">
             <li>Deploy inicial</li>
             <li>Importar catálogo</li>
-            <li>Recategorización</li>
+            <li>Dashboard de capas</li>
             <li>Métricas y logs</li>
             <li>Mantenimiento DB</li>
             <li>Troubleshooting</li>
@@ -374,7 +373,7 @@
           <div class="doc-actions">
             <span class="btn btn-warn btn-sm">Abrir runbook</span>
             <a class="btn btn-ghost btn-sm" href="/ui/test-monitor/index.html">Monitor</a>
-            <a class="btn btn-ghost btn-sm" href="/ui/recat/index.html">Recategorizar</a>
+            <a class="btn btn-ghost btn-sm" href="/ui/dashboard/index.html">Dashboard</a>
           </div>
         </a>
       </section>
@@ -402,8 +401,8 @@
             <li>
               <span class="num">3</span>
               <div>
-                <a href="/ui/recat/index.html">Recategorizar y revisar diffs</a>
-                <span class="step-meta">Sugerencias IA + marcas candidatas</span>
+                <a href="/ui/dashboard/index.html">Ver dashboard + sugerencias</a>
+                <span class="step-meta">% por capa + reglas globales sugeridas</span>
               </div>
             </li>
           </ol>
@@ -470,25 +469,25 @@
 
       <h2 class="section-title">Cómo decide la categoría — Cascada</h2>
       <section class="pipeline" aria-label="Cascada de categorización">
-        <a class="pipe-step" href="/ui/categorias/index.html">
-          <span class="step-n">PASO 01</span>
-          <h4>Catálogo</h4>
-          <p>Match exacto en <code>comercios_catalogo</code>. Máxima precisión.</p>
+        <a class="pipe-step" href="/ui/memoria/index.html">
+          <span class="step-n">CAPA 0</span>
+          <h4>Reglas tuyas</h4>
+          <p>Memoria y reglas personales por usuario. Aprende de correcciones.</p>
         </a>
         <a class="pipe-step" href="/ui/categorias/index.html">
-          <span class="step-n">PASO 02</span>
-          <h4>Patrones</h4>
-          <p>Regex/contiene/prefijo sobre descripción. Variantes y typos.</p>
+          <span class="step-n">CAPA 1</span>
+          <h4>Reglas globales</h4>
+          <p>Patrones regex/literal/contiene curados manualmente.</p>
         </a>
         <a class="pipe-step" href="/ui/categorias/index.html">
-          <span class="step-n">PASO 03</span>
+          <span class="step-n">CAPA 2</span>
           <h4>MCC</h4>
-          <p>Merchant Category Code de la red. Fallback estándar.</p>
+          <p>Código MCC del input o inferido por nombre de comercio.</p>
         </a>
-        <a class="pipe-step" href="/ui/recat/index.html">
-          <span class="step-n">PASO 04</span>
+        <a class="pipe-step" href="/ui/dashboard/index.html">
+          <span class="step-n">CAPA 3</span>
           <h4>IA (Ollama)</h4>
-          <p>Sugiere categoría + marca cuando todo lo anterior falla.</p>
+          <p>Fallback async cuando ninguna capa anterior matchea.</p>
         </a>
       </section>
 
@@ -511,7 +510,7 @@
           <div class="value" id="h-cats">—</div>
         </div>
         <div class="health-card">
-          <div class="label">Patrones</div>
+          <div class="label">Reglas</div>
           <div class="value" id="h-patrones">—</div>
         </div>
         <div class="health-card">
@@ -528,11 +527,11 @@
         </a>
         <a class="nav-card" href="/ui/importar/index.html">
           <h3>Importar</h3>
-          <p>Cargar XLSX/CSV a comercios_catalogo o movimientos.</p>
+          <p>Cargar XLSX/CSV a mcc_por_nombre o movimientos.</p>
         </a>
-        <a class="nav-card" href="/ui/recat/index.html">
-          <h3>Recategorizar</h3>
-          <p>Diffs, sugerencias IA y marcas candidatas.</p>
+        <a class="nav-card" href="/ui/dashboard/index.html">
+          <h3>Dashboard</h3>
+          <p>% por capa, latencia, sugerencias globales de reglas.</p>
         </a>
         <a class="nav-card" href="/ui/test-monitor/index.html">
           <h3>Monitor de tests</h3>
@@ -590,7 +589,7 @@
           document.getElementById('h-cats').textContent = '—';
         }
         try {
-          const r = await window.taggerApi('/patrones');
+          const r = await window.taggerApi('/reglas?scope=global');
           document.getElementById('h-patrones').textContent = r.items?.length ?? 0;
         } catch {
           document.getElementById('h-patrones').textContent = '—';

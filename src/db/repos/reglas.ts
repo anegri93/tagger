@@ -43,6 +43,15 @@ export interface SugerenciaRegla {
   ejemplos: string[];
 }
 
+export interface SugerenciaGlobal {
+  valorNormalizado: string;
+  ejemplos: string[];
+  categoriaSlug: string;
+  categoriaNombre: string;
+  usuariosDistintos: number;
+  totalCorrecciones: number;
+}
+
 export interface ReglasLoader {
   porScope(scope: string): Promise<ReglaCargada[]>;
 }
@@ -88,6 +97,10 @@ export interface ReglasWriter {
   eliminarPorScopeYValorNormalizado(scope: string, valorNormalizado: string): Promise<boolean>;
   incrementarHit(id: string): Promise<void>;
   sugerencias(scope: string, umbral?: number): Promise<SugerenciaRegla[]>;
+  sugerenciasGlobales(opts?: {
+    minUsuariosDistintos?: number;
+    minTotalCorrecciones?: number;
+  }): Promise<SugerenciaGlobal[]>;
 }
 
 function toPublica(r: typeof reglas.$inferSelect, slug: string): ReglaPublica {
@@ -280,6 +293,62 @@ export function crearReglasWriter(
       }
       out.sort((a, b) => b.veces - a.veces);
       return out;
+    },
+    async sugerenciasGlobales(opts = {}) {
+      const minUsuarios = opts.minUsuariosDistintos ?? 3;
+      const minTotal = opts.minTotalCorrecciones ?? 5;
+      // Agrupar correcciones por nombre_normalizado + categoria_nueva contando
+      // usuarios distintos y total. Excluir las que ya tienen regla global activa.
+      const result = await db.execute<{
+        valor_normalizado: string;
+        ejemplo: string;
+        categoria_slug: string;
+        categoria_nombre: string;
+        usuarios_distintos: number;
+        total: number;
+      }>(sql`
+        WITH base AS (
+          SELECT
+            COALESCE(m.nombre_bancard, m.nombre_comercio, '') AS raw,
+            upper(regexp_replace(COALESCE(m.nombre_bancard, m.nombre_comercio, ''), '[^A-Za-z0-9 ]', '', 'g')) AS vn,
+            cu.usuario,
+            c.slug AS categoria_slug,
+            c.nombre AS categoria_nombre
+          FROM correcciones_usuario cu
+          JOIN movimientos m ON m.id = cu.movimiento_id
+          JOIN categorias c ON c.id = cu.categoria_nueva_id
+          WHERE cu.usuario IS NOT NULL
+            AND COALESCE(m.nombre_bancard, m.nombre_comercio) IS NOT NULL
+        ),
+        agg AS (
+          SELECT vn, categoria_slug, categoria_nombre,
+                 COUNT(DISTINCT usuario)::int AS usuarios_distintos,
+                 COUNT(*)::int AS total,
+                 (array_agg(raw ORDER BY raw))[1] AS ejemplo
+          FROM base
+          WHERE vn != ''
+          GROUP BY vn, categoria_slug, categoria_nombre
+        ),
+        existentes AS (
+          SELECT valor_normalizado FROM reglas WHERE scope = 'global' AND activo = true
+        )
+        SELECT a.vn AS valor_normalizado, a.ejemplo, a.categoria_slug, a.categoria_nombre,
+               a.usuarios_distintos, a.total
+        FROM agg a
+        WHERE a.usuarios_distintos >= ${minUsuarios}
+          AND a.total >= ${minTotal}
+          AND NOT EXISTS (SELECT 1 FROM existentes e WHERE e.valor_normalizado = a.vn)
+        ORDER BY a.usuarios_distintos DESC, a.total DESC
+        LIMIT 200
+      `);
+      return result.rows.map((r) => ({
+        valorNormalizado: r.valor_normalizado,
+        ejemplos: [r.ejemplo],
+        categoriaSlug: r.categoria_slug,
+        categoriaNombre: r.categoria_nombre,
+        usuariosDistintos: Number(r.usuarios_distintos),
+        totalCorrecciones: Number(r.total),
+      }));
     },
   };
 }

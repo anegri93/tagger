@@ -134,8 +134,32 @@ async function editar(slug) {
 }
 
 async function loadConflictos() {
+  // Detectar conflictos: misma (tipo, valor_normalizado) apunta a >1 categoría dentro del scope global.
+  // Reemplazo de /patrones/conflictos (endpoint removido en simplificación).
   try {
-    const { items } = await window.taggerApi('/patrones/conflictos');
+    const { items: reglas } = await window.taggerApi('/reglas?scope=global');
+    const grupos = new Map();
+    for (const r of reglas) {
+      const key = `${r.tipo}|${r.valor_normalizado}`;
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push({
+        tipo: r.tipo,
+        valor: r.valor,
+        categoria_slug: r.categoria_slug,
+        regla_id: r.id,
+      });
+    }
+    const items = [];
+    for (const [, entries] of grupos) {
+      const cats = new Set(entries.map((e) => e.categoria_slug));
+      if (cats.size > 1) {
+        items.push({
+          tipo: entries[0].tipo,
+          valor: entries[0].valor,
+          entries,
+        });
+      }
+    }
     const banner = $('conflictos-banner');
     if (!items || items.length === 0) {
       banner.style.display = 'none';

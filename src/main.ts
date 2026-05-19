@@ -51,6 +51,7 @@ import {
   crearCategoriaWriter,
 } from './db/repos/categorias.js';
 import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
+import { statsPipelineRoute } from './api/routes/stats-pipeline.js';
 
 async function pingDb(): Promise<boolean> {
   try {
@@ -142,6 +143,7 @@ async function main() {
   const comerciosWriter = crearComerciosWriter(db);
   await app.register(comerciosRoute(comerciosWriter));
   await app.register(testBatchStatsRoute(crearTestBatchStatsReader(db)));
+  await app.register(statsPipelineRoute(db));
   await app.register(groundTruthAgreementRoute(db));
   await app.register(analisisProfundoRoute(db));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo, db });
