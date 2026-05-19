@@ -420,9 +420,8 @@
             <div class="tracer-step" data-step="reglas-global">
               <span class="n">1</span>Reglas globales
             </div>
-            <div class="tracer-step" data-step="catalogo"><span class="n">2</span>Catálogo</div>
-            <div class="tracer-step" data-step="mcc"><span class="n">3</span>MCC</div>
-            <div class="tracer-step" data-step="ia"><span class="n">4</span>IA</div>
+            <div class="tracer-step" data-step="mcc"><span class="n">2</span>MCC</div>
+            <div class="tracer-step" data-step="ia"><span class="n">3</span>IA</div>
           </div>
           <pre class="raw" id="resultado-raw"></pre>
         </details>
@@ -678,12 +677,10 @@
           regex: 'reglas-global',
           literal: 'reglas-global',
           contiene: 'reglas-global',
-          bancard: 'catalogo',
-          nombre: 'catalogo',
           mcc: 'mcc',
           ia: 'ia',
         };
-        const order = ['reglas-usr', 'reglas-global', 'catalogo', 'mcc', 'ia'];
+        const order = ['reglas-usr', 'reglas-global', 'mcc', 'ia'];
         const hitStep = fuente ? map[fuente] : null;
         const hitIdx = hitStep ? order.indexOf(hitStep) : -1;
         document.querySelectorAll('.tracer-step').forEach((el) => {

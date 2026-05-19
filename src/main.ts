@@ -24,7 +24,6 @@ import { db, pool } from './db/client.js';
 import { env } from './config/env.js';
 import { crearOllamaClient } from './lib/ollama.js';
 import { logger } from './lib/logger.js';
-import { crearCapaCatalogo } from './layers/catalogo.js';
 import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
@@ -32,7 +31,7 @@ import { crearReglasLoader, crearReglasWriter } from './db/repos/reglas.js';
 import { crearCapaReglas } from './layers/reglas.js';
 import { reglasRoute } from './api/routes/reglas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
-import { crearCatalogoLookup } from './db/repos/comercios.js';
+import { crearMccPorNombreLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
 import {
   crearMovimientoRepository,
@@ -66,7 +65,7 @@ async function main() {
   const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
 
   const reglasLoader = crearReglasLoader(db);
-  const catalogoLookup = crearCatalogoLookup(db);
+  const mccPorNombreLookup = crearMccPorNombreLookup(db);
   const mccLookup = crearMccLookup(db);
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
@@ -85,8 +84,7 @@ async function main() {
 
   const capas = {
     reglas: capaReglas,
-    catalogo: crearCapaCatalogo(catalogoLookup),
-    mcc: crearCapaMcc(mccLookup),
+    mcc: crearCapaMcc(mccLookup, mccPorNombreLookup),
   };
 
   const correccionSvc = crearCorreccionService(db, correccionMemoria, (scope) =>

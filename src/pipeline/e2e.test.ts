@@ -7,7 +7,6 @@ import { crearIaFallback } from './ia-fallback.js';
 import { crearCapaReglas } from '../layers/reglas.js';
 import type { ReglaCargada } from '../db/repos/reglas.js';
 import { crearCapaMcc } from '../layers/mcc.js';
-import { crearCapaCatalogo, type CatalogoHit } from '../layers/catalogo.js';
 import { crearCapaIa } from '../layers/ia.js';
 import type { OllamaClient } from '../lib/ollama.js';
 
@@ -20,7 +19,7 @@ function flushImmediate() {
 function mkCapas(opts: {
   reglas?: Array<{ id: string; patron: string; categoriaId: string; prioridad: number }>;
   mcc?: Record<string, { codMcc: string; categoriaId: string | null; ambiguo: boolean }>;
-  catalogo?: Record<string, CatalogoHit>;
+  mccPorNombre?: Record<string, { mcc: string; categoriaId: string; requiereRevision: boolean }>;
 }) {
   const reglasCargadas: ReglaCargada[] = (opts.reglas ?? []).map((r) => ({
     id: r.id,
@@ -34,14 +33,14 @@ function mkCapas(opts: {
   }));
   return {
     reglas: crearCapaReglas({ porScope: async () => reglasCargadas }),
-    catalogo: crearCapaCatalogo({
-      porBancardCodigo: async (b, c) => {
-        if (!b || !c) return null;
-        return opts.catalogo?.[`${b}|${c}`] ?? null;
-      },
-      porNombre: async () => null,
-    }),
-    mcc: crearCapaMcc({ porCodigo: async (k) => opts.mcc?.[k] ?? null }),
+    mcc: crearCapaMcc(
+      { porCodigo: async (k) => opts.mcc?.[k] ?? null },
+      opts.mccPorNombre
+        ? {
+            porNombre: async (n) => opts.mccPorNombre?.[n.toUpperCase()] ?? null,
+          }
+        : undefined,
+    ),
   };
 }
 
@@ -115,25 +114,15 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.requiereRevision).toBe(false);
   });
 
-  it('catálogo hit por bancardId+codigo → propaga fuente sin más capas', async () => {
+  it('MCC inferido por nombre (mcc_por_nombre) → fuente mcc + evidencia mcc_inferido_por_nombre', async () => {
     const capas = mkCapas({
-      catalogo: {
-        'BRISTOL-YPANE|99': {
-          id: 'c1',
-          categoriaId: 'cat-ropa',
-          fuente: 'mcc',
-          confianza: 0.75,
-          requiereRevision: false,
-          evidencia: { mcc_match: '5399' },
-        },
+      mccPorNombre: {
+        'BRISTOL-YPANE': { mcc: '5399', categoriaId: 'cat-ropa', requiereRevision: false },
       },
+      mcc: { '5399': { codMcc: '5399', categoriaId: 'cat-ropa', ambiguo: false } },
     });
     const repo = mkRepo();
-    const input = {
-      bancardId: 'BRISTOL-YPANE',
-      codigoComercio: '99',
-      nombreBancard: 'BRISTOL-YPANE',
-    };
+    const input = { nombreBancard: 'BRISTOL-YPANE' };
     const pipeline = await ejecutarCascada(input, capas);
     const out = await persistirMovimiento(input, pipeline, repo);
     expect(out.fuente).toBe('mcc');
@@ -141,7 +130,7 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.requiereRevision).toBe(false);
   });
 
-  it('catálogo MISS + regex MANGO → transferencia', async () => {
+  it('reglas globales ganan sobre MCC por nombre', async () => {
     const capas = mkCapas({
       reglas: [{ id: 'mango', patron: '^MANGO\\b', categoriaId: 'cat-transfer', prioridad: 5 }],
     });
@@ -153,7 +142,7 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.categoriaId).toBe('cat-transfer');
   });
 
-  it('catálogo MISS + regex AZAR → azar', async () => {
+  it('regex AZAR matchea sin MCC por nombre', async () => {
     const capas = mkCapas({
       reglas: [
         {
@@ -172,28 +161,19 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.categoriaId).toBe('cat-azar');
   });
 
-  it('catálogo con requiereRevision=true → propaga hit (conservador), persiste con revision', async () => {
+  it('input con MCC directo gana sobre fallback por nombre', async () => {
     const capas = mkCapas({
-      catalogo: {
-        'X|1': {
-          id: 'c1',
-          categoriaId: 'cat-otros',
-          fuente: 'mcc',
-          confianza: 0.3,
-          requiereRevision: true,
-          evidencia: null,
-        },
+      mccPorNombre: {
+        'X': { mcc: '5399', categoriaId: 'cat-ropa', requiereRevision: false },
       },
       mcc: { '5411': { codMcc: '5411', categoriaId: 'cat-super', ambiguo: false } },
     });
     const repo = mkRepo();
-    const input = { bancardId: 'X', codigoComercio: '1', mcc: '5411' };
+    const input = { nombreBancard: 'X', mcc: '5411' };
     const pipeline = await ejecutarCascada(input, capas);
     const out = await persistirMovimiento(input, pipeline, repo);
     expect(out.fuente).toBe('mcc');
-    expect(out.categoriaId).toBe('cat-otros');
-    expect(out.confianza).toBe(0.3);
-    expect(out.requiereRevision).toBe(true);
+    expect(out.categoriaId).toBe('cat-super');
   });
 
   it('nada matchea → requiere_revision + IA fallback actualiza row async', async () => {

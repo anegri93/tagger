@@ -4,18 +4,8 @@ export interface CapasSincrono {
   reglas?: {
     evaluar(input: MovimientoInput, scope: string): Promise<ResultadoCapa | null>;
   };
-  catalogo?: {
-    evaluar(
-      bancardId: string | null | undefined,
-      codigoComercio: string | null | undefined,
-      nombre?: string | null | undefined,
-    ): Promise<ResultadoCapa | null>;
-  };
   mcc: {
-    evaluar(
-      codMcc: string | null | undefined,
-      opts?: { ignorarAmbiguo?: boolean },
-    ): Promise<ResultadoCapa | null>;
+    evaluar(input: MovimientoInput, opts?: { ignorarAmbiguo?: boolean }): Promise<ResultadoCapa | null>;
   };
 }
 
@@ -30,7 +20,7 @@ export async function ejecutarCascada(
   capas: CapasSincrono,
   opts: { bypassCatalogo?: boolean; usuario?: string | null } = {},
 ): Promise<ResultadoPipeline> {
-  // Capa 0: reglas user-scope (memoria + patrones personales unificados).
+  // Capa 0: reglas user-scope (memoria + reglas personales unificadas).
   if (capas.reglas && opts.usuario) {
     const r = await capas.reglas.evaluar(input, `usuario:${opts.usuario}`);
     if (r) return { resultado: r, requiereRevision: false, requiereIa: false };
@@ -42,17 +32,16 @@ export async function ejecutarCascada(
     if (r) return { resultado: r, requiereRevision: false, requiereIa: false };
   }
 
-  // Capa 2: catálogo (MCC por nombre). Será absorbido por capa MCC en Etapa 3.
-  if (capas.catalogo && !opts.bypassCatalogo) {
-    const nombre = input.nombreBancard ?? input.nombreComercio ?? null;
-    const r = await capas.catalogo.evaluar(input.bancardId, input.codigoComercio, nombre);
-    if (r) return { resultado: r, requiereRevision: false, requiereIa: false };
+  // Capa 2: MCC inteligente — MCC directo del input o inferido por nombre vía mcc_por_nombre.
+  // bypassCatalogo desactiva el fallback por nombre (sirve para testing del resto del pipeline).
+  const r = await capas.mcc.evaluar(input, opts.bypassCatalogo ? { ignorarAmbiguo: false } : undefined);
+  if (r) {
+    if (opts.bypassCatalogo && r.evidencia?.mcc_inferido_por_nombre) {
+      // bypass activo: ignorar hits por nombre, dejar pasar a IA.
+    } else {
+      return { resultado: r, requiereRevision: false, requiereIa: false };
+    }
   }
 
-  // Capa 3: MCC directo del input.
-  const r = await capas.mcc.evaluar(input.mcc);
-  if (r) return { resultado: r, requiereRevision: false, requiereIa: false };
-
-  // Sin match: IA fallback async.
   return { resultado: null, requiereRevision: true, requiereIa: true };
 }
