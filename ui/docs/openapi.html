@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tagger — OpenAPI</title>
+    <link rel="stylesheet" href="/ui/shared/theme.css" />
+    <style>
+      .doc-shell {
+        max-width: 1400px;
+        margin: 24px auto 0;
+        padding: 0 20px;
+      }
+      .doc-head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .doc-head h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.3px;
+      }
+      .doc-kicker {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-3);
+        font-weight: 600;
+      }
+      .doc-head .actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .api-wrap {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        min-height: calc(100vh - 180px);
+      }
+      /* Stoplight Elements ajustes para tema oscuro de la app */
+      elements-api {
+        display: block;
+        height: calc(100vh - 180px);
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@stoplight/elements@8.4.6/styles.min.css"
+    />
+  </head>
+  <body>
+    <script src="/ui/shared/state.js"></script>
+    <script src="/ui/shared/toast.js"></script>
+    <script src="/ui/shared/api.js"></script>
+    <script src="/ui/shared/nav.js"></script>
+    <script src="/ui/shared/breadcrumbs.js"></script>
+    <script src="/ui/shared/footer.js" defer></script>
+
+    <div class="doc-shell">
+      <div class="doc-head">
+        <div>
+          <div class="doc-kicker">Referencia · contrato</div>
+          <h1>OpenAPI spec</h1>
+        </div>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/ui/api/index.html">API explorer</a>
+          <a class="btn btn-ghost" href="/ui/docs/integration-guide.html">Integration guide</a>
+          <a class="btn btn-ghost" href="/openapi.yaml" download>Descargar YAML</a>
+        </div>
+      </div>
+
+      <div class="api-wrap">
+        <elements-api
+          apiDescriptionUrl="/openapi.yaml"
+          router="hash"
+          layout="sidebar"
+          tryItCredentialsPolicy="same-origin"
+          hideInternal="true"
+        ></elements-api>
+      </div>
+    </div>
+
+    <script>
+      window.taggerBreadcrumbs &&
+        window.taggerBreadcrumbs([
+          { label: 'Inicio', href: '/ui/index.html' },
+          { label: 'Docs' },
+          { label: 'OpenAPI spec' },
+        ]);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@stoplight/elements@8.4.6/web-components.min.js"></script>
+  </body>
+</html>

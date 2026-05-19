@@ -32,8 +32,8 @@
       el('a', { href: '/postman/tagger.postman_collection.json', download: '' }, [
         'Postman collection',
       ]),
-      el('a', { href: '/openapi.yaml' }, ['OpenAPI']),
-      el('a', { href: '/docs/runbook.md' }, ['Runbook']),
+      el('a', { href: '/ui/docs/openapi.html' }, ['OpenAPI']),
+      el('a', { href: '/ui/docs/runbook.html' }, ['Runbook']),
     ]);
     const left = el('div', {}, [
       'tagger ',

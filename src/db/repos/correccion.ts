@@ -6,24 +6,23 @@ import { normalize } from '../../domain/normalize.js';
 
 /**
  * Deriva clave para guardar en memoria (reglas con scope='usuario:X', tipo='literal').
- * Si el movimiento es transferencia `MANGO-X`, usa el destinatario. Sino usa el primer
- * nombre disponible (comercio/bancard/descripción).
+ *
+ * Concatena todos los textos del movimiento en el mismo orden que la capa de reglas
+ * (ver `textoPara` en src/layers/reglas.ts) y normaliza. Así, cuando el mismo movimiento
+ * reaparezca, literal === comparará byte a byte con éxito.
+ *
+ * Cliente no edita nombres; sólo categoriza. Por eso match exacto es correcto: si el nombre
+ * cambia (variantes, sufijos), debería ser otra corrección separada.
  */
 function claveMemoria(input: {
   nombreBancard?: string | null;
   nombreComercio?: string | null;
   descripcion?: string | null;
 }): { raw: string; normalizado: string } | null {
-  const transRe = /^MANGO[-\s](.+)$/i;
-  if (input.nombreBancard) {
-    const m = transRe.exec(input.nombreBancard.trim());
-    if (m && m[1]) {
-      const raw = m[1].trim();
-      const norm = normalize(raw);
-      if (raw && norm) return { raw, normalizado: norm };
-    }
-  }
-  const raw = (input.nombreComercio ?? input.nombreBancard ?? input.descripcion ?? '').trim();
+  const raw = [input.nombreBancard, input.nombreComercio, input.descripcion]
+    .filter((v): v is string => Boolean(v))
+    .join(' ')
+    .trim();
   if (!raw) return null;
   const normalizado = normalize(raw);
   if (!normalizado) return null;
@@ -42,7 +41,9 @@ export interface CorreccionMemoriaWriter {
 export function crearCorreccionMemoriaWriter(db: Db): CorreccionMemoriaWriter {
   return {
     async upsert({ scope, valor, valorNormalizado, categoriaId }) {
-      // Buscar regla literal existente
+      // tipo='literal': nombre completo, match exacto. Cliente no edita nombres,
+      // sólo categoriza, así que match exacto es lo correcto.
+      // prioridad=1: gana siempre dentro de user-scope sobre otras reglas user.
       const existing = await db
         .select({ id: reglas.id })
         .from(reglas)
@@ -67,7 +68,7 @@ export function crearCorreccionMemoriaWriter(db: Db): CorreccionMemoriaWriter {
         valor,
         valorNormalizado,
         categoriaId,
-        prioridad: 50,
+        prioridad: 1,
         activo: true,
         origen: 'correccion',
       });

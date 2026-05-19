@@ -91,7 +91,7 @@
         el('a', { class: 'btn btn-ghost', href: REPO_URL, target: '_blank', rel: 'noopener' }, [
           'GitHub repo ↗',
         ]),
-        el('a', { class: 'btn btn-ghost', href: '/openapi.yaml' }, ['OpenAPI']),
+        el('a', { class: 'btn btn-ghost', href: '/ui/docs/openapi.html' }, ['OpenAPI']),
       ]),
     );
 

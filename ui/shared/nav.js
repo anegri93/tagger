@@ -19,9 +19,9 @@
       href: '/postman/tagger.postman_collection.json',
       download: true,
     },
-    { label: 'OpenAPI spec', href: '/openapi.yaml', external: false },
-    { label: 'Runbook', href: '/docs/runbook.md', external: false },
-    { label: 'Integration guide', href: '/docs/integration-guide.md', external: false },
+    { label: 'OpenAPI spec', href: '/ui/docs/openapi.html', external: false },
+    { label: 'Runbook', href: '/ui/docs/runbook.html', external: false },
+    { label: 'Integration guide', href: '/ui/docs/integration-guide.html', external: false },
   ];
 
   const THEME_KEY = 'tagger:theme';
