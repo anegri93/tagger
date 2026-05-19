@@ -8,42 +8,42 @@ const HIT_MCC: ResultadoCapa = {
   fuente: 'mcc',
   evidencia: { mcc_match: '5411' },
 };
-const HIT_PATRONES: ResultadoCapa = {
-  categoriaId: 'c-patrones',
+const HIT_REGLAS: ResultadoCapa = {
+  categoriaId: 'c-reglas',
   confianza: 0.9,
-  fuente: 'patrones',
+  fuente: 'contiene',
   evidencia: { regla_id: 'p1', patron: 'CIAL' },
 };
 
 function stubCapas(
-  overrides: Partial<Record<keyof CapasSincrono, ResultadoCapa | null>> = {},
+  overrides: { reglas?: ResultadoCapa | null; mcc?: ResultadoCapa | null } = {},
 ): CapasSincrono {
   return {
-    patrones: { evaluar: vi.fn().mockResolvedValue(overrides.patrones ?? null) },
+    reglas: { evaluar: vi.fn().mockResolvedValue(overrides.reglas ?? null) },
     mcc: { evaluar: vi.fn().mockResolvedValue(overrides.mcc ?? null) },
   };
 }
 
 describe('pipeline cascada', () => {
-  it('patrones acierta → no llama mcc', async () => {
-    const capas = stubCapas({ patrones: HIT_PATRONES });
+  it('reglas globales aciertan → no llama mcc', async () => {
+    const capas = stubCapas({ reglas: HIT_REGLAS });
     const r = await ejecutarCascada({ descripcion: 'BIGGIE' }, capas);
-    expect(r.resultado).toEqual(HIT_PATRONES);
+    expect(r.resultado).toEqual(HIT_REGLAS);
     expect(r.requiereRevision).toBe(false);
     expect(r.requiereIa).toBe(false);
     expect(capas.mcc.evaluar).not.toHaveBeenCalled();
   });
 
-  it('patrones falla, mcc acierta', async () => {
+  it('reglas fallan, mcc acierta', async () => {
     const capas = stubCapas({ mcc: HIT_MCC });
     const r = await ejecutarCascada({ nombreComercio: 'X', mcc: '5411' }, capas);
     expect(r.resultado).toEqual(HIT_MCC);
   });
 
-  it('patrones gana sobre mcc', async () => {
-    const capas = stubCapas({ patrones: HIT_PATRONES, mcc: HIT_MCC });
+  it('reglas globales ganan sobre mcc', async () => {
+    const capas = stubCapas({ reglas: HIT_REGLAS, mcc: HIT_MCC });
     const r = await ejecutarCascada({ nombreComercio: 'CIAL', mcc: '5411' }, capas);
-    expect(r.resultado).toEqual(HIT_PATRONES);
+    expect(r.resultado).toEqual(HIT_REGLAS);
     expect(capas.mcc.evaluar).not.toHaveBeenCalled();
   });
 
@@ -61,10 +61,28 @@ describe('pipeline cascada', () => {
     expect(r.requiereIa).toBe(true);
   });
 
-  it('input vacío salta capa patrones pero llama mcc', async () => {
-    const capas = stubCapas();
-    await ejecutarCascada({ mcc: '5411' }, capas);
-    expect(capas.patrones?.evaluar).not.toHaveBeenCalled();
-    expect(capas.mcc.evaluar).toHaveBeenCalledWith('5411');
+  it('reglas user-scope con usuario presente disparan antes que globales', async () => {
+    const HIT_USER: ResultadoCapa = {
+      categoriaId: 'c-user',
+      confianza: 1.0,
+      fuente: 'manual',
+      evidencia: { regla_id: 'r1', patron: 'X' },
+    };
+    const evaluar = vi
+      .fn()
+      .mockImplementation((_input, scope: string) =>
+        Promise.resolve(scope === 'usuario:u1' ? HIT_USER : null),
+      );
+    const capas: CapasSincrono = {
+      reglas: { evaluar },
+      mcc: { evaluar: vi.fn().mockResolvedValue(null) },
+    };
+    const r = await ejecutarCascada(
+      { nombreComercio: 'CIAL' },
+      capas,
+      { usuario: 'u1' },
+    );
+    expect(r.resultado).toEqual(HIT_USER);
+    expect(evaluar).toHaveBeenCalledWith(expect.anything(), 'usuario:u1');
   });
 });

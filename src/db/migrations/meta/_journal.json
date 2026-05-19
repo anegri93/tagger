@@ -127,6 +127,20 @@
       "when": 1779200000000,
       "tag": "0017_mcc_por_nombre",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779300000000,
+      "tag": "0018_reglas_unificadas",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779400000000,
+      "tag": "0019_drop_tablas_viejas",
+      "breakpoints": true
     }
   ]
 }

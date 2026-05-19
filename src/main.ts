@@ -28,9 +28,9 @@ import { crearCapaCatalogo } from './layers/catalogo.js';
 import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
 import { crearIaFallback } from './pipeline/ia-fallback.js';
-import { crearPatronesLoader, crearPatronWriter } from './db/repos/patrones.js';
-import { crearCapaPatrones } from './layers/patrones.js';
-import { patronesRoute } from './api/routes/patrones.js';
+import { crearReglasLoader, crearReglasWriter } from './db/repos/reglas.js';
+import { crearCapaReglas } from './layers/reglas.js';
+import { reglasRoute } from './api/routes/reglas.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearCatalogoLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
@@ -41,19 +41,10 @@ import {
   crearMovimientoInputReader,
   crearMovimientoReprocesador,
 } from './db/repos/movimientos.js';
-import { crearCorreccionService } from './db/repos/correccion.js';
 import {
-  crearMemoriaUsuarioLookup,
-  crearMemoriaUsuarioWriter,
-} from './db/repos/memoria-usuario.js';
-import { crearCapaMemoria } from './layers/memoria.js';
-import { memoriaRoute } from './api/routes/memoria.js';
-import {
-  crearPatronesUsuarioLoader,
-  crearPatronesUsuarioWriter,
-} from './db/repos/patrones-usuario.js';
-import { crearCapaPatronesUsuario } from './layers/patrones-usuario.js';
-import { patronesUsuarioRoute } from './api/routes/patrones-usuario.js';
+  crearCorreccionService,
+  crearCorreccionMemoriaWriter,
+} from './db/repos/correccion.js';
 import {
   crearCategoriasReader,
   crearCategoriasLoader,
@@ -74,33 +65,34 @@ async function pingDb(): Promise<boolean> {
 async function main() {
   const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
 
-  const patronesLoader = crearPatronesLoader(db);
+  const reglasLoader = crearReglasLoader(db);
   const catalogoLookup = crearCatalogoLookup(db);
   const mccLookup = crearMccLookup(db);
   const movRepo = crearMovimientoRepository(db);
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
-  const memoriaUsuarioLookup = crearMemoriaUsuarioLookup(db);
-  const memoriaUsuarioWriter = crearMemoriaUsuarioWriter(db);
-  const patronesUsuarioLoader = crearPatronesUsuarioLoader(db);
-  const correccionSvc = crearCorreccionService(db, memoriaUsuarioWriter);
+  const correccionMemoria = crearCorreccionMemoriaWriter(db);
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
   const marcasReader = crearMarcasReader(db);
 
-  // Capa patrones-usuario incrementa hits asincrónicamente al matchear.
-  const patronesUsuarioWriterParaHits = crearPatronesUsuarioWriter(db);
-  const capaPatronesUsuario = crearCapaPatronesUsuario(patronesUsuarioLoader, (id) => {
-    void patronesUsuarioWriterParaHits.incrementarHit(id).catch(() => undefined);
+  // Writer separado para incrementar hits async sin invalidar cache.
+  const reglasWriterParaHits = crearReglasWriter(db);
+  const capaReglas = crearCapaReglas(reglasLoader, (id) => {
+    void reglasWriterParaHits.incrementarHit(id).catch(() => undefined);
   });
+
   const capas = {
-    memoria: crearCapaMemoria(memoriaUsuarioLookup),
-    patronesUsuario: capaPatronesUsuario,
+    reglas: capaReglas,
     catalogo: crearCapaCatalogo(catalogoLookup),
-    patrones: crearCapaPatrones(patronesLoader),
     mcc: crearCapaMcc(mccLookup),
   };
+
+  const correccionSvc = crearCorreccionService(db, correccionMemoria, (scope) =>
+    capaReglas.invalidar(scope),
+  );
+
   const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
   const iaFallback = env.IA_ENABLED
     ? crearIaFallback({
@@ -135,15 +127,10 @@ async function main() {
     }),
   );
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
-  await app.register(memoriaRoute(memoriaUsuarioWriter));
-  const patronesUsuarioWriter = crearPatronesUsuarioWriter(db, (u) =>
-    capaPatronesUsuario.invalidar(u),
-  );
-  await app.register(patronesUsuarioRoute(patronesUsuarioWriter));
+  const reglasWriter = crearReglasWriter(db, (scope) => capaReglas.invalidar(scope));
+  await app.register(reglasRoute(reglasWriter));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
-  const patronWriter = crearPatronWriter(db, () => capas.patrones.invalidar());
-  await app.register(patronesRoute(patronWriter));
   await app.register(importarCatalogoRoute(db, capas));
   await app.register(importarMovimientosRoute(capas, movRepo));
   const mccWriter = crearMccWriter(db);

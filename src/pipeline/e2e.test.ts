@@ -1,11 +1,11 @@
 // E2E pipeline con repos/capas in-memory. Verifica integración entre orquestador,
 // cascada, persistencia y fallback IA sin requerir Postgres.
-// Variante con DB real (testcontainers) queda como TODO post-MVP.
 import { describe, it, expect, vi } from 'vitest';
 import { ejecutarCascada } from './categorizar.js';
 import { persistirMovimiento } from './persistir.js';
 import { crearIaFallback } from './ia-fallback.js';
-import { crearCapaPatrones, type PatronCargado } from '../layers/patrones.js';
+import { crearCapaReglas } from '../layers/reglas.js';
+import type { ReglaCargada } from '../db/repos/reglas.js';
 import { crearCapaMcc } from '../layers/mcc.js';
 import { crearCapaCatalogo, type CatalogoHit } from '../layers/catalogo.js';
 import { crearCapaIa } from '../layers/ia.js';
@@ -22,14 +22,18 @@ function mkCapas(opts: {
   mcc?: Record<string, { codMcc: string; categoriaId: string | null; ambiguo: boolean }>;
   catalogo?: Record<string, CatalogoHit>;
 }) {
-  const patronesAsPatrones: PatronCargado[] = (opts.reglas ?? []).map((r) => ({
+  const reglasCargadas: ReglaCargada[] = (opts.reglas ?? []).map((r) => ({
     id: r.id,
+    scope: 'global',
     tipo: 'regex',
     valor: r.patron,
+    valorNormalizado: r.patron.toUpperCase(),
     categoriaId: r.categoriaId,
     prioridad: r.prioridad,
+    origen: 'manual',
   }));
   return {
+    reglas: crearCapaReglas({ porScope: async () => reglasCargadas }),
     catalogo: crearCapaCatalogo({
       porBancardCodigo: async (b, c) => {
         if (!b || !c) return null;
@@ -37,7 +41,6 @@ function mkCapas(opts: {
       },
       porNombre: async () => null,
     }),
-    patrones: crearCapaPatrones({ cargar: async () => patronesAsPatrones }),
     mcc: crearCapaMcc({ porCodigo: async (k) => opts.mcc?.[k] ?? null }),
   };
 }

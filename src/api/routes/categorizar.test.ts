@@ -12,13 +12,13 @@ beforeAll(() => {
 const HIT: ResultadoCapa = {
   categoriaId: '00000000-0000-0000-0000-000000000001',
   confianza: 0.95,
-  fuente: 'patrones',
+  fuente: 'regex',
   evidencia: { regla_id: 'r1', patron: 'X' },
 };
 
 function stubCapas(hit: ResultadoCapa | null): CapasSincrono {
   return {
-    patrones: { evaluar: vi.fn().mockResolvedValue(hit) },
+    reglas: { evaluar: vi.fn().mockResolvedValue(hit) },
     mcc: { evaluar: vi.fn().mockResolvedValue(null) },
   };
 }
@@ -47,7 +47,7 @@ async function build(opts: { hit?: ResultadoCapa | null } = {}) {
 }
 
 describe('POST /categorizar-movimiento', () => {
-  it('200 con resultado patrones hit', async () => {
+  it('200 con resultado reglas hit', async () => {
     const { app } = await build({ hit: HIT });
     const r = await app.inject({
       method: 'POST',
@@ -58,7 +58,7 @@ describe('POST /categorizar-movimiento', () => {
     expect(r.json()).toMatchObject({
       categoria_id: HIT.categoriaId,
       categoria: { id: HIT.categoriaId, slug: 'super', nombre: 'Supermercado' },
-      fuente: 'patrones',
+      fuente: 'regex',
       confianza: 0.95,
       requiere_revision: false,
     });
