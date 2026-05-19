@@ -72,6 +72,27 @@ export const reglasRoute =
       },
     );
 
+    app.get<{ Querystring: { min_usuarios?: string; min_total?: string } }>(
+      '/reglas/sugerencias-globales',
+      async (req, reply) => {
+        const minUsuarios = req.query.min_usuarios ? Number(req.query.min_usuarios) : 3;
+        const minTotal = req.query.min_total ? Number(req.query.min_total) : 5;
+        if (!Number.isFinite(minUsuarios) || minUsuarios < 2)
+          return reply.code(400).send({ error: 'min_usuarios_invalido' });
+        if (!Number.isFinite(minTotal) || minTotal < 1)
+          return reply.code(400).send({ error: 'min_total_invalido' });
+        const sug = await writer.sugerenciasGlobales({
+          minUsuariosDistintos: minUsuarios,
+          minTotalCorrecciones: minTotal,
+        });
+        return reply.send({
+          min_usuarios: minUsuarios,
+          min_total: minTotal,
+          sugerencias: sug,
+        });
+      },
+    );
+
     app.post('/reglas', async (req, reply) => {
       const parsed = crearSchema.safeParse(req.body);
       if (!parsed.success) {

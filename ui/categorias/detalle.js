@@ -307,12 +307,13 @@ $('#comercios-tbl').addEventListener('change', async (e) => {
   }
 });
 
-// Patrones
+// Reglas globales (filtradas por categoría en cliente)
 async function loadPatrones() {
   try {
-    const { items } = await window.taggerApi(`/patrones?categoria=${encodeURIComponent(SLUG)}`);
+    const { items } = await window.taggerApi('/reglas?scope=global');
+    const filtradas = items.filter((p) => p.categoria_slug === SLUG);
     const tbody = $('#patrones-tbl tbody');
-    tbody.innerHTML = items
+    tbody.innerHTML = filtradas
       .map(
         (p) => `<tr data-id="${p.id}">
           <td>${esc(p.tipo)}</td>
@@ -328,43 +329,36 @@ async function loadPatrones() {
       )
       .join('');
   } catch (e) {
-    setStatus(`error patrones: ${e.message}`, 'error');
+    setStatus(`error reglas: ${e.message}`, 'error');
   }
 }
 
 $('#p-add').addEventListener('click', async () => {
-  const tipo = $('#p-tipo').value;
-  const valor = $('#p-valor').value.trim();
+  // Tipos válidos en reglas: literal | contiene | regex. Si UI ofrece 'prefijo', convertir a regex.
+  let tipo = $('#p-tipo').value;
+  let valor = $('#p-valor').value.trim();
+  if (tipo === 'prefijo') {
+    tipo = 'regex';
+    valor = '^' + valor;
+  }
   const prioridad = Number($('#p-prio').value) || 100;
   const descripcion = $('#p-desc').value.trim() || undefined;
   if (!valor) return alert('falta valor');
   try {
-    await window.taggerApi('/patrones', {
+    await window.taggerApi('/reglas', {
       method: 'POST',
-      body: JSON.stringify({ tipo, valor, categoria_slug: SLUG, prioridad, descripcion }),
+      body: JSON.stringify({
+        scope: 'global',
+        tipo,
+        valor,
+        categoria_slug: SLUG,
+        prioridad,
+        descripcion,
+      }),
     });
     $('#p-valor').value = '';
     $('#p-desc').value = '';
     await loadPatrones();
-  } catch (e) {
-    alert(e.message);
-  }
-});
-
-$('#p-test-btn').addEventListener('click', async () => {
-  const tipo = $('#p-tipo').value;
-  const valor = $('#p-valor').value.trim();
-  const texto = $('#p-test-texto').value.trim();
-  if (!valor || !texto) return;
-  try {
-    const r = await window.taggerApi('/patrones/test', {
-      method: 'POST',
-      body: JSON.stringify({ tipo, valor, texto }),
-    });
-    const el = $('#p-test-result');
-    el.style.display = 'block';
-    el.className = `test-result ${r.match ? 'match' : 'no-match'}`;
-    el.textContent = r.match ? `✓ matchea` : `✗ no matchea`;
   } catch (e) {
     alert(e.message);
   }
@@ -377,11 +371,11 @@ $('#patrones-tbl').addEventListener('click', async (e) => {
   const act = btn.dataset.act;
   try {
     if (act === 'p-del') {
-      if (!confirm('Eliminar patrón?')) return;
-      await window.taggerApi(`/patrones/${id}`, { method: 'DELETE' });
+      if (!confirm('Eliminar regla?')) return;
+      await window.taggerApi(`/reglas/${id}`, { method: 'DELETE' });
     } else if (act === 'p-toggle') {
       const activo = btn.dataset.activo !== 'true';
-      await window.taggerApi(`/patrones/${id}`, {
+      await window.taggerApi(`/reglas/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ activo }),
       });
@@ -392,75 +386,19 @@ $('#patrones-tbl').addEventListener('click', async (e) => {
   }
 });
 
-// Sugerencias patrones
+// Sugerencias por categoría: feature removida en simplificación.
+// Las sugerencias ahora viven en /ui/dashboard/ (globales cross-user).
+const sugBtn = document.getElementById('p-sugerir');
+if (sugBtn) {
+  sugBtn.style.display = 'none';
+}
 const sugPanel = document.getElementById('p-sugerir-panel');
-const sugStatus = document.getElementById('p-sugerir-status');
-const sugTbody = document.querySelector('#p-sug-tbl tbody');
+if (sugPanel) sugPanel.style.display = 'none';
 
-document.getElementById('p-sugerir').addEventListener('click', async () => {
-  sugStatus.textContent = 'cargando…';
-  try {
-    const { items } = await window.taggerApi(
-      `/patrones/sugerencias?categoria_slug=${encodeURIComponent(SLUG)}`,
-    );
-    sugTbody.innerHTML = items.length
-      ? items
-          .map(
-            (s, i) => `<tr data-i="${i}">
-        <td><input type="checkbox" class="p-sug-chk" /></td>
-        <td><code>${esc(s.token)}</code></td>
-        <td>${esc(s.tipo)}</td>
-        <td><code>${esc(s.valor)}</code></td>
-        <td>${s.freqSeed}</td>
-        <td>${(s.pureza * 100).toFixed(0)}%</td>
-        <td>${s.impactoSinCat}</td>
-      </tr>`,
-          )
-          .join('')
-      : '<tr><td colspan="7" class="t-muted">sin sugerencias</td></tr>';
-    sugPanel.dataset.items = JSON.stringify(items);
-    sugPanel.style.display = 'block';
-    sugStatus.textContent = `${items.length} sugerencias`;
-  } catch (e) {
-    sugStatus.textContent = `error: ${e.message}`;
-  }
-});
-
-document.getElementById('p-sug-cerrar').addEventListener('click', () => {
-  sugPanel.style.display = 'none';
-});
-
-document.getElementById('p-sug-all').addEventListener('change', (e) => {
-  document.querySelectorAll('.p-sug-chk').forEach((c) => (c.checked = e.target.checked));
-});
-
-document.getElementById('p-sug-aplicar').addEventListener('click', async () => {
-  const items = JSON.parse(sugPanel.dataset.items || '[]');
-  const seleccion = [];
-  document.querySelectorAll('#p-sug-tbl tbody tr').forEach((tr) => {
-    const chk = tr.querySelector('.p-sug-chk');
-    if (chk && chk.checked) {
-      const it = items[Number(tr.dataset.i)];
-      seleccion.push({
-        tipo: it.tipo,
-        valor: it.valor,
-        categoria_slug: it.categoriaSlug,
-        prioridad: 35,
-      });
-    }
-  });
-  if (seleccion.length === 0) return alert('seleccionar al menos uno');
-  try {
-    const r = await window.taggerApi('/patrones/sugerencias/aplicar', {
-      method: 'POST',
-      body: JSON.stringify({ items: seleccion }),
-    });
-    sugStatus.textContent = `creados: ${r.creados}, errores: ${r.errores.length}`;
-    sugPanel.style.display = 'none';
-    await loadPatrones();
-  } catch (e) {
-    alert(e.message);
-  }
-});
+// Test patrón inline: feature removida.
+const testBtn = document.getElementById('p-test-btn');
+if (testBtn) testBtn.style.display = 'none';
+const testInput = document.getElementById('p-test-texto');
+if (testInput) testInput.style.display = 'none';
 
 loadInfo();

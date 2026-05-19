@@ -4,9 +4,9 @@
 
   const SECTIONS = [
     { path: '/ui/index.html', label: 'Inicio', exact: ['/ui/', '/ui/index.html', '/ui'] },
+    { path: '/ui/dashboard/index.html', label: 'Dashboard', prefix: '/ui/dashboard/' },
     { path: '/ui/categorias/index.html', label: 'Categorías', prefix: '/ui/categorias/' },
     { path: '/ui/importar/index.html', label: 'Importar', prefix: '/ui/importar/' },
-    { path: '/ui/recat/index.html', label: 'Recategorizar', prefix: '/ui/recat/' },
     { path: '/ui/test-monitor/index.html', label: 'Monitor', prefix: '/ui/test-monitor/' },
     { path: '/ui/memoria/index.html', label: 'Playground', prefix: '/ui/memoria/' },
     { path: '/ui/api/index.html', label: 'API', prefix: '/ui/api/' },

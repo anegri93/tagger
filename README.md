@@ -91,6 +91,10 @@ flowchart LR
     S -->|admin aprueba| C1[Capa 1]
 ```
 
+**Sugerencias globales cross-user** (`/ui/dashboard/`): cuando ≥N usuarios distintos corrigen el mismo nombre a la misma categoría, aparece como candidato para promover a regla global (capa 1) y beneficia a todos los usuarios. Configurable vía `min_usuarios` y `min_total` en el endpoint `/reglas/sugerencias-globales`.
+
+**Dashboard de capas** (`/ui/dashboard/`): visualiza % de movimientos resueltos por cada capa en ventanas 1h/24h/7d/30d. Si IA o "sin match" suben, indica que hace falta agregar reglas para los nombres frecuentes.
+
 **Cómo leerlo.** El primer diagrama es el flujo de categorización: el movimiento entra por la izquierda y va pasando por las capas hasta que alguna lo reconoce (`hit`). El segundo es el bucle de aprendizaje: las correcciones del usuario vuelven a alimentar las capas 0 y 1, para que esos mismos movimientos salgan automáticos la próxima vez.
 
 ---
@@ -232,10 +236,17 @@ open http://localhost:3000/ui/      # UIs
 | --------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                                                                                            |
 | GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/mcc_por_nombre/mcc_catalogo)                                                                      |
-| GET/POST/PATCH/DELETE | `/reglas`                 | CRUD reglas. `GET /reglas?scope=global` o `scope=usuario:<X>`. `GET /reglas/sugerencias?usuario=X&umbral=N` lista sugerencias agrupando correcciones repetidas. `POST` crea regla, `PATCH /:id` activa/desactiva o cambia prioridad, `DELETE /:id` o `DELETE /reglas?scope=&valor=`. Tipos: `literal` / `contiene` / `regex` |
+| GET/POST/PATCH/DELETE | `/reglas`                 | CRUD reglas. `GET /reglas?scope=global` o `scope=usuario:<X>`. `GET /reglas/sugerencias?usuario=X&umbral=N` agrupa correcciones del usuario. `GET /reglas/sugerencias-globales?min_usuarios=3&min_total=5` lista patrones que **varios usuarios distintos** corrigieron a la misma categoría (candidatos a regla global). `POST` crea regla, `PATCH /:id` activa/desactiva o cambia prioridad, `DELETE /:id` o `DELETE /reglas?scope=&valor=`. Tipos: `literal` / `contiene` / `regex` |
 | GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                                                                                                           |
 | GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                                                                                                   |
 | GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual (sobre `mcc_por_nombre`)                                                     |
+
+### Stats / Dashboard
+
+| Método | Path                                      | Descripción                                                                                                                                                                                              |
+| ------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/stats/pipeline?ventana=1h\|24h\|7d\|30d\|all` | Distribución de movimientos por capa del pipeline en la ventana especificada. Incluye conteo por capa+fuente, revisiones pendientes, correcciones aplicadas, latencia p50/p95/p99/avg. Default 24h |
+| GET    | `/reglas/sugerencias-globales`            | Lista nombres normalizados que ≥N usuarios distintos corrigieron a la misma categoría. Params: `min_usuarios` (default 3), `min_total` (default 5). Excluye los que ya tienen regla global activa        |
 
 ### Importación bulk
 
@@ -339,10 +350,11 @@ Todas servidas por mismo Fastify (mismo origen, sin CORS).
 | URL                 | Función                                                                            |
 | ------------------- | ---------------------------------------------------------------------------------- |
 | `/ui/`              | Landing con health + counts                                                        |
-| `/ui/categorias/`   | CRUD categorías + patrones + MCC + marcas + comercios                              |
+| `/ui/dashboard/`    | **NUEVO** — % por capa del pipeline + sugerencias globales (cross-user) para promover a reglas |
+| `/ui/categorias/`   | CRUD categorías + reglas globales + MCC + marcas + comercios                       |
 | `/ui/importar/`     | Importa XLSX/CSV a `mcc_por_nombre` o `movimientos` con mapping de campos          |
 | `/ui/test-monitor/` | Dashboard tests masivos realtime                                                   |
-| `/ui/memoria/`      | Playground end-to-end: crear movimiento, corregir, ver memoria por usuario         |
+| `/ui/memoria/`      | Playground end-to-end: crear movimiento, corregir, ver reglas tuyas + sugerencias  |
 | `/ui/api/`          | Swagger UI sobre `openapi.yaml` con "Try it out" + Postman collection downloadable |
 
 **Shared layout** (`ui/shared/`):
