@@ -35,21 +35,23 @@ export interface CapaMcc {
   ): Promise<ResultadoCapa | null>;
 }
 
+const CONFIANZA_MCC_AMBIGUO = 0.5; // bajo threshold (0.70) → requiereRevision=true automático
+
 async function evaluarPorCodigo(
   lookup: MccLookup,
   codMcc: string | null | undefined,
-  opts?: EvaluarMccOpts,
+  _opts?: EvaluarMccOpts,
 ): Promise<ResultadoCapa | null> {
   if (!codMcc) return null;
   const trimmed = codMcc.trim();
   if (!trimmed) return null;
   const hit = await lookup.porCodigo(trimmed);
   if (!hit) return null;
-  if (hit.ambiguo && !opts?.ignorarAmbiguo) return null;
   if (!hit.categoriaId) return null;
+  // MCC ambiguo: matchea siempre, confianza baja → cae bajo threshold → requiere_revision=true
   return {
     categoriaId: hit.categoriaId,
-    confianza: CONFIANZA.mcc,
+    confianza: hit.ambiguo ? CONFIANZA_MCC_AMBIGUO : CONFIANZA.mcc,
     fuente: 'mcc',
     evidencia: { mcc_match: hit.codMcc, ...(hit.ambiguo ? { mcc_ambiguo: true } : {}) },
   };

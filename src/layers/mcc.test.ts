@@ -17,11 +17,15 @@ describe('capa mcc — MCC directo', () => {
     expect(r?.evidencia?.mcc_match).toBe('5411');
   });
 
-  it('ambiguo devuelve null (delega a IA)', async () => {
+  it('ambiguo matchea con confianza baja + evidencia mcc_ambiguo', async () => {
     const capa = crearCapaMcc(
       lookupFijo({ '5999': { codMcc: '5999', categoriaId: 'cat-misc', ambiguo: true } }),
     );
-    expect(await capa.evaluar({ mcc: '5999' })).toBeNull();
+    const r = await capa.evaluar({ mcc: '5999' });
+    expect(r?.categoriaId).toBe('cat-misc');
+    expect(r?.fuente).toBe('mcc');
+    expect(r?.confianza).toBe(0.5);
+    expect(r?.evidencia?.mcc_ambiguo).toBe(true);
   });
 
   it('no encontrado devuelve null', async () => {
