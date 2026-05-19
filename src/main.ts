@@ -78,8 +78,12 @@ async function main() {
 
   // Writer separado para incrementar hits async sin invalidar cache.
   const reglasWriterParaHits = crearReglasWriter(db);
-  const capaReglas = crearCapaReglas(reglasLoader, (id) => {
-    void reglasWriterParaHits.incrementarHit(id).catch(() => undefined);
+  const capaReglas = crearCapaReglas(reglasLoader, {
+    ttlMs: env.REGLAS_CACHE_TTL_MS,
+    maxEntries: env.REGLAS_CACHE_MAX,
+    onHit: (id) => {
+      void reglasWriterParaHits.incrementarHit(id).catch(() => undefined);
+    },
   });
 
   const capas = {

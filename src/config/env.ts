@@ -10,6 +10,9 @@ const envSchema = z.object({
   OLLAMA_URL: z.string().url().default('http://localhost:11434'),
   OLLAMA_MODEL: z.string().default('gemma2:2b'),
   OLLAMA_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
+  DB_POOL_MAX: z.coerce.number().int().positive().default(30),
+  REGLAS_CACHE_MAX: z.coerce.number().int().positive().default(5000),
+  REGLAS_CACHE_TTL_MS: z.coerce.number().int().positive().default(60_000),
   IA_ENABLED: z
     .enum(['true', 'false'])
     .default('true')

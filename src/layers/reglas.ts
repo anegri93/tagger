@@ -3,11 +3,21 @@ import { CONFIANZA } from '../domain/confianza.js';
 import { normalize } from '../domain/normalize.js';
 import type { ReglaCargada, ReglasLoader, ReglaTipo } from '../db/repos/reglas.js';
 
-const TTL_MS = 60_000;
+const DEFAULT_TTL_MS = 60_000;
+const DEFAULT_MAX_ENTRIES = 5_000;
 
 export interface CapaReglas {
   evaluar(input: MovimientoInput, scope: string): Promise<ResultadoCapa | null>;
   invalidar(scope?: string): void;
+  /** Estadísticas internas para diagnóstico/observability. */
+  stats(): { size: number; capacity: number; ttlMs: number };
+}
+
+export interface CapaReglasOpts {
+  ttlMs?: number;
+  maxEntries?: number;
+  onHit?: (reglaId: string) => void;
+  now?: () => number;
 }
 
 function textoPara(input: MovimientoInput): string {
@@ -46,12 +56,52 @@ function fuenteYConfianza(r: ReglaCargada): { fuente: FuenteCategoria; confianza
   return { fuente: tipoFuente[r.tipo], confianza: CONFIANZA[r.tipo] };
 }
 
-export function crearCapaReglas(
-  loader: ReglasLoader,
-  onHit?: (reglaId: string) => void,
-  now: () => number = Date.now,
-): CapaReglas {
-  const cache = new Map<string, { reglas: ReglaCargada[]; expira: number }>();
+/**
+ * Cache LRU bounded para reglas por scope.
+ * Aprovecha que Map de JS preserva el orden de inserción: re-inserting una key
+ * la mueve al final. Cuando size > max, descarta el primer elemento (LRU).
+ */
+class LRUCache<V> {
+  private map = new Map<string, V>();
+  constructor(private capacity: number) {}
+
+  get(key: string): V | undefined {
+    const v = this.map.get(key);
+    if (v === undefined) return undefined;
+    // Touch: borrar + reinsertar para que pase al final (most recently used)
+    this.map.delete(key);
+    this.map.set(key, v);
+    return v;
+  }
+
+  set(key: string, value: V): void {
+    if (this.map.has(key)) this.map.delete(key);
+    this.map.set(key, value);
+    if (this.map.size > this.capacity) {
+      const oldestKey = this.map.keys().next().value as string | undefined;
+      if (oldestKey !== undefined) this.map.delete(oldestKey);
+    }
+  }
+
+  delete(key: string): boolean {
+    return this.map.delete(key);
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+
+  get size(): number {
+    return this.map.size;
+  }
+}
+
+export function crearCapaReglas(loader: ReglasLoader, opts: CapaReglasOpts = {}): CapaReglas {
+  const ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS;
+  const maxEntries = opts.maxEntries ?? DEFAULT_MAX_ENTRIES;
+  const now = opts.now ?? Date.now;
+  const onHit = opts.onHit;
+  const cache = new LRUCache<{ reglas: ReglaCargada[]; expira: number }>(maxEntries);
 
   async function getReglas(scope: string): Promise<ReglaCargada[]> {
     const hit = cache.get(scope);
@@ -59,7 +109,7 @@ export function crearCapaReglas(
     const reglas = (await loader.porScope(scope))
       .slice()
       .sort((a, b) => a.prioridad - b.prioridad);
-    cache.set(scope, { reglas, expira: now() + TTL_MS });
+    cache.set(scope, { reglas, expira: now() + ttlMs });
     return reglas;
   }
 
@@ -86,6 +136,9 @@ export function crearCapaReglas(
     invalidar(scope) {
       if (scope) cache.delete(scope);
       else cache.clear();
+    },
+    stats() {
+      return { size: cache.size, capacity: maxEntries, ttlMs };
     },
   };
 }
