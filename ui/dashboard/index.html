@@ -250,11 +250,15 @@
 
       async function cargarStats() {
         const ventana = $('ventana').value;
+        $('capas-result').innerHTML = '<div class="empty">Cargando…</div>';
+        ['kpi-total', 'kpi-rev', 'kpi-corr', 'kpi-p95'].forEach((id) => ($(id).textContent = '…'));
         try {
           const d = await window.taggerApi('/stats/pipeline?ventana=' + ventana);
           renderStats(d);
         } catch (e) {
           toast('Error: ' + (e?.message || 'falló'), 'err');
+          $('capas-result').innerHTML =
+            '<div class="empty">Error al cargar. Reintentá.</div>';
         }
       }
 
@@ -276,6 +280,11 @@
           '3_ia': ['3', 'IA Gemma'],
           'sin_match': ['—', 'Sin categoría'],
         };
+        if (!d.capas?.length) {
+          $('capas-result').innerHTML =
+            '<div class="empty">Sin movimientos en esta ventana.</div>';
+          return;
+        }
         const maxPct = Math.max(...d.capas.map((c) => c.pct), 1);
         $('capas-result').innerHTML = d.capas
           .map((c) => {
@@ -295,6 +304,8 @@
       async function cargarSugerenciasGlobales() {
         const minUsr = $('sug-min-usr').value || 3;
         const minTot = $('sug-min-tot').value || 5;
+        const btn = $('btn-sug-refresh');
+        btn.disabled = true;
         $('sug-result').innerHTML = '<div class="empty">Buscando...</div>';
         try {
           const d = await window.taggerApi(
@@ -304,6 +315,8 @@
         } catch (e) {
           $('sug-result').innerHTML =
             '<div class="empty">Error: ' + (e?.message || 'falló') + '</div>';
+        } finally {
+          btn.disabled = false;
         }
       }
 
@@ -379,10 +392,14 @@
       }
 
       $('ventana').addEventListener('change', cargarStats);
-      $('btn-refresh').addEventListener('click', cargarStats);
+      $('btn-refresh').addEventListener('click', () => {
+        cargarStats();
+        cargarSugerenciasGlobales();
+      });
       $('btn-sug-refresh').addEventListener('click', cargarSugerenciasGlobales);
 
       cargarStats();
+      cargarSugerenciasGlobales();
     </script>
   </body>
 </html>

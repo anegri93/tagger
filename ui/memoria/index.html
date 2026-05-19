@@ -614,6 +614,9 @@
             }
           } catch {}
         }
+        if (lastMovimientoId === id) {
+          toast('La IA tardó demasiado. Refrescá la página o reintentá.', 'err');
+        }
       }
 
       // ===== renderizar resultado =====

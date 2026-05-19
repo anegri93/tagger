@@ -49,7 +49,7 @@ const api = window.taggerApi;
 async function startRun() {
   syncFromUI();
   if (!state.batchId) {
-    alert('falta batch_id');
+    window.toast?.error('falta batch_id');
     return;
   }
   const payload = { batch_id: state.batchId, concurrency: state.concurrency };
@@ -88,7 +88,7 @@ async function stopRun() {
 function monitorOnly() {
   syncFromUI();
   if (!state.batchId) {
-    alert('falta batch_id');
+    window.toast?.error('falta batch_id');
     return;
   }
   state.paused = false;

@@ -106,16 +106,17 @@ async function eliminar(slug) {
   try {
     const u = await window.taggerApi(`/categorias/${encodeURIComponent(slug)}/usage`);
     if (u.movimientos > 0 || u.mcc > 0 || u.comercios > 0) {
-      alert(
-        `No se puede eliminar: tiene refs\nmov:${u.movimientos} mcc:${u.mcc} comercios:${u.comercios}`,
+      window.toast?.error(
+        `No se puede eliminar: tiene refs (mov:${u.movimientos} mcc:${u.mcc} comercios:${u.comercios})`,
       );
       return;
     }
     if (!confirm(`Eliminar categoría '${slug}'?`)) return;
     await window.taggerApi(`/categorias/${encodeURIComponent(slug)}`, { method: 'DELETE' });
     await loadList();
+    window.toast?.success(`Categoría '${slug}' eliminada`);
   } catch (e) {
-    alert(`Error: ${e.message}`);
+    window.toast?.error(`Error: ${e.message}`);
   }
 }
 
@@ -128,8 +129,9 @@ async function editar(slug) {
       body: JSON.stringify({ nombre }),
     });
     await loadList();
+    window.toast?.success(`Categoría actualizada`);
   } catch (e) {
-    alert(`Error: ${e.message}`);
+    window.toast?.error(`Error: ${e.message}`);
   }
 }
 
@@ -176,7 +178,7 @@ async function loadConflictos() {
             ${c.entries
               .map(
                 (e) =>
-                  `<span style="margin-left:8px;padding:2px 6px;background:rgba(255,255,255,0.08);border-radius:4px">${esc(e.categoriaSlug)} <span class="t-small t-muted">(prio ${e.prioridad})</span></span>`,
+                  `<span style="margin-left:8px;padding:2px 6px;background:rgba(255,255,255,0.08);border-radius:4px">${esc(e.categoria_slug)} <span class="t-small t-muted">(prio ${e.prioridad})</span></span>`,
               )
               .join('')}
           </div>`,
@@ -188,9 +190,17 @@ async function loadConflictos() {
   }
 }
 
-$('btn-reload').addEventListener('click', () => {
-  loadList();
-  loadConflictos();
+$('btn-reload').addEventListener('click', async () => {
+  const btn = $('btn-reload');
+  const txt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '↻ Cargando…';
+  try {
+    await Promise.all([loadList(), loadConflictos()]);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = txt;
+  }
 });
 $('btn-new').addEventListener('click', () => ($('modal-new').style.display = 'flex'));
 $('btn-cancel').addEventListener('click', () => ($('modal-new').style.display = 'none'));

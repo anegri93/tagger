@@ -3,7 +3,7 @@ const $$ = (s) => document.querySelectorAll(s);
 const params = new URLSearchParams(window.location.search);
 const SLUG = params.get('slug');
 if (!SLUG) {
-  alert('falta ?slug=X');
+  window.toast?.error('falta ?slug=X');
   window.location.href = 'index.html';
 }
 
@@ -25,16 +25,23 @@ function esc(s) {
 }
 
 // Tabs
+const TABS_LOADED = new Set();
 $$('.tab').forEach((t) =>
   t.addEventListener('click', () => {
     $$('.tab').forEach((x) => x.classList.toggle('active', x === t));
     $$('.tab-content').forEach((x) =>
       x.classList.toggle('active', x.dataset.tab === t.dataset.tab),
     );
-    if (t.dataset.tab === 'mcc') loadMcc();
-    if (t.dataset.tab === 'marcas') loadMarcas();
-    if (t.dataset.tab === 'comercios') loadComercios();
-    if (t.dataset.tab === 'patrones') loadPatrones();
+    const tab = t.dataset.tab;
+    if (!TABS_LOADED.has(tab)) setStatus('cargando…', 'live');
+    const done = () => {
+      TABS_LOADED.add(tab);
+      setStatus('live', 'live');
+    };
+    if (tab === 'mcc') loadMcc().then(done);
+    if (tab === 'marcas') loadMarcas().then(done);
+    if (tab === 'comercios') loadComercios().then(done);
+    if (tab === 'patrones') loadPatrones().then(done);
   }),
 );
 
@@ -68,18 +75,21 @@ $('#info-save').addEventListener('click', async () => {
       }),
     });
     setStatus('guardado', 'live');
+    window.toast?.success('Cambios guardados');
   } catch (e) {
-    alert(e.message);
+    window.toast?.error(e.message);
   }
 });
 
 $('#btn-delete-cat').addEventListener('click', async () => {
+  if (!confirm(`Eliminar categoría '${SLUG}'?`)) return;
   try {
     await window.taggerApi(`/categorias/${encodeURIComponent(SLUG)}`, { method: 'DELETE' });
     window.location.href = 'index.html';
   } catch (e) {
-    if (e.body?.usage) alert(`No se puede eliminar: tiene refs ${JSON.stringify(e.body.usage)}`);
-    else alert(e.message);
+    if (e.body?.usage)
+      window.toast?.error(`No se puede eliminar: tiene refs ${JSON.stringify(e.body.usage)}`);
+    else window.toast?.error(e.message);
   }
 });
 
@@ -125,7 +135,7 @@ $('#mcc-asignar-btn').addEventListener('click', async () => {
     $('#mcc-asignar-cod').value = '';
     await loadMcc();
   } catch (e) {
-    alert(e.message);
+    window.toast?.error(e.message);
   }
 });
 
@@ -149,7 +159,7 @@ document.body.addEventListener('click', async (e) => {
     } else return;
     await loadMcc();
   } catch (err) {
-    alert(err.message);
+    window.toast?.error(err.message);
   }
 });
 
@@ -183,8 +193,9 @@ $('#m-add').addEventListener('click', async () => {
     $('#m-marca').value = '';
     $('#m-desc').value = '';
     await loadMarcas();
+    window.toast?.success('Marca agregada');
   } catch (e) {
-    alert(e.message);
+    window.toast?.error(e.message);
   }
 });
 
@@ -195,8 +206,9 @@ $('#marcas-tbl').addEventListener('click', async (e) => {
   try {
     await window.taggerApi(`/marcas/${btn.dataset.id}`, { method: 'DELETE' });
     await loadMarcas();
+    window.toast?.success('Marca eliminada');
   } catch (e) {
-    alert(e.message);
+    window.toast?.error(e.message);
   }
 });
 
@@ -303,7 +315,7 @@ $('#comercios-tbl').addEventListener('change', async (e) => {
       await loadComercios();
     }
   } catch (err) {
-    alert(err.message);
+    window.toast?.error(err.message);
   }
 });
 
@@ -339,11 +351,11 @@ $('#p-add').addEventListener('click', async () => {
   let valor = $('#p-valor').value.trim();
   if (tipo === 'prefijo') {
     tipo = 'regex';
-    valor = '^' + valor;
+    valor = '^' + valor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
   const prioridad = Number($('#p-prio').value) || 100;
   const descripcion = $('#p-desc').value.trim() || undefined;
-  if (!valor) return alert('falta valor');
+  if (!valor) return window.toast?.error('falta valor');
   try {
     await window.taggerApi('/reglas', {
       method: 'POST',
@@ -359,8 +371,9 @@ $('#p-add').addEventListener('click', async () => {
     $('#p-valor').value = '';
     $('#p-desc').value = '';
     await loadPatrones();
+    window.toast?.success('Regla agregada');
   } catch (e) {
-    alert(e.message);
+    window.toast?.error(e.message);
   }
 });
 
@@ -382,7 +395,7 @@ $('#patrones-tbl').addEventListener('click', async (e) => {
     } else return;
     await loadPatrones();
   } catch (err) {
-    alert(err.message);
+    window.toast?.error(err.message);
   }
 });
 

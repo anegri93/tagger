@@ -319,7 +319,7 @@
           monto: dest === 'movimientos' ? $('m-monto').value : '',
         };
         if (!map.nombre) {
-          alert('mapeá al menos "nombre"');
+          window.toast?.error('mapeá al menos "nombre"');
           return;
         }
         const rows = parsedRows
@@ -355,6 +355,8 @@
           });
           $('estado').textContent =
             `import_id: ${res.import_id}${res.batch_id ? ` batch=${res.batch_id}` : ''} — corriendo...`;
+          pollIntentos = 0;
+          pollFallosSeguidos = 0;
           pollStatus(dest);
         } catch (err) {
           $('estado').textContent = `error: ${err.message}`;
@@ -362,11 +364,22 @@
         }
       });
 
+      const POLL_MAX_INTENTOS = 600; // 10 min @ 1s
+      const POLL_MAX_FALLOS = 10;
+      let pollIntentos = 0;
+      let pollFallosSeguidos = 0;
       async function pollStatus(dest) {
+        if (pollIntentos++ > POLL_MAX_INTENTOS) {
+          $('estado').textContent = 'timeout: import tomó demasiado, revisar logs';
+          $('estado').className = 'err';
+          $('btn-importar').disabled = false;
+          return;
+        }
         try {
           const endpoint =
             dest === 'movimientos' ? '/movimientos/importar/status' : '/catalogo/importar/status';
           const { run } = await window.taggerApi(endpoint);
+          pollFallosSeguidos = 0;
           if (!run) return;
           const s = run.stats;
           const pct = s.total ? Math.round((100 * s.procesados) / s.total) : 0;
@@ -404,6 +417,12 @@
             $('btn-importar').disabled = false;
           }
         } catch {
+          if (++pollFallosSeguidos > POLL_MAX_FALLOS) {
+            $('estado').textContent = 'error: pérdida de conexión con backend';
+            $('estado').className = 'err';
+            $('btn-importar').disabled = false;
+            return;
+          }
           setTimeout(() => pollStatus(dest), 2000);
         }
       }
@@ -426,9 +445,10 @@
         ]);
       window.taggerApiModal &&
         window.taggerApiModal.register([
-          { name: 'Importar comercios catálogo', method: 'POST', path: '/import/comercios' },
-          { name: 'Importar movimientos', method: 'POST', path: '/import/movimientos' },
-          { name: 'Estado de import', method: 'GET', path: '/import/status' },
+          { name: 'Importar catálogo MCC por nombre', method: 'POST', path: '/catalogo/importar' },
+          { name: 'Estado import catálogo', method: 'GET', path: '/catalogo/importar/status' },
+          { name: 'Importar movimientos', method: 'POST', path: '/movimientos/importar' },
+          { name: 'Estado import movimientos', method: 'GET', path: '/movimientos/importar/status' },
         ]);
     </script>
   </body>
