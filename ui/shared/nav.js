@@ -10,6 +10,7 @@
     { path: '/ui/test-monitor/index.html', label: 'Monitor', prefix: '/ui/test-monitor/' },
     { path: '/ui/memoria/index.html', label: 'Playground', prefix: '/ui/memoria/' },
     { path: '/ui/api/index.html', label: 'API', prefix: '/ui/api/' },
+    { path: '/ui/docs/sdk.html', label: 'SDK', exact: ['/ui/docs/sdk.html'] },
   ];
 
   const RESOURCES = [

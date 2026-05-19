@@ -16,6 +16,7 @@ Pipeline en cascada (4 capas): reglas por usuario → reglas globales → MCC in
 - [Cascada categorización](#cascada-categorización)
 - [Modelo de datos](#modelo-de-datos)
 - [UIs](#uis)
+- [SDK JavaScript / TypeScript](#sdk-javascript--typescript)
 - [Scripts útiles](#scripts-útiles)
 - [Estructura del proyecto](#estructura-del-proyecto)
 
@@ -365,6 +366,41 @@ Todas servidas por mismo Fastify (mismo origen, sin CORS).
 - `nav.js` — navbar auto-inyectado con active state + health badge
 
 API key se setea **una vez** en cualquier UI y persiste en localStorage.
+
+---
+
+## SDK JavaScript / TypeScript
+
+Cliente oficial en `sdk/`. Wrapper tipado sobre la API HTTP con manejo de auth, errores tipados, serialización camelCase ↔ snake_case y soporte para todos los endpoints.
+
+```ts
+import { TaggerClient } from '@mango/tagger-sdk';
+
+const tagger = new TaggerClient({
+  url: process.env.TAGGER_URL,            // default: https://tagger.n8negri.xyz
+  apiKey: process.env.TAGGER_API_KEY!,
+});
+
+const r = await tagger.movimientos.categorizar({
+  nombreBancard: 'MANGO - JUAN PEREZ',
+  monto: 50000,
+  origen: 'usuario_123',                  // ← REQUERIDO para memoria por-usuario
+});
+```
+
+Estructura modular: `tagger.movimientos`, `tagger.categorias`, `tagger.reglas`, `tagger.mcc`, `tagger.marcas`, `tagger.comercios`, `tagger.catalogo`, `tagger.testBatch`, `tagger.stats`, `tagger.health()`.
+
+Errores tipados: `ValidationError` (400), `AuthError` (401/403), `NotFoundError` (404), `ConflictError` (409), `ServerError` (5xx), `NetworkError` (timeout).
+
+**Build + smoke**:
+
+```bash
+cd sdk
+pnpm install && pnpm build
+API_KEY=xxx pnpm smoke    # corre 27 checks contra el dev server
+```
+
+Docs completas: [`docs/sdk.md`](docs/sdk.md) o `/ui/docs/sdk.html` en cualquier deploy.
 
 ---
 
