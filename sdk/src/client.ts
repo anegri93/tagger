@@ -91,7 +91,9 @@ export class TaggerClient {
     this.url = (opts.url ?? DEFAULT_URL).replace(/\/$/, '');
     this.apiKey = opts.apiKey;
     this.timeoutMs = opts.timeoutMs ?? 15_000;
-    this.fetchImpl = opts.fetch ?? fetch;
+    // En browser, fetch necesita estar bound a `window` o tira "Illegal invocation".
+    // En Node fetch global ya es bindeable.
+    this.fetchImpl = opts.fetch ?? fetch.bind(globalThis);
 
     this.movimientos = movimientosModule(this);
     this.categorias = categoriasModule(this);
