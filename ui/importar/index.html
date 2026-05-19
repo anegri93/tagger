@@ -150,14 +150,18 @@
       <h2>0. Destino</h2>
       <div class="row">
         <label
-          ><input type="radio" name="dest" value="catalogo" checked /> comercios_catalogo
-          (base)</label
+          ><input type="radio" name="dest" value="catalogo" checked /> Catálogo MCC por nombre</label
         >
         <label style="margin-left: 16px"
-          ><input type="radio" name="dest" value="movimientos" /> movimientos (test
-          categorización)</label
+          ><input type="radio" name="dest" value="movimientos" /> Movimientos (categorizar lote)</label
         >
       </div>
+      <p class="t-small t-muted" style="margin-top: 8px">
+        <strong>Catálogo</strong>: poblar tabla <code>mcc_por_nombre</code> (nombre comercial → MCC).
+        Mejora capa 2 del pipeline.<br />
+        <strong>Movimientos</strong>: importar movimientos reales y correr cascada de categorización
+        sobre cada uno. Útil para tests masivos.
+      </p>
     </div>
 
     <div class="card" style="margin: 20px">

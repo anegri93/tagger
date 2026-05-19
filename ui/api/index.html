@@ -152,6 +152,10 @@
         overflow: auto;
         max-height: 400px;
         white-space: pre-wrap;
+        resize: vertical;
+      }
+      pre.response.expanded {
+        max-height: calc(100vh - 120px);
       }
       .resp-meta {
         font-family: var(--mono);
@@ -335,12 +339,16 @@
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
             <button id="x-run" class="btn btn-primary">Ejecutar</button>
             <button id="x-copy" class="btn btn-ghost">Copiar curl</button>
+            <button id="x-expand" class="btn btn-ghost" title="Expandir respuesta">⤢</button>
             <span id="x-meta" class="resp-meta t-muted">—</span>
           </div>
           <pre class="response" id="x-resp" hidden></pre>
         `;
         document.getElementById('x-run').addEventListener('click', () => runRequest(m));
         document.getElementById('x-copy').addEventListener('click', () => copyCurl(m));
+        document.getElementById('x-expand').addEventListener('click', () => {
+          document.getElementById('x-resp').classList.toggle('expanded');
+        });
       }
 
       async function runRequest(method) {
@@ -349,10 +357,22 @@
         const opts = { method };
         if (['POST', 'PUT', 'PATCH'].includes(method)) {
           const txt = document.getElementById('x-body')?.value || '';
-          if (txt.trim()) opts.body = txt;
+          if (txt.trim()) {
+            try {
+              JSON.parse(txt);
+            } catch (e) {
+              window.toast?.error('Body JSON inválido: ' + e.message);
+              return;
+            }
+            opts.body = txt;
+          }
         }
         const resp = document.getElementById('x-resp');
         const meta = document.getElementById('x-meta');
+        const runBtn = document.getElementById('x-run');
+        const runTxt = runBtn.textContent;
+        runBtn.disabled = true;
+        runBtn.textContent = '⏳ Enviando…';
         meta.innerHTML = 'enviando…';
         resp.hidden = true;
         const t0 = performance.now();
@@ -369,18 +389,25 @@
           resp.textContent = JSON.stringify({ message: e.message, body: e.body }, null, 2);
           resp.hidden = false;
           window.toast && window.toast.error(e.userMessage || e.message);
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = runTxt;
         }
       }
 
       function copyCurl(method) {
         const url = document.getElementById('x-url').value;
         const body = document.getElementById('x-body')?.value;
-        const headers = ['-H "x-api-key: $API_KEY"'];
+        const key = window.tagger?.apiKey || '$API_KEY';
+        const headers = [`-H "x-api-key: ${key}"`];
         if (body) headers.push('-H "content-type: application/json"');
         let cmd = `curl -X ${method} ${headers.join(' ')} "${url}"`;
         if (body) cmd += ` \\\n  -d '${body.replace(/'/g, "'\\''")}'`;
         navigator.clipboard?.writeText(cmd);
-        window.toast && window.toast.info('curl copiado');
+        window.toast &&
+          window.toast.info(
+            key === '$API_KEY' ? 'curl copiado (set apiKey en topbar)' : 'curl copiado',
+          );
       }
 
       document.getElementById('search').addEventListener('input', renderTree);

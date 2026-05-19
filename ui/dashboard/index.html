@@ -169,7 +169,7 @@
       <h1 style="margin: 0 0 14px">📊 Dashboard</h1>
 
       <div class="toolbar">
-        <label>Ventana:</label>
+        <label title="Rango temporal sobre el cual calcular los KPIs">Ventana de tiempo:</label>
         <select id="ventana">
           <option value="1h">Última hora</option>
           <option value="24h" selected>Últimas 24h</option>
@@ -219,10 +219,24 @@
           Candidatos a promover a regla global (capa 1) para que todos los usuarios se beneficien.
         </div>
         <div class="toolbar">
-          <label>Mín usuarios:</label>
-          <input id="sug-min-usr" type="number" value="3" min="2" style="max-width: 80px" />
-          <label>Mín correcciones:</label>
-          <input id="sug-min-tot" type="number" value="5" min="1" style="max-width: 80px" />
+          <label title="Cantidad mínima de usuarios DISTINTOS que corrigieron el mismo comercio a la misma categoría">Mín usuarios:</label>
+          <input
+            id="sug-min-usr"
+            type="number"
+            value="3"
+            min="2"
+            style="max-width: 80px"
+            title="Cantidad mínima de usuarios distintos"
+          />
+          <label title="Total de correcciones agregadas (suma sobre todos los usuarios)">Mín correcciones:</label>
+          <input
+            id="sug-min-tot"
+            type="number"
+            value="5"
+            min="1"
+            style="max-width: 80px"
+            title="Total de correcciones sumadas"
+          />
           <button id="btn-sug-refresh" class="btn btn-primary">🔍 Buscar</button>
         </div>
         <div id="sug-result" style="margin-top: 14px">

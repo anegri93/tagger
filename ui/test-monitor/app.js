@@ -1,6 +1,41 @@
 const $ = (id) => document.getElementById(id);
 const LS = 'tagger-test-monitor-v3';
 
+let lastMismatches = [];
+
+function renderMismatches() {
+  const q = ($('mm-q')?.value || '').toLowerCase();
+  const sortKey = $('mm-sort')?.value || '';
+  let rows = lastMismatches.slice();
+  if (q) {
+    rows = rows.filter((m) =>
+      [m.nombre_bancard, m.runtime_categoria, m.catalogo_categoria, m.runtime_fuente, m.catalogo_fuente]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }
+  if (sortKey) {
+    rows.sort((a, b) => String(a[sortKey] ?? '').localeCompare(String(b[sortKey] ?? '')));
+  }
+  const mtbody = $('mismatches').querySelector('tbody');
+  mtbody.innerHTML = rows
+    .map(
+      (m) => `<tr>
+      <td>${esc(m.nombre_bancard)}</td>
+      <td>${esc(m.bancard_id)}</td>
+      <td>${esc(m.codigo_comercio)}</td>
+      <td><span class="tag tag-${m.runtime_fuente ?? 'NULL'}">${esc(m.runtime_fuente)}</span></td>
+      <td>${esc(m.runtime_categoria)}</td>
+      <td><span class="tag tag-${m.catalogo_fuente ?? 'NULL'}">${esc(m.catalogo_fuente)}</span></td>
+      <td>${esc(m.catalogo_categoria)}</td>
+    </tr>`,
+    )
+    .join('');
+  if ($('mm-info')) {
+    $('mm-info').textContent = `${rows.length} de ${lastMismatches.length}`;
+  }
+}
+
 const state = {
   batchId: '',
   limit: '',
@@ -207,20 +242,8 @@ function render(stats) {
     .map((r) => `<tr><td>${esc(r.slug)}</td><td>${esc(r.nombre)}</td><td>${r.count}</td></tr>`)
     .join('');
 
-  const mtbody = $('mismatches').querySelector('tbody');
-  mtbody.innerHTML = stats.mismatches_recientes
-    .map(
-      (m) => `<tr>
-      <td>${esc(m.nombre_bancard)}</td>
-      <td>${esc(m.bancard_id)}</td>
-      <td>${esc(m.codigo_comercio)}</td>
-      <td><span class="tag tag-${m.runtime_fuente ?? 'NULL'}">${esc(m.runtime_fuente)}</span></td>
-      <td>${esc(m.runtime_categoria)}</td>
-      <td><span class="tag tag-${m.catalogo_fuente ?? 'NULL'}">${esc(m.catalogo_fuente)}</span></td>
-      <td>${esc(m.catalogo_categoria)}</td>
-    </tr>`,
-    )
-    .join('');
+  lastMismatches = stats.mismatches_recientes || [];
+  renderMismatches();
 
   const rtbody = $('recientes').querySelector('tbody');
   rtbody.innerHTML = stats.recientes
@@ -283,5 +306,7 @@ $('btn-run').addEventListener('click', startRun);
 $('btn-stop').addEventListener('click', stopRun);
 $('btn-monitor').addEventListener('click', monitorOnly);
 $('btn-pause').addEventListener('click', togglePause);
+$('mm-q')?.addEventListener('input', renderMismatches);
+$('mm-sort')?.addEventListener('change', renderMismatches);
 
 loadCfg();

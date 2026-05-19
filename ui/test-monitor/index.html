@@ -124,6 +124,17 @@
 
       <div class="panel wide">
         <h2>Mismatches recientes (runtime ≠ catálogo)</h2>
+        <div class="row" style="margin-bottom: 8px; gap: 8px">
+          <input id="mm-q" placeholder="Filtrar (nombre, cat, fuente)…" style="flex: 1" />
+          <select id="mm-sort">
+            <option value="">Sin orden</option>
+            <option value="nombre">Nombre A→Z</option>
+            <option value="runtime_fuente">Por fuente runtime</option>
+            <option value="runtime_categoria">Por cat runtime</option>
+            <option value="catalogo_categoria">Por cat catálogo</option>
+          </select>
+          <span id="mm-info" class="t-small t-muted"></span>
+        </div>
         <table class="tbl" id="mismatches">
           <thead>
             <tr>

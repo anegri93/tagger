@@ -152,6 +152,10 @@
         <label>Código MCC<input id="mcc-asignar-cod" /></label>
         <button id="mcc-asignar-btn">Asignar</button>
       </div>
+      <div class="form-row" style="margin-bottom: 8px">
+        <input id="mcc-disp-q" placeholder="Filtrar disponibles (código o descripción)…" style="flex: 1" />
+        <span id="mcc-disp-info" class="t-small t-muted"></span>
+      </div>
       <table class="tbl" id="mcc-disponibles-tbl">
         <thead>
           <tr>
@@ -162,6 +166,9 @@
         </thead>
         <tbody></tbody>
       </table>
+      <div class="form-row" style="justify-content: center; margin-top: 8px">
+        <button id="mcc-disp-more" class="action-btn" style="display: none">Cargar más</button>
+      </div>
     </div>
 
     <div class="tab-content" data-tab="marcas">
@@ -224,54 +231,15 @@
     </div>
 
     <div class="tab-content" data-tab="patrones">
-      <h2>Patrones</h2>
-      <div class="form-row">
-        <button id="p-sugerir" type="button">🪄 Sugerir patrones</button>
-        <span id="p-sugerir-status" class="t-small t-muted"></span>
-      </div>
-      <div
-        id="p-sugerir-panel"
-        style="
-          display: none;
-          border: 1px solid #30363d;
-          padding: 12px;
-          border-radius: 6px;
-          margin-bottom: 12px;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-          "
-        >
-          <strong>Sugerencias auto</strong>
-          <span>
-            <button id="p-sug-aplicar" class="action-btn">Aplicar seleccionados</button>
-            <button id="p-sug-cerrar" class="action-btn">Cerrar</button>
-          </span>
-        </div>
-        <table class="tbl" id="p-sug-tbl">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="p-sug-all" /></th>
-              <th>Token</th>
-              <th>Tipo</th>
-              <th>Valor</th>
-              <th>Freq</th>
-              <th>Pureza</th>
-              <th>Impacto sin-cat</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2>Patrones (reglas globales)</h2>
+      <p class="t-small t-muted" style="margin-bottom: 12px">
+        Reglas que aplican a todos los usuarios (capa 1 del pipeline). Para sugerencias
+        cross-user, mirá el <a href="/ui/dashboard/index.html">Dashboard</a>.
+      </p>
       <div class="form-row">
         <label
           >Tipo
-          <select id="p-tipo">
+          <select id="p-tipo" title="contiene: substring · literal: igual exacto · prefijo: comienza con · regex: expresión regular">
             <option value="contiene">contiene</option>
             <option value="literal">literal</option>
             <option value="prefijo">prefijo</option>
@@ -283,13 +251,6 @@
         <label>Descripción<input id="p-desc" /></label>
         <button id="p-add">+ Agregar</button>
       </div>
-      <div class="form-row">
-        <label
-          >Probar tipo+valor vs texto<input id="p-test-texto" placeholder="CIAL.VIRGEN DEL ROSA"
-        /></label>
-        <button id="p-test-btn">Probar</button>
-      </div>
-      <div id="p-test-result" class="test-result" style="display: none"></div>
       <table class="tbl" id="patrones-tbl">
         <thead>
           <tr>

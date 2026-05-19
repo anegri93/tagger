@@ -94,6 +94,32 @@ $('#btn-delete-cat').addEventListener('click', async () => {
 });
 
 // MCC
+const mccDispState = { all: [], shown: 50, q: '' };
+
+function renderMccDisponibles() {
+  const q = mccDispState.q.toLowerCase();
+  const filtrados = q
+    ? mccDispState.all.filter(
+        (m) =>
+          String(m.codMcc).toLowerCase().includes(q) ||
+          String(m.descripcion ?? '').toLowerCase().includes(q),
+      )
+    : mccDispState.all;
+  const shown = Math.min(mccDispState.shown, filtrados.length);
+  $('#mcc-disponibles-tbl tbody').innerHTML = filtrados
+    .slice(0, shown)
+    .map(
+      (m) => `<tr>
+          <td><code>${esc(m.codMcc)}</code></td>
+          <td>${esc(m.descripcion)}</td>
+          <td><button class="action-btn" data-act="assign" data-cod="${m.codMcc}">Asignar</button></td>
+        </tr>`,
+    )
+    .join('');
+  $('#mcc-disp-info').textContent = `${shown} de ${filtrados.length}`;
+  $('#mcc-disp-more').style.display = shown < filtrados.length ? '' : 'none';
+}
+
 async function loadMcc() {
   try {
     const [asignados, sin] = await Promise.all([
@@ -109,20 +135,23 @@ async function loadMcc() {
         </tr>`,
       )
       .join('');
-    $('#mcc-disponibles-tbl tbody').innerHTML = sin.items
-      .slice(0, 50)
-      .map(
-        (m) => `<tr>
-          <td><code>${esc(m.codMcc)}</code></td>
-          <td>${esc(m.descripcion)}</td>
-          <td><button class="action-btn" data-act="assign" data-cod="${m.codMcc}">Asignar</button></td>
-        </tr>`,
-      )
-      .join('');
+    mccDispState.all = sin.items;
+    mccDispState.shown = 50;
+    renderMccDisponibles();
   } catch (e) {
     setStatus(`error mcc: ${e.message}`, 'error');
   }
 }
+
+$('#mcc-disp-q').addEventListener('input', (e) => {
+  mccDispState.q = e.target.value.trim();
+  mccDispState.shown = 50;
+  renderMccDisponibles();
+});
+$('#mcc-disp-more').addEventListener('click', () => {
+  mccDispState.shown += 50;
+  renderMccDisponibles();
+});
 
 $('#mcc-asignar-btn').addEventListener('click', async () => {
   const cod = $('#mcc-asignar-cod').value.trim();
@@ -236,7 +265,7 @@ async function loadComercios() {
     comerciosState.total = r.total;
     const tbody = $('#comercios-tbl tbody');
     const opts = comerciosState.allCats
-      .map((c) => `<option value="${c.slug}">${esc(c.slug)}</option>`)
+      .map((c) => `<option value="${c.slug}">${esc(c.nombre)} (${esc(c.slug)})</option>`)
       .join('');
     tbody.innerHTML = r.items
       .map(
@@ -398,20 +427,5 @@ $('#patrones-tbl').addEventListener('click', async (e) => {
     window.toast?.error(err.message);
   }
 });
-
-// Sugerencias por categoría: feature removida en simplificación.
-// Las sugerencias ahora viven en /ui/dashboard/ (globales cross-user).
-const sugBtn = document.getElementById('p-sugerir');
-if (sugBtn) {
-  sugBtn.style.display = 'none';
-}
-const sugPanel = document.getElementById('p-sugerir-panel');
-if (sugPanel) sugPanel.style.display = 'none';
-
-// Test patrón inline: feature removida.
-const testBtn = document.getElementById('p-test-btn');
-if (testBtn) testBtn.style.display = 'none';
-const testInput = document.getElementById('p-test-texto');
-if (testInput) testInput.style.display = 'none';
 
 loadInfo();
