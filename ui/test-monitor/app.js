@@ -217,13 +217,13 @@ function render(stats) {
   $('kpi-agreement').textContent = stats.agreement.pct.toFixed(2);
   const modoLabel =
     {
-      cascada_pura: '🧪 cascada pura (bypass)',
-      con_catalogo: '⚠️ con catálogo (tautológico)',
-      mixto: '🌀 mixto',
+      cascada_pura: '✓ medición honesta (bypass activo)',
+      con_catalogo: '⚠️ métrica circular: catálogo usado en pipeline. Activá bypass para medir honesto.',
+      mixto: '🌀 mixto (parte con bypass, parte sin)',
       sin_datos: '—',
     }[stats.modo] || '—';
   $('kpi-agreement-detail').textContent =
-    `${modoLabel} • match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin_cat ${stats.agreement.sin_catalogo}`;
+    `${modoLabel} • match ${stats.agreement.match} • mismatch ${stats.agreement.mismatch} • sin catálogo ${stats.agreement.sin_catalogo}`;
 
   const l = stats.latencia;
   $('lat-min').textContent = l.min ?? '—';

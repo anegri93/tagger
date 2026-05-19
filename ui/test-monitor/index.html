@@ -34,10 +34,10 @@
         </label>
         <label
           class="cb"
-          title="Skip capa catálogo. Cascada pura (regex+nombre+mcc+ia). Agreement honesto."
+          title="Salta consulta a mcc_por_nombre. Pipeline usa solo reglas + MCC directo + IA. Necesario para que la métrica 'Coincidencia con catálogo' sea honesta (no circular)."
         >
           <input id="bypass-cat" type="checkbox" />
-          <span class="t-small">bypass</span>
+          <span class="t-small">bypass catálogo</span>
         </label>
         <button id="btn-run" class="btn">▶ Run</button>
         <button id="btn-stop" class="btn btn-danger">■ Stop</button>
@@ -77,8 +77,8 @@
         <div class="kpi-value"><span id="kpi-cobertura">—</span><small>%</small></div>
         <div class="kpi-sub"><span id="kpi-cobertura-detail">—</span></div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">Agreement vs catálogo</div>
+      <div class="kpi" title="% de movs donde la predicción del pipeline coincide con la categoría que tiene el catálogo mcc_por_nombre para ese nombre. Para métrica honesta correr con bypass_catalogo activo.">
+        <div class="kpi-label">Coincidencia con catálogo</div>
         <div class="kpi-value"><span id="kpi-agreement">—</span><small>%</small></div>
         <div class="kpi-sub"><span id="kpi-agreement-detail">—</span></div>
       </div>
