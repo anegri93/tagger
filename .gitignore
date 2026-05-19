@@ -13,6 +13,7 @@ coverage
 data/*
 !data/mcc-mapping.json
 !data/seed.sql
+!data/reorg-plan.example.json
 .codegraph
 .cursor
 .claude/scheduled_tasks.lock

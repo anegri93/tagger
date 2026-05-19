@@ -2,9 +2,48 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Db } from '../client.js';
-import { categorias, mccCatalogo, mccPorNombre, movimientos } from '../schema/index.js';
+import {
+  categorias,
+  categoriasAlias,
+  mccCatalogo,
+  mccPorNombre,
+  movimientos,
+} from '../schema/index.js';
 import type { CategoriasReader, CategoriaPublica } from '../../api/routes/categorias.js';
 import type { CategoriasLoader, CategoriaActiva } from '../../layers/ia.js';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Resuelve un identificador (UUID, slug actual, o slug-alias antiguo) a la fila
+ * de categoría real. Devuelve null si no existe.
+ */
+export async function resolverIdentificador(
+  db: Db,
+  identificador: string,
+): Promise<{ id: string; slug: string; nombre: string } | null> {
+  if (UUID_RE.test(identificador)) {
+    const rows = await db
+      .select({ id: categorias.id, slug: categorias.slug, nombre: categorias.nombre })
+      .from(categorias)
+      .where(eq(categorias.id, identificador))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+  const directRows = await db
+    .select({ id: categorias.id, slug: categorias.slug, nombre: categorias.nombre })
+    .from(categorias)
+    .where(eq(categorias.slug, identificador))
+    .limit(1);
+  if (directRows[0]) return directRows[0];
+  const aliasRows = await db
+    .select({ id: categorias.id, slug: categorias.slug, nombre: categorias.nombre })
+    .from(categoriasAlias)
+    .innerJoin(categorias, eq(categorias.id, categoriasAlias.categoriaId))
+    .where(eq(categoriasAlias.slugAntiguo, identificador))
+    .limit(1);
+  return aliasRows[0] ?? null;
+}
 
 const ROOT = resolve(import.meta.dirname, '..', '..', '..');
 const EXTRAS_PATH = resolve(ROOT, 'data/categorias-extras.tsv');
@@ -15,12 +54,15 @@ export interface CategoriaWriter {
     nombre: string;
     descripcion?: string | null | undefined;
   }): Promise<{ id: string; slug: string; nombre: string; descripcion: string | null }>;
+  /** identificador: slug actual, alias antiguo, o UUID */
   actualizar(
-    slug: string,
+    identificador: string,
     input: { nombre?: string | undefined; descripcion?: string | null | undefined },
   ): Promise<{ id: string; slug: string; nombre: string; descripcion: string | null } | null>;
-  eliminar(slug: string): Promise<boolean>;
-  usage(slug: string): Promise<{
+  /** identificador: slug actual, alias antiguo, o UUID */
+  eliminar(identificador: string): Promise<boolean>;
+  /** identificador: slug actual, alias antiguo, o UUID */
+  usage(identificador: string): Promise<{
     movimientos: number;
     mcc: number;
     comercios: number;
@@ -63,14 +105,16 @@ export function crearCategoriaWriter(db: Db, resolver?: { invalidar(): void }): 
       resolver?.invalidar();
       return { id: r.id, slug: r.slug, nombre: r.nombre, descripcion: r.descripcion };
     },
-    async actualizar(slug, input) {
+    async actualizar(identificador, input) {
+      const target = await resolverIdentificador(db, identificador);
+      if (!target) return null;
       const set: Record<string, unknown> = { updatedAt: new Date() };
       if (input.nombre !== undefined) set.nombre = input.nombre;
       if (input.descripcion !== undefined) set.descripcion = input.descripcion;
       const rows = await db
         .update(categorias)
         .set(set)
-        .where(eq(categorias.slug, slug))
+        .where(eq(categorias.id, target.id))
         .returning();
       const r = rows[0];
       if (!r) return null;
@@ -78,21 +122,19 @@ export function crearCategoriaWriter(db: Db, resolver?: { invalidar(): void }): 
       resolver?.invalidar();
       return { id: r.id, slug: r.slug, nombre: r.nombre, descripcion: r.descripcion };
     },
-    async eliminar(slug) {
-      const rows = await db.delete(categorias).where(eq(categorias.slug, slug)).returning();
+    async eliminar(identificador) {
+      const target = await resolverIdentificador(db, identificador);
+      if (!target) return false;
+      const rows = await db.delete(categorias).where(eq(categorias.id, target.id)).returning();
       if (rows.length === 0) return false;
-      removeExtra(slug);
+      removeExtra(target.slug);
       resolver?.invalidar();
       return true;
     },
-    async usage(slug) {
-      const cat = await db
-        .select({ id: categorias.id })
-        .from(categorias)
-        .where(eq(categorias.slug, slug))
-        .limit(1);
-      if (cat.length === 0) return null;
-      const id = cat[0]!.id;
+    async usage(identificador) {
+      const target = await resolverIdentificador(db, identificador);
+      if (!target) return null;
+      const id = target.id;
       const [m, c, mc] = await Promise.all([
         db
           .select({ c: sql<number>`count(*)::int` })

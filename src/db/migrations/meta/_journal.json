@@ -141,6 +141,13 @@
       "when": 1779400000000,
       "tag": "0019_drop_tablas_viejas",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1779500000000,
+      "tag": "0020_categorias_alias_reemplazo",
+      "breakpoints": true
     }
   ]
 }

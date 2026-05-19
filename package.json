@@ -22,7 +22,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed:dump": "tsx scripts/dump-seed.ts"
+    "db:seed:dump": "tsx scripts/dump-seed.ts",
+    "categorias:report": "tsx scripts/categorias-report.ts",
+    "categorias:reorg": "tsx scripts/categorias-reorg.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

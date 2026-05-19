@@ -1,0 +1,33 @@
+{
+  "_doc": "Plan ejemplo de reorganización. Copiar a data/reorg-plan.json y editar.",
+  "_uso": "pnpm categorias:reorg --plan=data/reorg-plan.json (dry-run) o + --apply",
+  "_identificador": "Cualquier campo identificador acepta: slug actual, alias antiguo, o UUID",
+
+  "renombrar": [
+    {
+      "identificador": "cafeteria",
+      "nuevo_nombre": "Cafetería y panadería",
+      "motivo": "ampliar scope"
+    },
+    {
+      "identificador": "otros",
+      "nuevo_slug": "otros_general",
+      "nuevo_nombre": "Otros (genérico)",
+      "motivo": "clarificar que es catch-all"
+    }
+  ],
+
+  "fusionar": [
+    {
+      "origen": ["mascotas"],
+      "destino": "otros",
+      "motivo": "1 sola entrada, no justifica categoría propia"
+    }
+  ],
+
+  "borrar": [
+    { "identificador": "religioso", "motivo": "sin uso" },
+    { "identificador": "funeraria", "motivo": "sin uso" },
+    { "identificador": "agro", "motivo": "sin uso" }
+  ]
+}
