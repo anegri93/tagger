@@ -31,7 +31,6 @@ import { crearIaFallback } from './pipeline/ia-fallback.js';
 import { crearPatronesLoader, crearPatronWriter } from './db/repos/patrones.js';
 import { crearCapaPatrones } from './layers/patrones.js';
 import { patronesRoute } from './api/routes/patrones.js';
-import { tokensSinCategoriaRoute } from './api/routes/tokens-sin-categoria.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearCatalogoLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
@@ -147,7 +146,6 @@ async function main() {
   await app.register(patronesRoute(patronWriter));
   await app.register(importarCatalogoRoute(db, capas));
   await app.register(importarMovimientosRoute(capas, movRepo));
-  await app.register(tokensSinCategoriaRoute(db));
   const mccWriter = crearMccWriter(db);
   await app.register(mccRoute(mccWriter));
   const marcaWriter = crearMarcaWriter(db, marcasReader);

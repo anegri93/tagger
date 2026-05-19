@@ -1,5 +1,5 @@
 export * from './categorias.js';
-export * from './comercios_catalogo.js';
+export * from './mcc_por_nombre.js';
 export * from './mcc_catalogo.js';
 export * from './movimientos.js';
 export * from './correcciones_usuario.js';

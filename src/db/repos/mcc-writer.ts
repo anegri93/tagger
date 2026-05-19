@@ -2,7 +2,7 @@ import { eq, sql, isNull } from 'drizzle-orm';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Db } from '../client.js';
-import { mccCatalogo, categorias, comerciosCatalogo } from '../schema/index.js';
+import { mccCatalogo, categorias, mccPorNombre } from '../schema/index.js';
 
 const ROOT = resolve(import.meta.dirname, '..', '..', '..');
 const EXTRAS_PATH = resolve(ROOT, 'data/mcc-extras.tsv');
@@ -178,8 +178,8 @@ export function crearMccWriter(db: Db, invalidar?: () => void): MccWriter {
     async eliminar(codMcc) {
       const refs = await db
         .select({ c: sql<number>`count(*)::int` })
-        .from(comerciosCatalogo)
-        .where(eq(comerciosCatalogo.mcc, codMcc));
+        .from(mccPorNombre)
+        .where(eq(mccPorNombre.mcc, codMcc));
       const n = Number(refs[0]?.c ?? 0);
       if (n > 0) return { tieneRefs: true, comercios: n };
       const del = await db.delete(mccCatalogo).where(eq(mccCatalogo.codMcc, codMcc)).returning();

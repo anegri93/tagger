@@ -120,6 +120,13 @@
       "when": 1779100000000,
       "tag": "0016_comercios_nombre_uniq",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1779200000000,
+      "tag": "0017_mcc_por_nombre",
+      "breakpoints": true
     }
   ]
 }

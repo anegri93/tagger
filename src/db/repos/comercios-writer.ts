@@ -1,19 +1,13 @@
 import { eq, sql, and, ilike } from 'drizzle-orm';
 import type { Db } from '../client.js';
-import { comerciosCatalogo, categorias } from '../schema/index.js';
+import { mccPorNombre, categorias } from '../schema/index.js';
 
 export interface ComercioPublico {
   id: string;
   nombre: string;
-  bancardId: string | null;
-  codigoComercio: string | null;
-  mcc: string | null;
-  fuenteCategoria: string | null;
-  confianza: string | null;
+  mcc: string;
   requiereRevision: boolean;
-  marca: string | null;
-  mccInferido: boolean;
-  categoriaSlug: string | null;
+  categoriaSlug: string;
 }
 
 export interface ComerciosWriter {
@@ -33,45 +27,38 @@ export interface ComerciosWriter {
 export function crearComerciosWriter(db: Db, invalidar?: () => void): ComerciosWriter {
   return {
     async listar(filter) {
-      const conds = [] as Array<ReturnType<typeof eq>>;
+      const conds: ReturnType<typeof eq>[] = [];
       if (filter.categoriaSlug) conds.push(eq(categorias.slug, filter.categoriaSlug));
-      if (filter.q) conds.push(ilike(comerciosCatalogo.nombre, `%${filter.q}%`) as never);
+      if (filter.q) conds.push(ilike(mccPorNombre.nombre, `%${filter.q}%`) as never);
       if (filter.requiereRevision !== undefined)
-        conds.push(eq(comerciosCatalogo.requiereRevision, filter.requiereRevision) as never);
+        conds.push(eq(mccPorNombre.requiereRevision, filter.requiereRevision) as never);
       const whereClause = conds.length > 0 ? (and(...conds) as never) : undefined;
 
       const baseSel = db
         .select({
-          id: comerciosCatalogo.id,
-          nombre: comerciosCatalogo.nombre,
-          bancardId: comerciosCatalogo.bancardId,
-          codigoComercio: comerciosCatalogo.codigoComercio,
-          mcc: comerciosCatalogo.mcc,
-          fuenteCategoria: comerciosCatalogo.fuenteCategoria,
-          confianza: comerciosCatalogo.confianza,
-          requiereRevision: comerciosCatalogo.requiereRevision,
-          marca: comerciosCatalogo.marca,
-          mccInferido: comerciosCatalogo.mccInferido,
+          id: mccPorNombre.id,
+          nombre: mccPorNombre.nombre,
+          mcc: mccPorNombre.mcc,
+          requiereRevision: mccPorNombre.requiereRevision,
           categoriaSlug: categorias.slug,
         })
-        .from(comerciosCatalogo)
-        .innerJoin(categorias, eq(comerciosCatalogo.categoriaId, categorias.id));
+        .from(mccPorNombre)
+        .innerJoin(categorias, eq(mccPorNombre.categoriaId, categorias.id));
       const sel = whereClause ? baseSel.where(whereClause) : baseSel;
-      const items = await sel
-        .orderBy(comerciosCatalogo.nombre)
-        .limit(filter.limit)
-        .offset(filter.offset);
+      const items = await sel.orderBy(mccPorNombre.nombre).limit(filter.limit).offset(filter.offset);
 
-      const baseCount = db
+      const baseCnt = db
         .select({ c: sql<number>`count(*)::int` })
-        .from(comerciosCatalogo)
-        .innerJoin(categorias, eq(comerciosCatalogo.categoriaId, categorias.id));
-      const countQ = whereClause ? baseCount.where(whereClause) : baseCount;
-      const cRow = await countQ;
-      return { items, total: Number(cRow[0]?.c ?? 0) };
+        .from(mccPorNombre)
+        .innerJoin(categorias, eq(mccPorNombre.categoriaId, categorias.id));
+      const cntRows = whereClause ? await baseCnt.where(whereClause) : await baseCnt;
+      const total = Number(cntRows[0]?.c ?? 0);
+
+      return { items, total };
     },
     async actualizar(id, input) {
       const set: Record<string, unknown> = { updatedAt: new Date() };
+      if (input.requiereRevision !== undefined) set.requiereRevision = input.requiereRevision;
       if (input.categoriaSlug !== undefined) {
         const cat = await db
           .select({ id: categorias.id })
@@ -80,14 +67,11 @@ export function crearComerciosWriter(db: Db, invalidar?: () => void): ComerciosW
           .limit(1);
         if (cat.length === 0) throw new Error('categoria_inexistente');
         set.categoriaId = cat[0]!.id;
-        set.fuenteCategoria = 'manual';
-        set.confianza = '1.00';
       }
-      if (input.requiereRevision !== undefined) set.requiereRevision = input.requiereRevision;
       const upd = await db
-        .update(comerciosCatalogo)
+        .update(mccPorNombre)
         .set(set)
-        .where(eq(comerciosCatalogo.id, id))
+        .where(eq(mccPorNombre.id, id))
         .returning();
       const r = upd[0];
       if (!r) return null;
@@ -100,15 +84,9 @@ export function crearComerciosWriter(db: Db, invalidar?: () => void): ComerciosW
       return {
         id: r.id,
         nombre: r.nombre,
-        bancardId: r.bancardId,
-        codigoComercio: r.codigoComercio,
         mcc: r.mcc,
-        fuenteCategoria: r.fuenteCategoria,
-        confianza: r.confianza,
         requiereRevision: r.requiereRevision,
-        marca: r.marca,
-        mccInferido: r.mccInferido,
-        categoriaSlug: slugRow[0]?.slug ?? null,
+        categoriaSlug: slugRow[0]?.slug ?? '',
       };
     },
   };
