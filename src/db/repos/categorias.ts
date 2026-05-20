@@ -250,6 +250,68 @@ export function crearCategoriasReader(db: Db): CategoriasReader {
   };
 }
 
+export interface CategoriaSimilar {
+  id: string;
+  slug: string;
+  nombre: string;
+  descripcion: string | null;
+  similitud: number;
+}
+
+export interface CategoriasSimilaresReader {
+  /**
+   * Devuelve categorías ordenadas por similitud trigram desc, excluyendo `excluirId`.
+   * Si `q` está presente, busca contra ese texto; si no, contra la categoría
+   * referenciada por `excluirId` (slug + nombre + descripcion).
+   * `umbral` filtra resultados con similarity < umbral (default 0).
+   */
+  buscar(opts: {
+    excluirId: string;
+    q?: string | undefined;
+    limit: number;
+    offset: number;
+    umbral?: number | undefined;
+  }): Promise<CategoriaSimilar[]>;
+}
+
+export function crearCategoriasSimilaresReader(db: Db): CategoriasSimilaresReader {
+  return {
+    async buscar({ excluirId, q, limit, offset, umbral = 0 }) {
+      // Texto de referencia: q explícito, o concat de la categoría origen.
+      const refExpr = q
+        ? sql<string>`${q}`
+        : sql<string>`(SELECT coalesce(${categorias.slug},'') || ' ' || coalesce(${categorias.nombre},'') || ' ' || coalesce(${categorias.descripcion},'') FROM ${categorias} WHERE ${categorias.id} = ${excluirId})`;
+
+      const candidatoTxt = sql<string>`(coalesce(${categorias.slug},'') || ' ' || coalesce(${categorias.nombre},'') || ' ' || coalesce(${categorias.descripcion},''))`;
+      const simExpr = sql<number>`similarity(${candidatoTxt}, ${refExpr})`;
+
+      const rows = await db
+        .select({
+          id: categorias.id,
+          slug: categorias.slug,
+          nombre: categorias.nombre,
+          descripcion: categorias.descripcion,
+          similitud: simExpr,
+        })
+        .from(categorias)
+        .where(
+          sql`${categorias.activo} = true AND ${categorias.id} <> ${excluirId} AND similarity(${candidatoTxt}, ${refExpr}) >= ${umbral}`,
+        )
+        .orderBy(sql`similarity(${candidatoTxt}, ${refExpr}) DESC, ${categorias.slug} ASC`)
+        .limit(limit)
+        .offset(offset);
+
+      return rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        nombre: r.nombre,
+        descripcion: r.descripcion,
+        similitud: Number(r.similitud ?? 0),
+      }));
+    },
+  };
+}
+
 export function crearCategoriasLoader(db: Db): CategoriasLoader {
   return {
     async activas(): Promise<CategoriaActiva[]> {

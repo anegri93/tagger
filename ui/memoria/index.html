@@ -147,6 +147,52 @@
         flex-wrap: wrap;
         margin-top: 12px;
       }
+      .sim-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+      .sim-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      .sim-chip:hover {
+        border-color: var(--accent);
+      }
+      .sim-chip.selected {
+        background: rgba(46, 160, 67, 0.18);
+        border-color: var(--success);
+        color: var(--success);
+        font-weight: 600;
+      }
+      .sim-chip .sim-score {
+        font-size: 10px;
+        color: var(--text-3);
+        background: var(--bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .sim-chip.selected .sim-score {
+        color: var(--success);
+      }
+      .sim-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .sim-actions .btn {
+        font-size: 12px;
+        padding: 5px 10px;
+      }
       .corregir .field {
         flex: 1;
         min-width: 200px;
@@ -402,13 +448,35 @@
             <div class="why" id="hero-why">—</div>
           </div>
         </div>
-        <div class="corregir" id="corregir-row">
-          <div class="field">
-            <label>¿No es correcto? Elegí la categoría correcta:</label>
-            <select id="c-categoria"></select>
+        <div id="corregir-row" style="margin-top: 14px">
+          <div style="font-size: 12px; color: var(--text-3); margin-bottom: 6px">
+            ¿No es correcto? Elegí una alternativa similar:
           </div>
-          <div>
-            <button id="btn-corregir" class="btn btn-primary">Guardar corrección</button>
+          <div id="similares-chips" class="sim-chips">
+            <div class="empty" style="margin: 0">Sin categoría origen — usá buscar o lista completa.</div>
+          </div>
+          <div class="sim-actions">
+            <button id="btn-sim-mas" class="btn btn-ghost" type="button" hidden>Ver más</button>
+            <button id="btn-sim-toggle-buscar" class="btn btn-ghost" type="button">Buscar otra…</button>
+            <button id="btn-sim-toggle-todas" class="btn btn-ghost" type="button">Ver lista completa</button>
+          </div>
+          <div id="sim-buscar-row" class="row" hidden style="margin-top: 8px">
+            <div class="field" style="flex: 2">
+              <input id="sim-buscar" type="text" placeholder="Buscar por nombre… (ej: super, farmacia)" />
+            </div>
+            <div>
+              <button id="btn-sim-buscar" class="btn btn-ghost" type="button">Buscar</button>
+            </div>
+          </div>
+          <div class="corregir" id="sim-todas-row" hidden style="margin-top: 8px">
+            <div class="field">
+              <label>Toda la lista</label>
+              <select id="c-categoria"></select>
+            </div>
+          </div>
+          <div style="margin-top: 12px">
+            <button id="btn-corregir" class="btn btn-primary" disabled>Guardar corrección</button>
+            <span id="sim-elegida" style="font-size: 12px; color: var(--text-3); margin-left: 8px"></span>
           </div>
         </div>
         <details class="tech">
@@ -477,6 +545,17 @@
       let lastOrigen = null;
       let categoriasCache = null;
       let historial = loadHistorial();
+      // Estado del selector de similares
+      const SIM_UMBRAL_DEFAULT = 0.05;
+      let simState = {
+        offset: 0,
+        limit: 5,
+        q: null,
+        umbral: SIM_UMBRAL_DEFAULT,
+        cargados: [], // items acumulados
+        elegidaId: null,
+        elegidaNombre: null,
+      };
 
       // ===== toast =====
       function toast(msg, type = 'info') {
@@ -667,9 +746,126 @@
         if (cat?.id && $('c-categoria').options.length) {
           $('c-categoria').value = cat.id;
         }
+        // Reset + cargar similares
+        resetSimilares();
+        cargarSimilares({ reset: true });
         // Scroll suave
         $('card-resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+
+      // ===== similares =====
+      function resetSimilares() {
+        simState = { offset: 0, limit: 5, q: null, umbral: SIM_UMBRAL_DEFAULT, cargados: [], elegidaId: null, elegidaNombre: null };
+        $('sim-elegida').textContent = '';
+        $('btn-corregir').disabled = true;
+        $('btn-sim-mas').hidden = true;
+        $('sim-buscar-row').hidden = true;
+        $('sim-todas-row').hidden = true;
+        $('similares-chips').innerHTML = '<div class="empty" style="margin:0">Buscando categorías similares…</div>';
+      }
+
+      async function cargarSimilares({ reset = false } = {}) {
+        if (!lastMovimientoId) {
+          $('similares-chips').innerHTML =
+            '<div class="empty" style="margin:0">Categorizá un movimiento primero.</div>';
+          return;
+        }
+        if (reset) {
+          simState.offset = 0;
+          simState.cargados = [];
+        }
+        const params = new URLSearchParams({
+          limit: String(simState.limit),
+          offset: String(simState.offset),
+          umbral: String(simState.umbral),
+        });
+        if (simState.q) params.set('q', simState.q);
+        try {
+          const r = await window.taggerApi(
+            `/movimientos/${lastMovimientoId}/categorias-sugeridas?` + params.toString(),
+          );
+          const items = r.items || [];
+          simState.cargados = simState.cargados.concat(items);
+          // si pagina llena → puede haber más
+          $('btn-sim-mas').hidden = items.length < simState.limit;
+          renderSimilaresChips();
+        } catch (e) {
+          $('similares-chips').innerHTML =
+            '<div class="empty" style="margin:0">No pude cargar similares.</div>';
+        }
+      }
+
+      function renderSimilaresChips() {
+        const cont = $('similares-chips');
+        if (!simState.cargados.length) {
+          cont.innerHTML =
+            '<div class="empty" style="margin:0">Sin similares — usá "Buscar otra" o "Ver lista completa".</div>';
+          return;
+        }
+        cont.innerHTML = simState.cargados
+          .map((c) => {
+            const sel = simState.elegidaId === c.id ? ' selected' : '';
+            const score = Number.isFinite(c.similitud)
+              ? `<span class="sim-score">${(c.similitud * 100).toFixed(0)}%</span>`
+              : '';
+            return `<button class="sim-chip${sel}" type="button" data-id="${escapeHtml(c.id)}" data-nombre="${escapeHtml(c.nombre)}" title="${escapeHtml(c.descripcion || '')}">${escapeHtml(c.nombre)} ${score}</button>`;
+          })
+          .join('');
+        cont.querySelectorAll('.sim-chip').forEach((el) =>
+          el.addEventListener('click', () => {
+            seleccionarCategoria(el.getAttribute('data-id'), el.getAttribute('data-nombre'));
+          }),
+        );
+      }
+
+      function seleccionarCategoria(id, nombre) {
+        simState.elegidaId = id;
+        simState.elegidaNombre = nombre;
+        $('btn-corregir').disabled = false;
+        $('sim-elegida').textContent = '→ ' + (nombre || id);
+        // refresca estado visual chips
+        document.querySelectorAll('.sim-chip').forEach((el) => {
+          el.classList.toggle('selected', el.getAttribute('data-id') === id);
+        });
+        // sync select completo
+        if ($('c-categoria').options.length) $('c-categoria').value = id;
+      }
+
+      $('btn-sim-mas').addEventListener('click', () => {
+        simState.offset += simState.limit;
+        cargarSimilares();
+      });
+
+      $('btn-sim-toggle-buscar').addEventListener('click', () => {
+        const row = $('sim-buscar-row');
+        row.hidden = !row.hidden;
+        if (!row.hidden) $('sim-buscar').focus();
+      });
+
+      $('btn-sim-buscar').addEventListener('click', () => {
+        const q = $('sim-buscar').value.trim();
+        simState.q = q || null;
+        cargarSimilares({ reset: true });
+      });
+      $('sim-buscar').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') $('btn-sim-buscar').click();
+      });
+
+      $('btn-sim-toggle-todas').addEventListener('click', async () => {
+        await cargarCategorias();
+        const row = $('sim-todas-row');
+        row.hidden = !row.hidden;
+        if (!row.hidden && simState.elegidaId) $('c-categoria').value = simState.elegidaId;
+      });
+
+      // cambio en select completo selecciona también
+      document.addEventListener('change', (e) => {
+        if (e.target && e.target.id === 'c-categoria') {
+          const id = e.target.value;
+          const opt = e.target.options[e.target.selectedIndex];
+          seleccionarCategoria(id, opt ? opt.textContent : id);
+        }
+      });
 
       function renderTracer(fuente) {
         // Heurística: fuente='manual' viene de reglas user-scope con origen correccion/manual.
@@ -707,7 +903,11 @@
           toast('Categorizá un movimiento primero', 'err');
           return;
         }
-        const categoria_id_nueva = $('c-categoria').value;
+        const categoria_id_nueva = simState.elegidaId || $('c-categoria').value;
+        if (!categoria_id_nueva) {
+          toast('Elegí una categoría primero', 'err');
+          return;
+        }
         const body = { categoria_id_nueva };
         if (lastOrigen) body.usuario = lastOrigen;
         try {

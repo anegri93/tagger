@@ -148,6 +148,20 @@
       "when": 1779500000000,
       "tag": "0020_categorias_alias_reemplazo",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779600000000,
+      "tag": "0021_categorias_trgm",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1779700000000,
+      "tag": "0022_categorias_descripciones_enriquecidas",
+      "breakpoints": true
     }
   ]
 }

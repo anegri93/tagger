@@ -49,7 +49,12 @@ import {
   crearCategoriasLoader,
   crearCategoriaResolver,
   crearCategoriaWriter,
+  crearCategoriasSimilaresReader,
 } from './db/repos/categorias.js';
+import {
+  categoriasSimilaresRoute,
+  movimientoCategoriasSugeridasRoute,
+} from './api/routes/categorias-similares.js';
 import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
 import { statsPipelineRoute } from './api/routes/stats-pipeline.js';
 
@@ -134,6 +139,9 @@ async function main() {
   await app.register(reglasRoute(reglasWriter));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
+  const categoriasSimilaresReader = crearCategoriasSimilaresReader(db);
+  await app.register(categoriasSimilaresRoute(db, categoriasSimilaresReader));
+  await app.register(movimientoCategoriasSugeridasRoute(movReader, categoriasSimilaresReader));
   await app.register(importarCatalogoRoute(db, capas));
   await app.register(importarMovimientosRoute(capas, movRepo));
   const mccWriter = crearMccWriter(db);
