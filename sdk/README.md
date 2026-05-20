@@ -69,6 +69,48 @@ const r2 = await tagger.movimientos.categorizar({
 | `reprocesar(id)` | POST `/movimientos/:id/reprocesar` |
 | `importar({rows, batchId?})` | POST `/movimientos/importar` |
 | `statusImport()` | GET `/movimientos/importar/status` |
+| `categoriasSugeridas(id, {q?, limit?, offset?, umbral?})` | GET `/movimientos/:id/categorias-sugeridas` |
+
+#### Sobre `descripcion` y categorización contextual
+
+El pipeline tagger concatena `nombreBancard + nombreComercio + descripcion` antes de evaluar reglas. **La descripción no es decorativa: cambia el resultado.**
+
+```ts
+// Sin descripción: cae a regex global → transferencia
+await tagger.movimientos.categorizar({
+  nombreBancard: 'MANGO - ALDO NEGRI',
+  monto: 1_000_000,
+  origen: 'user123',
+});
+// → { fuente: 'regex', categoria: { slug: 'transferencia' } }
+
+// Con descripción contextual: regla 'contiene alquiler' gana
+await tagger.movimientos.categorizar({
+  nombreBancard: 'MANGO - ALDO NEGRI',
+  descripcion: 'transferir un millón a aldo por alquiler',
+  monto: 1_000_000,
+  origen: 'user123',
+});
+// → { fuente: 'contiene', categoria: { slug: 'hogar' } }
+```
+
+Pasá siempre `descripcion` cuando tu app la tenga (concepto libre, asunto de la transferencia, dictado por voz, leyenda).
+
+#### `categoriasSugeridas` — alternativas por similitud trigram
+
+Devuelve top-K categorías similares al texto. Útil para chip "¿quisiste decir X?":
+
+```ts
+const sug = await tagger.movimientos.categoriasSugeridas(movId, {
+  q: 'transferencia de un millón a aldo por alquiler',
+  limit: 5,
+});
+// → items: [
+//     { slug: 'transferencia', similitud: 0.23 },
+//     { slug: 'inmobiliaria',  similitud: 0.12 },  // captó "alquiler"
+//     ...
+//   ]
+```
 
 ### `tagger.categorias.*`
 
@@ -79,8 +121,20 @@ const r2 = await tagger.movimientos.categorizar({
 | `actualizar(identificador, {nombre?, descripcion?})` | PATCH `/categorias/:identificador` |
 | `eliminar(identificador)` | DELETE `/categorias/:identificador` |
 | `usage(identificador)` | GET `/categorias/:identificador/usage` |
+| `similares(identificador, {q?, limit?, offset?, umbral?})` | GET `/categorias/:identificador/similares` |
 
 `identificador` acepta: slug actual, alias antiguo, o UUID.
+
+#### `similares` — categorías parecidas por trigram
+
+```ts
+const sim = await tagger.categorias.similares('hogar', { limit: 3 });
+// → items: [
+//     { slug: 'construccion', similitud: 0.20 },
+//     { slug: 'belleza',      similitud: 0.16 },
+//     { slug: 'floreria',     similitud: 0.15 },
+//   ]
+```
 
 ### `tagger.reglas.*`
 

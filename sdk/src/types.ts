@@ -42,6 +42,31 @@ export interface ActualizarCategoria {
 }
 
 // =========================================================================
+// Similitud / sugerencias contextuales (trigram sobre categorias.descripcion)
+// =========================================================================
+
+export interface CategoriaSimilar {
+  id: string;
+  slug: string;
+  nombre: string;
+  descripcion: string | null;
+  /** Similitud trigram 0–1 (cuanto más alto, mejor match). */
+  similitud: number;
+}
+
+export interface CategoriasSugeridasResult {
+  /**
+   * Para `categorias.similares()`: la categoría desde la que se busca.
+   * Para `movimientos.categoriasSugeridas()`: id de la categoría actual del mov (null si no tiene).
+   */
+  categoria_origen?: { id: string; slug: string; nombre: string } | null;
+  categoria_origen_id?: string | null;
+  limit: number;
+  offset: number;
+  items: CategoriaSimilar[];
+}
+
+// =========================================================================
 // Movimientos
 // =========================================================================
 

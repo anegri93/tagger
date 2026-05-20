@@ -390,6 +390,10 @@ const r = await tagger.movimientos.categorizar({
 
 Estructura modular: `tagger.movimientos`, `tagger.categorias`, `tagger.reglas`, `tagger.mcc`, `tagger.marcas`, `tagger.comercios`, `tagger.catalogo`, `tagger.testBatch`, `tagger.stats`, `tagger.health()`.
 
+**Tip clave**: pasar `descripcion` con el contexto del gasto (concepto libre, asunto de la transferencia, dictado por voz) cambia drásticamente la categorización. El pipeline concatena `nombreBancard + nombreComercio + descripcion` antes de evaluar reglas, por lo que palabras como "alquiler", "taxi", "remedio" pueden ganar sobre regex de plataforma (`^MANGO\b`).
+
+**Sugerencias contextuales**: `tagger.movimientos.categoriasSugeridas(id, {q})` y `tagger.categorias.similares(id, {q?})` devuelven top-K categorías por similitud trigram sobre las descripciones enriquecidas — útil para mostrar "¿quisiste decir X?" o curar reglas nuevas.
+
 Errores tipados: `ValidationError` (400), `AuthError` (401/403), `NotFoundError` (404), `ConflictError` (409), `ServerError` (5xx), `NetworkError` (timeout).
 
 **Build + smoke**:

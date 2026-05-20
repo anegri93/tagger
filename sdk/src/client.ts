@@ -7,6 +7,7 @@ import type {
   BatchRun,
   BatchStats,
   Categoria,
+  CategoriasSugeridasResult,
   CategoriaUsage,
   Comercio,
   CorreccionInput,
@@ -290,6 +291,31 @@ function movimientosModule(c: TaggerClient) {
     async statusImport(): Promise<ImportStatus> {
       return c.request<ImportStatus>('/movimientos/importar/status');
     },
+
+    /**
+     * Sugiere categorías alternativas para un movimiento usando similitud trigram
+     * sobre el texto enriquecido de cada categoría (slug + nombre + descripcion).
+     *
+     * Útil para mostrar al usuario "¿quisiste decir X?" cuando categoriza un mov
+     * cuya descripción tiene contexto (ej "alquiler" en transferencia).
+     *
+     * Si pasás `q`, se usa ese texto. Si no, se infiere del nombre/descripción
+     * del movimiento.
+     */
+    async categoriasSugeridas(
+      id: string,
+      opts: { q?: string; limit?: number; offset?: number; umbral?: number } = {},
+    ): Promise<CategoriasSugeridasResult> {
+      const query: RequestOpts['query'] = {};
+      if (opts.q !== undefined) query.q = opts.q;
+      if (opts.limit !== undefined) query.limit = opts.limit;
+      if (opts.offset !== undefined) query.offset = opts.offset;
+      if (opts.umbral !== undefined) query.umbral = opts.umbral;
+      return c.request<CategoriasSugeridasResult>(
+        `/movimientos/${encodeURIComponent(id)}/categorias-sugeridas`,
+        { query },
+      );
+    },
   };
 }
 
@@ -317,6 +343,27 @@ function categoriasModule(c: TaggerClient) {
     async usage(identificador: string): Promise<CategoriaUsage> {
       return c.request<CategoriaUsage>(
         `/categorias/${encodeURIComponent(identificador)}/usage`,
+      );
+    },
+
+    /**
+     * Lista categorías similares a la dada por similitud trigram sobre
+     * (slug + nombre + descripcion). Útil para "ver categorías parecidas".
+     *
+     * Si pasás `q`, busca por ese texto en lugar del texto de la categoría.
+     */
+    async similares(
+      identificador: string,
+      opts: { q?: string; limit?: number; offset?: number; umbral?: number } = {},
+    ): Promise<CategoriasSugeridasResult> {
+      const query: RequestOpts['query'] = {};
+      if (opts.q !== undefined) query.q = opts.q;
+      if (opts.limit !== undefined) query.limit = opts.limit;
+      if (opts.offset !== undefined) query.offset = opts.offset;
+      if (opts.umbral !== undefined) query.umbral = opts.umbral;
+      return c.request<CategoriasSugeridasResult>(
+        `/categorias/${encodeURIComponent(identificador)}/similares`,
+        { query },
       );
     },
   };

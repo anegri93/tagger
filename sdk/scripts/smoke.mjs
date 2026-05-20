@@ -179,6 +179,22 @@ await check('reprocesar(id)', async () => {
   expect(r.movimientoId === movId);
 });
 
+// ============== sugerencias contextuales (trigram) ==============
+console.log('\n-- sugerencias contextuales --');
+await check('categorias.similares("hogar", limit=3)', async () => {
+  const sim = await tagger.categorias.similares('hogar', { limit: 3 });
+  expect(Array.isArray(sim.items) && sim.items.length > 0);
+  expect(typeof sim.items[0].similitud === 'number');
+});
+await check('movimientos.categoriasSugeridas(id, {q})', async () => {
+  if (!movId) throw new Error('no hay movId');
+  const sug = await tagger.movimientos.categoriasSugeridas(movId, {
+    q: 'transferencia alquiler vivienda',
+    limit: 5,
+  });
+  expect(Array.isArray(sug.items));
+});
+
 // ============== stats ==============
 console.log('\n-- stats --');
 await check('pipeline({ventana: "24h"})', async () => {

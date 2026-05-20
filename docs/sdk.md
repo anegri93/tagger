@@ -86,7 +86,58 @@ tagger.movimientos.corregir({movimientoId, categoriaIdNueva, usuario?, motivo?})
 tagger.movimientos.reprocesar(id): Promise<ResultadoCategorizacion>
 tagger.movimientos.importar({rows, batchId?}): Promise<ImportarMovimientosResult>
 tagger.movimientos.statusImport(): Promise<ImportStatus>
+tagger.movimientos.categoriasSugeridas(id, {q?, limit?, offset?, umbral?}): Promise<CategoriasSugeridasResult>
 ```
+
+### El campo `descripcion` y la cascada
+
+El campo `descripcion` no es decorativo. El pipeline lo **concatena** con `nombreBancard` y `nombreComercio` antes de evaluar las reglas globales. Eso permite que el contexto del gasto influya en la categorización.
+
+**Ejemplo**: una transferencia P2P normalmente cae en regex `^MANGO\b → transferencia`. Pero si la descripción contiene "alquiler", una regla global `contiene "alquiler" → hogar` con prioridad menor gana en la cascada.
+
+```ts
+// Sin descripción: cae a regex global → transferencia
+await tagger.movimientos.categorizar({
+  nombreBancard: 'MANGO - ALDO NEGRI',
+  monto: 1_000_000,
+  origen: 'user123',
+});
+// → { categoria: { slug: 'transferencia' }, fuente: 'regex' }
+
+// Con descripción contextual: gana la regla contextual → hogar
+await tagger.movimientos.categorizar({
+  nombreBancard: 'MANGO - ALDO NEGRI',
+  descripcion: 'transferir un millón a aldo por alquiler',
+  monto: 1_000_000,
+  origen: 'user123',
+});
+// → { categoria: { slug: 'hogar' }, fuente: 'contiene', confianza: 0.8 }
+```
+
+**Recomendación**: si tu app captura un concepto/leyenda libre del usuario (dictado por voz, campo "concepto del gasto", asunto de la transferencia bancaria), pasalo siempre como `descripcion`. Mejora drásticamente la calidad de categorización para movs que no son comercios "famosos".
+
+### `categoriasSugeridas` — sugerencias por similitud semántica
+
+Devuelve top-K categorías con mayor similitud (trigram) al texto enriquecido de cada categoría (slug + nombre + descripcion). Útil para mostrar al usuario "¿quisiste decir X?" antes de aplicar una corrección.
+
+```ts
+// Para un movimiento ya categorizado, sugerir alternativas basándose
+// en un texto libre (puede ser la descripción del propio mov o el dictado).
+const sug = await tagger.movimientos.categoriasSugeridas(movId, {
+  q: 'transferencia de un millón a aldo por alquiler',
+  limit: 5,
+});
+// → items: [
+//     { slug: 'transferencia', similitud: 0.23 },
+//     { slug: 'financiero',    similitud: 0.13 },
+//     { slug: 'inmobiliaria',  similitud: 0.12 },  // captó "alquiler"
+//     ...
+//   ]
+```
+
+A diferencia de la cascada (que devuelve UNA categoría), esto devuelve ranking. Útil para UI tipo "chip de sugerencias" donde el usuario elige.
+
+Si la categoría que devuelve la cascada y la primera de `categoriasSugeridas` difieren, probablemente sea un caso donde vale la pena pedir confirmación al usuario o crear una regla contextual nueva.
 
 `MovimientoInput`:
 
@@ -110,7 +161,23 @@ tagger.categorias.crear({slug, nombre, descripcion?}): Promise<Categoria>
 tagger.categorias.actualizar(identificador, {nombre?, descripcion?}): Promise<Categoria>
 tagger.categorias.eliminar(identificador): Promise<void>
 tagger.categorias.usage(identificador): Promise<{movimientos, mcc, comercios}>
+tagger.categorias.similares(identificador, {q?, limit?, offset?, umbral?}): Promise<CategoriasSugeridasResult>
 ```
+
+### `similares` — categorías relacionadas
+
+Devuelve categorías similares a la dada (excluyéndola) por similitud trigram. Útil para "ver categorías parecidas a hogar".
+
+```ts
+const sim = await tagger.categorias.similares('hogar', { limit: 3 });
+// → items: [
+//     { slug: 'construccion', similitud: 0.20 },
+//     { slug: 'belleza',      similitud: 0.16 },
+//     { slug: 'floreria',     similitud: 0.15 },
+//   ]
+```
+
+Si pasás `q`, busca por ese texto en lugar del texto de la categoría origen.
 
 `identificador` acepta:
 - slug actual (`'restaurante'`)
