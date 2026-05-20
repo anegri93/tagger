@@ -316,6 +316,23 @@
           }
         },
         {
+          "name": "POST /categorizar-movimiento (manual con categoria_id)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre_bancard\": \"GASTO MANUAL DESDE APP\",\n  \"monto\": 50000,\n  \"origen\": \"user123\",\n  \"categoria_id\": \"{{categoriaId}}\",\n  \"aprender\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            },
+            "description": "**Caso:** usuario crea un gasto manualmente en la app y ya elige la categoría al cargarlo. El backend NO corre la cascada — guarda el movimiento con la categoría dada como `fuente='manual'`, `confianza=1.0`.\n\n**Body:**\n- `categoria_id` (UUID, opcional pero key acá) — si presente, saltea pipeline.\n- `aprender` (boolean, opcional, default `false` cuando hay categoria_id):\n  - `true` (junto con `origen`): además del mov, guarda regla user-scope para que próximos movs con el mismo nombre devuelvan esta categoría automático.\n  - `false`: sólo este movimiento.\n\n**Espera:** `fuente: 'manual'`, `confianza: 1.0`."
+          }
+        },
+        {
           "name": "POST /categorizar-movimiento (desconocido → IA async)",
           "request": {
             "method": "POST",

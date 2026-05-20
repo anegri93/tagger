@@ -85,6 +85,19 @@ export interface MovimientoInput {
   origen?: string;
   batchId?: string;
   bypassCatalogo?: boolean;
+  /**
+   * Categoría predefinida por el usuario (UUID). Si está presente, se SALTEA
+   * el pipeline y el movimiento se guarda con esta categoría como manual
+   * (fuente='manual', confianza=1.0). Útil para gastos creados manualmente
+   * en la app donde el usuario ya elige la categoría al cargar.
+   */
+  categoriaId?: string;
+  /**
+   * Si true + categoriaId + origen, también guarda regla user-scope para que
+   * próximos movs con el mismo nombre devuelvan esta categoría automático.
+   * Si false (default), sólo se aplica a este mov.
+   */
+  aprender?: boolean;
 }
 
 export interface ResultadoCategorizacion {

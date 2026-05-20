@@ -89,6 +89,31 @@ tagger.movimientos.statusImport(): Promise<ImportStatus>
 tagger.movimientos.categoriasSugeridas(id, {q?, limit?, offset?, umbral?}): Promise<CategoriasSugeridasResult>
 ```
 
+### Categorizar con categoría manual (`categoriaId` + `aprender`)
+
+Si la app permite al usuario elegir categoría al cargar un gasto (no se confía en pipeline), pasá `categoriaId` directo. Skip cascada, mov se guarda con `fuente='manual'` `confianza=1`.
+
+```ts
+// Sólo este mov
+await tagger.movimientos.categorizar({
+  nombreBancard: 'ALMACEN DON JUAN',
+  monto: 35000,
+  origen: 'user123',
+  categoriaId: idSupermercado,
+});
+
+// Aprende para próximas veces
+await tagger.movimientos.categorizar({
+  nombreBancard: 'ALMACEN DON JUAN',
+  monto: 35000,
+  origen: 'user123',
+  categoriaId: idSupermercado,
+  aprender: true,
+});
+```
+
+`aprender` default `false` cuando hay `categoriaId`. Requiere `origen`.
+
 ### Corregir con o sin aprender (`aprender`)
 
 Por default, `corregir` crea regla user-scope (prio 1) para que próximas categorizaciones del mismo nombre devuelvan la categoría corregida automáticamente.

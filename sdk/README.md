@@ -71,6 +71,31 @@ const r2 = await tagger.movimientos.categorizar({
 | `statusImport()` | GET `/movimientos/importar/status` |
 | `categoriasSugeridas(id, {q?, limit?, offset?, umbral?})` | GET `/movimientos/:id/categorias-sugeridas` |
 
+#### Gasto manual con `categoriaId`
+
+Si el usuario YA elige cat al cargar (gasto manual desde app), pasá `categoriaId`. Skip cascada, guarda como `fuente='manual'` `confianza=1`.
+
+```ts
+// Manual sin aprender — solo este mov
+await tagger.movimientos.categorizar({
+  nombreBancard: 'ALMACEN DON JUAN',
+  monto: 35000,
+  origen: 'user123',
+  categoriaId: idSupermercado,
+});
+
+// Manual + aprender — próximos "ALMACEN DON JUAN" van directo a supermercado
+await tagger.movimientos.categorizar({
+  nombreBancard: 'ALMACEN DON JUAN',
+  monto: 35000,
+  origen: 'user123',
+  categoriaId: idSupermercado,
+  aprender: true,
+});
+```
+
+`aprender` sólo aplica cuando hay `categoriaId` + `origen`. Default `false`.
+
 #### Corregir con o sin aprender (`aprender`)
 
 Por default, corregir un movimiento crea una regla user-scope con prioridad 1: las próximas categorizaciones del mismo nombre devuelven la categoría corregida automáticamente. Esto es lo deseado en la mayoría de los casos.

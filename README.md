@@ -226,7 +226,7 @@ open http://localhost:3000/ui/      # UIs
 
 | Método | Path                          | Descripción                                                                                                                        |
 | ------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?}` |
+| POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion?, nombre_bancard?, nombre_comercio?, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?, categoria_id?, aprender?}`. Si `categoria_id` viene → saltea cascada, guarda como manual (`fuente='manual'` `confianza=1`). `aprender=true` (con `categoria_id` + `origen`) además guarda regla user-scope |
 | GET    | `/movimientos/:id`            | Detalle movimiento (incluye evidencia IA)                                                                                          |
 | POST   | `/movimientos/:id/correccion` | Corrección manual. Body: `{categoria_id_nueva, usuario?, motivo?, aprender?}`. `aprender=true` (default) crea regla user-scope (capa 0). `aprender=false` aplica sólo a este mov (excepción puntual, no contamina memoria) |
 | POST   | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`.  |

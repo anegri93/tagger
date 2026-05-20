@@ -117,6 +117,40 @@ Response:
 
 ---
 
+## Gasto manual con categoría predefinida
+
+Cuando el usuario carga un gasto manualmente en la app y ya elige categoría desde el dropdown (no espera que el sistema adivine), pasá `categoria_id` directo. El backend salta la cascada y guarda el mov con esa cat como `fuente='manual'` `confianza=1`.
+
+```
+POST /categorizar-movimiento
+Content-Type: application/json
+x-api-key: <API_KEY>
+
+{
+  "nombre_bancard": "ALMACEN DON JUAN",
+  "monto": 35000,
+  "origen": "user123",
+  "categoria_id": "<uuid-de-supermercado>",
+  "aprender": true
+}
+```
+
+Campos relevantes:
+
+- `categoria_id` (UUID, opcional) — si está presente, saltea pipeline. Cat manual.
+- `aprender` (boolean, opcional, default `false`):
+  - `true` + `origen` presente: además del mov, crea regla user-scope con prio 1. Próximos movs con el mismo nombre van a esta categoría automático.
+  - `false`: sólo este movimiento.
+
+Sin `categoria_id`: la cascada normal corre (regex → mcc → ia).
+
+Use cases:
+- Gasto en efectivo cargado a mano: el user sabe qué fue, elige cat al cargar
+- Importación de gastos viejos: cliente ya tiene la categoría, no quiere re-categorizar
+- Override puntual: cliente desconfía del pipeline para ese mov específico
+
+---
+
 ## Correcciones del usuario
 
 Cuando usuario corrige una categoría desde mobile:
@@ -287,9 +321,15 @@ export interface CategorizarRequest {
   bancard_id?: string;
   codigo_comercio?: string;
   monto?: number;
-  origen?: string;
+  origen?: string; // id del usuario; necesario para memoria y aprender
   batch_id?: string;
   bypass_catalogo?: boolean;
+  // Modo manual: usuario ya eligió cat al cargar el gasto en la app.
+  // Si está presente, se SALTEA la cascada y se guarda con fuente='manual', conf=1.
+  categoria_id?: string;
+  // Sólo aplica si hay categoria_id + origen. Si true, guarda regla user-scope
+  // para que próximos movs con el mismo nombre devuelvan esta cat automático.
+  aprender?: boolean;
 }
 
 export type Fuente =

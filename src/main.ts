@@ -122,7 +122,14 @@ async function main() {
   await app.register(healthRoute(healthDeps));
   await app.register(apiKeyAuth, { apiKey: env.API_KEY });
   await app.register(
-    categorizarRoute({ capas, repo: movRepo, iaFallback, categorias: categoriaResolver }),
+    categorizarRoute({
+      capas,
+      repo: movRepo,
+      iaFallback,
+      categorias: categoriaResolver,
+      memoria: correccionMemoria,
+      invalidarReglas: (scope) => capaReglas.invalidar(scope),
+    }),
   );
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
   await app.register(

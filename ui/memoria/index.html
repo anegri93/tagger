@@ -6,26 +6,107 @@
     <title>tagger — playground</title>
     <link rel="stylesheet" href="/ui/shared/theme.css" />
     <style>
+      /* Patrones modern-web-guidance (Google Chrome best practices):
+         - color-scheme + accent-color: branding consistente en controles nativos.
+         - :focus-visible: outline solo para keyboard, no para mouse.
+         - prefers-reduced-motion: respeta usuarios sensibles a movimiento.
+         - font-size: 16px mínimo en inputs evita zoom auto en iOS.
+         - tap targets >=48px en pointer:coarse (mobile).
+         - sr-only: contenido para screen readers, oculto visualmente. */
+      :root {
+        color-scheme: dark;
+        accent-color: var(--accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: var(--r-sm);
+      }
+      /* Screen reader only — texto accesible sin impacto visual. */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      button {
+        min-height: 36px;
+      }
+      /* Mobile: tap targets mayores. */
+      @media (pointer: coarse) {
+        button,
+        input,
+        select {
+          min-height: 48px;
+        }
+        input,
+        select {
+          font-size: 16px; /* evita iOS zoom on focus */
+        }
+      }
+      /* Validación no-intrusiva: error solo después de interacción del usuario. */
+      input:user-invalid {
+        border-color: var(--danger);
+      }
+      input:user-invalid + .sr-only::after {
+        content: ' (inválido)';
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
       .container {
-        max-width: 760px;
+        max-width: 1180px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 24px 24px 80px;
+        display: grid;
+        gap: 20px;
+        /* dos columnas en desktop: izq = form + resultado, der = memoria + historial */
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        align-items: start;
+      }
+      .container > .card.full {
+        grid-column: 1 / -1;
+      }
+      /* Si la card de resultado está oculta, la card del form se expande full-width. */
+      .container:has(#card-resultado[hidden]) > section:first-of-type,
+      .container:has(#card-resultado[hidden]) > .card:first-of-type {
+        grid-column: 1 / -1;
+      }
+      @media (max-width: 880px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        container-type: inline-size; /* habilita container queries */
       }
       .topbar {
         position: sticky;
         top: 0;
         z-index: 10;
-        background: var(--bg);
+        background: color-mix(in srgb, var(--bg) 92%, transparent);
+        backdrop-filter: saturate(150%) blur(8px);
         border-bottom: 1px solid var(--border);
-        padding: 12px 20px;
+        padding: 14px 24px;
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         flex-wrap: wrap;
       }
       .topbar h1 {
         margin: 0;
-        font-size: 16px;
+        font-size: 18px;
+        letter-spacing: -0.2px;
       }
       .topbar .user-field {
         margin-left: auto;
@@ -41,12 +122,27 @@
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--r-lg);
-        padding: 20px;
-        margin-bottom: 16px;
+        padding: 18px 20px;
+        margin: 0; /* el gap del grid maneja el spacing */
+        transition: outline-color 0.4s ease, box-shadow 0.4s ease;
+      }
+      /* Highlight breve cuando click en historial → señala "estás editando un mov ya creado". */
+      .card.flash {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card.flash {
+          outline-color: var(--accent);
+        }
       }
       .card h2 {
-        margin: 0 0 6px;
-        font-size: 17px;
+        margin: 0 0 4px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--text-2);
       }
       .card .sub {
         color: var(--text-3);
@@ -93,10 +189,21 @@
         gap: 6px;
         flex-wrap: wrap;
         margin-bottom: 14px;
+        align-items: center;
       }
       .examples button {
         font-size: 12px;
-        padding: 6px 12px;
+        padding: 6px 10px;
+        background: var(--bg-3);
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        font-weight: 400;
+        min-height: auto;
+        border-radius: 999px;
+      }
+      .examples button:hover {
+        border-color: var(--accent);
+        color: var(--text);
       }
       .examples-label {
         font-size: 12px;
@@ -198,6 +305,106 @@
         min-width: 200px;
         margin: 0;
       }
+      /* Radio group "Alcance de la corrección" — radio agrupado con copy explícito,
+         dos labels clickeables, accent-color y :has() para feedback visual del seleccionado. */
+      .aprender-fieldset {
+        display: grid;
+        gap: 8px;
+        border: none;
+        padding: 0;
+        margin: 14px 0 0;
+      }
+      .aprender-radio {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 12px;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .aprender-radio:hover {
+        border-color: var(--accent);
+      }
+      .aprender-radio:has(input:checked) {
+        background: rgba(46, 160, 67, 0.08);
+        border-color: var(--success);
+      }
+      .aprender-radio:has(input:focus-visible) {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .aprender-radio input {
+        margin: 3px 0 0;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--success);
+        cursor: pointer;
+      }
+      .aprender-radio span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+      }
+      .aprender-radio .aprender-sub {
+        font-size: 11px;
+        color: var(--text-3);
+      }
+
+      /* Toggle "Aprender" — legacy del expense-tracker, mantenido por compat. */
+      .aprender-toggle {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .aprender-toggle:hover {
+        border-color: var(--accent);
+      }
+      .aprender-toggle:has(input:focus-visible) {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .aprender-toggle input {
+        margin: 3px 0 0;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        /* accent-color local: cuando "aprender" está activo lo pintamos verde
+           (refuerza el feedback de estado en addición al fondo del label). */
+        accent-color: var(--success);
+        flex-shrink: 0;
+      }
+      .aprender-toggle:has(input:checked) {
+        background: rgba(46, 160, 67, 0.08);
+        border-color: var(--success);
+      }
+      .aprender-text {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .aprender-sub {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .aprender-toggle {
+          transition: none;
+        }
+      }
       .pill {
         display: inline-block;
         padding: 3px 10px;
@@ -275,35 +482,42 @@
         margin: 8px 0 0;
       }
       .learned-section {
-        margin-bottom: 18px;
+        margin-bottom: 22px;
       }
       .learned-section:last-child {
         margin-bottom: 0;
       }
       .learned-section h3 {
-        margin: 0 0 4px;
-        font-size: 14px;
+        margin: 0 0 2px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
       .learned-section .sub {
         font-size: 12px;
         color: var(--text-3);
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       }
       .learned-list {
         list-style: none;
         padding: 0;
         margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+        gap: 6px;
       }
       .learned-list li {
-        padding: 10px 12px;
+        padding: 8px 10px;
         background: var(--bg);
         border: 1px solid var(--border);
         border-radius: var(--r-sm);
-        margin-bottom: 6px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-size: 13px;
+        gap: 8px;
+        font-size: 12px;
+        min-height: 36px;
       }
       .learned-list li .item-main {
         flex: 1;
@@ -405,37 +619,75 @@
     <div class="topbar">
       <h1>🏷️ Probar el categorizador</h1>
       <div class="user-field">
-        <label>Tu nombre:</label>
-        <input id="usuario-global" type="text" value="usuario_42" placeholder="usuario_42" />
+        <label for="usuario-global">Tu nombre:</label>
+        <input
+          id="usuario-global"
+          type="text"
+          value="usuario_42"
+          placeholder="usuario_42"
+          autocomplete="username"
+          aria-describedby="usuario-help"
+        />
+        <span id="usuario-help" class="sr-only">
+          Identificador para tu memoria personal. Se usa como scope de tus reglas aprendidas.
+        </span>
       </div>
     </div>
 
-    <div class="container">
+    <main class="container">
       <!-- 1. Probar un movimiento -->
-      <div class="card">
-        <h2>1. Probá un movimiento</h2>
+      <section class="card" aria-labelledby="paso1-title">
+        <h2 id="paso1-title">1. Probá un movimiento</h2>
         <div class="sub">Escribí el nombre del comercio (o transferencia) y el monto.</div>
-        <div class="examples">
+        <div class="examples" role="group" aria-label="Ejemplos rápidos">
           <span class="examples-label">Ejemplos:</span>
-          <button class="btn btn-ghost" data-example="mango">Transferencia MANGO</button>
-          <button class="btn btn-ghost" data-example="farma">Farmacia</button>
-          <button class="btn btn-ghost" data-example="stripe">STRIPE (ambiguo)</button>
-          <button class="btn btn-ghost" data-example="raro">Comercio raro</button>
+          <button type="button" class="btn btn-ghost" data-example="mango">Transferencia MANGO</button>
+          <button type="button" class="btn btn-ghost" data-example="farma">Farmacia</button>
+          <button type="button" class="btn btn-ghost" data-example="stripe">STRIPE (ambiguo)</button>
+          <button type="button" class="btn btn-ghost" data-example="raro">Comercio raro</button>
         </div>
-        <div class="row">
-          <div class="field" style="flex: 2">
-            <label>Comercio o transferencia</label>
-            <input id="m-nombre" type="text" placeholder="FARMACIA CATEDRAL" autofocus />
+        <form id="form-categorizar" novalidate>
+          <div class="row">
+            <div class="field" style="flex: 2">
+              <label for="m-nombre">Comercio o transferencia</label>
+              <input
+                id="m-nombre"
+                name="nombre"
+                type="text"
+                placeholder="FARMACIA CATEDRAL"
+                autocomplete="off"
+                enterkeyhint="next"
+                required
+                minlength="2"
+                maxlength="200"
+                aria-describedby="m-nombre-help"
+                autofocus
+              />
+              <span id="m-nombre-help" class="sr-only">
+                Nombre del comercio o destinatario. Mínimo 2 caracteres.
+              </span>
+            </div>
+            <div class="field" style="flex: 1; min-width: 140px">
+              <label for="m-monto">Monto</label>
+              <input
+                id="m-monto"
+                name="monto"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="85000"
+                enterkeyhint="go"
+                autocomplete="off"
+                aria-describedby="m-monto-help"
+              />
+              <span id="m-monto-help" class="sr-only">Monto en guaraníes. Sólo dígitos.</span>
+            </div>
           </div>
-          <div class="field" style="flex: 1; min-width: 120px">
-            <label>Monto</label>
-            <input id="m-monto" type="number" step="1" placeholder="85000" />
+          <div class="actions">
+            <button type="submit" id="btn-crear" class="btn btn-primary">Categorizar →</button>
           </div>
-        </div>
-        <div class="actions">
-          <button id="btn-crear" class="btn btn-primary">Categorizar →</button>
-        </div>
-      </div>
+        </form>
+      </section>
 
       <!-- 2. Resultado -->
       <div class="card" id="card-resultado" hidden>
@@ -474,9 +726,28 @@
               <select id="c-categoria"></select>
             </div>
           </div>
+          <fieldset class="aprender-fieldset" aria-label="Alcance de la corrección">
+            <legend class="sr-only">Alcance de la corrección</legend>
+            <label class="aprender-radio">
+              <input type="radio" name="c-aprender-scope" value="adelante" checked />
+              <span>
+                <strong>📌 Este movimiento en adelante</strong>
+                <span class="aprender-sub">Aprende. Próximos movs con el mismo nombre van a la nueva categoría automático.</span>
+              </span>
+            </label>
+            <label class="aprender-radio">
+              <input type="radio" name="c-aprender-scope" value="solo" />
+              <span>
+                <strong>⚡ Solo este movimiento</strong>
+                <span class="aprender-sub">Excepción puntual. Modifica sólo este mov; no se guarda regla.</span>
+              </span>
+            </label>
+          </fieldset>
           <div style="margin-top: 12px">
-            <button id="btn-corregir" class="btn btn-primary" disabled>Guardar corrección</button>
-            <span id="sim-elegida" style="font-size: 12px; color: var(--text-3); margin-left: 8px"></span>
+            <button id="btn-corregir" class="btn btn-primary" disabled aria-disabled="true">
+              Guardar corrección
+            </button>
+            <span id="sim-elegida" style="font-size: 12px; color: var(--text-3); margin-left: 8px" aria-live="polite"></span>
           </div>
         </div>
         <details class="tech">
@@ -496,7 +767,7 @@
       </div>
 
       <!-- 3. Lo que aprendí de vos -->
-      <div class="card">
+      <div class="card full">
         <h2>3. Lo que aprendí de vos</h2>
         <div class="sub">
           Estas son las cosas que recuerdo y las reglas personales que vos creaste.
@@ -525,16 +796,16 @@
       </div>
 
       <!-- 4. Historial -->
-      <div class="card">
+      <div class="card full">
         <h2>4. Historial reciente</h2>
         <div class="sub">Click en una fila para volver a verla.</div>
         <div id="historial-result">
           <div class="empty">Todavía no probaste ningún movimiento.</div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <div class="toast-host" id="toast-host"></div>
+    <div class="toast-host" id="toast-host" aria-live="polite" aria-atomic="false"></div>
 
     <script>
       const $ = (id) => document.getElementById(id);
@@ -621,12 +892,10 @@
       );
 
       // ===== categorizar =====
-      $('btn-crear').addEventListener('click', categorizar);
-      $('m-nombre').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') categorizar();
-      });
-      $('m-monto').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') categorizar();
+      // Submit del <form> cubre Enter en cualquier input + click en botón submit.
+      $('form-categorizar').addEventListener('submit', (e) => {
+        e.preventDefault();
+        categorizar();
       });
 
       async function categorizar() {
@@ -649,6 +918,11 @@
           });
           lastMovimientoId = r.movimiento_id;
           lastNombreBancard = nombre;
+          // Reset radio "alcance" al default ("este en adelante") cada vez que categorizás un mov nuevo.
+          const radioAdelante = document.querySelector(
+            'input[name="c-aprender-scope"][value="adelante"]',
+          );
+          if (radioAdelante) radioAdelante.checked = true;
           lastOrigen = origen;
           renderResultado(r);
           historial.unshift({
@@ -908,27 +1182,45 @@
           toast('Elegí una categoría primero', 'err');
           return;
         }
-        const body = { categoria_id_nueva };
+        const aprender =
+          (document.querySelector('input[name="c-aprender-scope"]:checked') || {}).value !== 'solo';
+        const body = { categoria_id_nueva, aprender };
         if (lastOrigen) body.usuario = lastOrigen;
+        const btn = $('btn-corregir');
+        const labelOrig = btn.textContent;
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.textContent = 'Guardando…';
         try {
           const r = await window.taggerApi(`/movimientos/${lastMovimientoId}/correccion`, {
             method: 'POST',
             body: JSON.stringify(body),
             headers: { 'content-type': 'application/json' },
           });
-          toast(`✓ Guardado: ahora es ${r.categoria_nueva?.nombre ?? '—'}`, 'ok');
+          const nombre = r.categoria_nueva?.nombre ?? '—';
+          toast(
+            aprender
+              ? `✓ Aprendido: ahora es ${nombre}`
+              : `✓ Excepción aplicada: este mov → ${nombre} (sin aprender)`,
+            'ok',
+          );
           // Refrescar hero
           const nuevaCat = (categoriasCache || []).find((c) => c.id === categoria_id_nueva);
           if (nuevaCat) {
             $('hero-cat').textContent = nuevaCat.nombre;
-            $('hero-icon').textContent = '✅';
+            $('hero-icon').textContent = aprender ? '✅' : '⚡';
             $('hero').classList.remove('pendiente', 'sin');
-            $('hero-why').textContent =
-              'Lo aprendí de vos. La próxima vez sale automático si es una transferencia, o se sugiere como regla.';
+            $('hero-why').textContent = aprender
+              ? 'Lo aprendí de vos. La próxima vez sale automático si es una transferencia, o se sugiere como regla.'
+              : 'Excepción puntual. La memoria personal no se modificó; el comercio sigue con su categoría habitual.';
           }
           cargarAprendido();
         } catch (e) {
           toast('Error: ' + (e?.message || 'falló'), 'err');
+        } finally {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+          btn.textContent = labelOrig;
         }
       });
 
@@ -1136,6 +1428,12 @@
             });
             $('m-nombre').value = it.nombre_bancard;
             if (it.monto) $('m-monto').value = it.monto;
+            // UX: scroll suave al card Resultado + highlight breve para indicar
+            // que estamos editando un mov pre-existente, no creando uno nuevo.
+            const card = $('card-resultado');
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            card.classList.add('flash');
+            setTimeout(() => card.classList.remove('flash'), 1200);
           }),
         );
       }

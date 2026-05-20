@@ -205,6 +205,8 @@ function movimientosModule(c: TaggerClient) {
       if (input.origen !== undefined) body.origen = input.origen;
       if (input.batchId !== undefined) body.batch_id = input.batchId;
       if (input.bypassCatalogo !== undefined) body.bypass_catalogo = input.bypassCatalogo;
+      if (input.categoriaId !== undefined) body.categoria_id = input.categoriaId;
+      if (input.aprender !== undefined) body.aprender = input.aprender;
 
       const r = await c.request<{
         movimiento_id: string;

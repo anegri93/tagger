@@ -451,6 +451,21 @@ components:
         bypass_catalogo:
           type: boolean
           description: Testing — salta capa 1
+        categoria_id:
+          type: string
+          format: uuid
+          description: |
+            Categoría predefinida por el usuario. Si está presente, se SALTEA
+            el pipeline; el movimiento se guarda con esta cat como manual
+            (fuente='manual', confianza=1.0). Caso de uso: gasto manual en
+            app móvil donde el usuario ya elige categoría al cargar.
+        aprender:
+          type: boolean
+          default: false
+          description: |
+            Sólo aplica cuando se pasa `categoria_id` + `origen`. Si `true`,
+            además del movimiento guarda regla user-scope con prio 1 para que
+            próximos movs con el mismo nombre devuelvan esta categoría automático.
 
     CategorizarResponse:
       type: object

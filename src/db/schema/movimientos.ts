@@ -27,6 +27,7 @@ export type Evidencia = {
   ia_prompt?: string;
   ia_response?: string;
   memoria_destinatario?: string;
+  origen?: 'usuario_manual';
 };
 
 export const fuenteCategoriaEnum = pgEnum('fuente_categoria', [
