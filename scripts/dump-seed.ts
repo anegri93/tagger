@@ -21,14 +21,15 @@ async function main() {
   out.push('-- tagger seed dump');
   out.push(`-- generado ${new Date().toISOString()}`);
   out.push('-- estrategia: WIPE + RELOAD completo. Fase de desarrollo: matchear local.');
-  out.push('-- esto borra: movimientos, correcciones, categorías, reglas, mcc, marcas, alias.');
-  out.push('-- todo lo seedable se recarga; movs/correcciones quedan vacíos hasta que la app genere.');
+  out.push('-- esto borra: movimientos, correcciones, descripcion_uso, categorías, reglas, mcc, marcas, alias.');
+  out.push('-- todo lo seedable se recarga; movs/correcciones/descripcion_uso quedan vacíos hasta que la app genere (runtime per-user).');
   out.push('');
   out.push('BEGIN;');
   out.push('');
   out.push('TRUNCATE TABLE');
   out.push('  correcciones_usuario,');
   out.push('  movimientos,');
+  out.push('  descripcion_uso,');
   out.push('  categorias_alias,');
   out.push('  marcas_conocidas,');
   out.push('  reglas,');

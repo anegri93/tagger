@@ -220,6 +220,38 @@ await check('movimientos.categoriasSugeridas(id, {q})', async () => {
   expect(Array.isArray(sug.items));
 });
 
+// ============== descripciones (autocomplete per-user) ==============
+console.log('\n-- descripciones --');
+await check('descripciones.sugerir(prefix)', async () => {
+  const usuario = 'sdk_desc_' + Date.now();
+  // Sembrar 2 movs con descripciones
+  await tagger.movimientos.categorizar({
+    nombreBancard: 'MANGO - SDK DESC A',
+    descripcion: 'alquiler departamento',
+    monto: 100,
+    origen: usuario,
+  });
+  await tagger.movimientos.categorizar({
+    nombreBancard: 'MANGO - SDK DESC B',
+    descripcion: 'alquiler enero',
+    monto: 100,
+    origen: usuario,
+  });
+  // Sleep corto: upsert es fire-and-forget post-response
+  await new Promise((r) => setTimeout(r, 200));
+  const items = await tagger.descripciones.sugerir({ usuario, q: 'alq', limit: 5 });
+  expect(Array.isArray(items) && items.length >= 2, `esperaba >=2, vino ${items.length}`);
+  expect(items.every((i) => typeof i.descripcion === 'string' && typeof i.freq === 'number'));
+});
+await check('descripciones.sugerir scope per-user (otro user no ve)', async () => {
+  const items = await tagger.descripciones.sugerir({
+    usuario: 'sdk_no_existe_' + Date.now(),
+    q: 'alq',
+    limit: 5,
+  });
+  expect(items.length === 0, `user nuevo no debe ver nada, vino ${items.length}`);
+});
+
 // ============== stats ==============
 console.log('\n-- stats --');
 await check('pipeline({ventana: "24h"})', async () => {

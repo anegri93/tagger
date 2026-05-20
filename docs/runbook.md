@@ -130,6 +130,51 @@ Efecto:
 - Registro en `correcciones_usuario` (audit, siempre)
 - Si `aprender=true` + tiene `usuario`: regla user-scope creada/actualizada → próximos movs del mismo nombre devuelven la nueva categoría automático (capa 0 del pipeline)
 
+### Autocomplete de descripciones (per-user)
+
+Cuando un usuario tipea la descripción de una transferencia, la app puede sugerir
+descripciones que ese usuario ya escribió antes:
+
+```bash
+GET /descripciones/sugerencias?usuario=user_123&q=alq&limit=10
+```
+
+Response:
+
+```json
+{
+  "usuario": "user_123",
+  "q": "alq",
+  "limit": 10,
+  "items": [
+    { "descripcion": "alquiler", "freq": 8, "categoria_slug": "hogar" },
+    { "descripcion": "alquiler departamento", "freq": 5, "categoria_slug": "hogar" }
+  ]
+}
+```
+
+Detalles:
+
+- **Scope per-user**: nunca devuelve descripciones de otros usuarios.
+- **Prefix btree**: latencia p99 < 50ms hasta ~10M filas.
+- **Fire-and-forget upsert**: cada `POST /categorizar-movimiento` con
+  `descripcion` no nula + `origen` hace `INSERT … ON CONFLICT UPDATE` async.
+  No bloquea el response.
+- **Cat-aware boost**: pasar `categoria_id` opcional sube en el ranking las
+  descripciones cuya `cat_top` coincide.
+- **Mínimo 2 chars** en `q`. Debouncear cliente 150ms recomendado.
+
+### Backfill histórico
+
+Después de aplicar la migration `0023_descripcion_uso.sql`, llenar la tabla
+desde el corpus de `movimientos` existente:
+
+```bash
+pnpm tsx scripts/backfill-descripcion-uso.ts
+```
+
+Idempotente (ON CONFLICT recalcula freq/cat_top/ultima_vez_at). Reaplicable.
+
 ### Categorización manual al cargar (alternativa)
 
 Si la app crea el mov con cat ya elegida por el user (gasto manual sin cascada), usar `POST /categorizar-movimiento` con `categoria_id` directo:

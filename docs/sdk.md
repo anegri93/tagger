@@ -75,6 +75,7 @@ const r2 = await tagger.movimientos.categorizar({
 | `tagger.catalogo` | Importar `mcc_por_nombre` (capa 2) |
 | `tagger.testBatch` | Tests de pipeline en lote |
 | `tagger.stats` | Distribución por capa del pipeline |
+| `tagger.descripciones` | Autocomplete per-user de descripciones |
 | `tagger.health()` | Status servicio |
 
 ## Referencia: `movimientos`
@@ -277,7 +278,32 @@ tagger.testBatch.agreement(batchId, {groundTruth?}): Promise<unknown>
 tagger.testBatch.agreementMcc(batchId, {...}): Promise<unknown>
 
 tagger.stats.pipeline({ventana?: '1h'|'24h'|'7d'|'30d'|'all'}): Promise<StatsPipeline>
+
+tagger.descripciones.sugerir({usuario, q, limit?, categoriaId?}): Promise<SugerenciaDescripcion[]>
+tagger.descripciones.sugerirFull({usuario, q, limit?, categoriaId?}): Promise<SugerenciasDescripcionResult>
 ```
+
+## Autocomplete per-user de descripciones
+
+`tagger.descripciones.sugerir(...)` devuelve descripciones que el usuario tipeó
+antes y empiezan con `q`. Scope estricto per-user (otro usuario nunca las ve).
+
+```ts
+const items = await tagger.descripciones.sugerir({
+  usuario: 'user_123',
+  q: 'alq',
+  limit: 5,
+});
+// [{ descripcion: 'alquiler', freq: 8, categoriaSlug: 'hogar' }, ...]
+```
+
+Patrón cliente recomendado: input `<input list="...">` + `<datalist>`, debounce
+150ms, min 2 chars, AbortController para cancelar tipeo rápido. Boost opcional
+con `categoriaId` cuando el user ya eligió cat en el form.
+
+Las descripciones se persisten automáticamente al llamar a
+`movimientos.categorizar(...)` con `descripcion` no nula + `origen`. No hay
+endpoint de write — el sistema aprende del corpus real.
 
 ## Errores tipados
 

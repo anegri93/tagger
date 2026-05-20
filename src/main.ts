@@ -57,6 +57,8 @@ import {
 } from './api/routes/categorias-similares.js';
 import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
 import { statsPipelineRoute } from './api/routes/stats-pipeline.js';
+import { crearDescripcionUsoRepo } from './db/repos/descripcion-uso.js';
+import { descripcionesRoute } from './api/routes/descripciones.js';
 
 async function pingDb(): Promise<boolean> {
   try {
@@ -77,6 +79,7 @@ async function main() {
   const movUpdater = crearMovimientoUpdater(db);
   const movReader = crearMovimientoReader(db);
   const correccionMemoria = crearCorreccionMemoriaWriter(db);
+  const descripcionUsoRepo = crearDescripcionUsoRepo(db);
   const categoriasReader = crearCategoriasReader(db);
   const categoriasLoader = crearCategoriasLoader(db);
   const categoriaResolver = crearCategoriaResolver(db);
@@ -129,8 +132,10 @@ async function main() {
       categorias: categoriaResolver,
       memoria: correccionMemoria,
       invalidarReglas: (scope) => capaReglas.invalidar(scope),
+      descripcionUso: descripcionUsoRepo,
     }),
   );
+  await app.register(descripcionesRoute(descripcionUsoRepo));
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
   await app.register(
     movimientoReprocesarRoute({

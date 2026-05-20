@@ -6,3 +6,4 @@ export * from './correcciones_usuario.js';
 export * from './marcas_conocidas.js';
 export * from './test_ground_truth.js';
 export * from './reglas.js';
+export * from './descripcion_uso.js';

@@ -442,6 +442,31 @@
       ]
     },
     {
+      "name": "descripciones",
+      "description": "Autocomplete per-user de descripciones. Lookup btree prefix, scope estricto user. Latencia objetivo p99 < 50ms.",
+      "item": [
+        {
+          "name": "GET /descripciones/sugerencias",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/descripciones/sugerencias?usuario={{usuario}}&q=alq&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["descripciones", "sugerencias"],
+              "query": [
+                { "key": "usuario", "value": "{{usuario}}" },
+                { "key": "q", "value": "alq" },
+                { "key": "limit", "value": "10" },
+                { "key": "categoria_id", "value": "", "disabled": true, "description": "Opcional. UUID de cat para boostear ranking." }
+              ]
+            },
+            "description": "Autocomplete: devuelve top-K descripciones que el usuario tipeó antes y empiezan con `q`.\n\n**Params:**\n- `usuario` (req) — id del usuario final\n- `q` (req) — prefix mín 2 chars, máx 200\n- `limit` (opt, 1-20, default 10)\n- `categoria_id` (opt UUID) — boost descripciones con cat top igual\n\n**Response 200:**\n```json\n{\n  \"usuario\": \"user_123\",\n  \"q\": \"alq\",\n  \"limit\": 10,\n  \"items\": [\n    { \"descripcion\": \"alquiler\", \"freq\": 8, \"categoria_slug\": \"hogar\" },\n    { \"descripcion\": \"alquiler departamento\", \"freq\": 5, \"categoria_slug\": \"hogar\" }\n  ]\n}\n```\n\nScope estricto per-user: otro usuario nunca ve estas descripciones. Items se generan automáticamente cada vez que el user llama a `/categorizar-movimiento` con `descripcion`."
+          }
+        }
+      ]
+    },
+    {
       "name": "auth-fail (sin api-key → 401)",
       "request": {
         "auth": {

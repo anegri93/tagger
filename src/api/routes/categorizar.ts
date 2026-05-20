@@ -7,6 +7,7 @@ import type { IaFallback } from '../../pipeline/ia-fallback.js';
 import type { MovimientoInput } from '../../domain/types.js';
 import { normalize } from '../../domain/normalize.js';
 import type { CorreccionMemoriaWriter } from '../../db/repos/correccion.js';
+import type { DescripcionUsoRepo } from '../../db/repos/descripcion-uso.js';
 import { CONFIANZA } from '../../domain/confianza.js';
 
 export interface CategoriaResolverPort {
@@ -24,6 +25,8 @@ export interface CategorizarDeps {
   memoria?: CorreccionMemoriaWriter;
   /** Para invalidar cache de reglas tras upsert. */
   invalidarReglas?: (scope: string) => void;
+  /** Opcional. Si se provee + body.descripcion + body.origen, registra uso para autocomplete. */
+  descripcionUso?: DescripcionUsoRepo;
 }
 
 export const categorizarRoute =
@@ -117,6 +120,19 @@ export const categorizarRoute =
         }
 
         const cat = await deps.categorias.porId(out.categoriaId);
+
+        // Fire-and-forget: registrar descripción para autocomplete per-user.
+        // Falla silenciosa, no bloquea response.
+        if (deps.descripcionUso && body.descripcion && body.origen) {
+          void deps.descripcionUso
+            .upsert({
+              usuarioId: body.origen,
+              descripcion: body.descripcion,
+              categoriaId: out.categoriaId ?? null,
+            })
+            .catch((err: unknown) => req.log.warn({ err }, 'descripcion_uso upsert failed'));
+        }
+
         return reply.send({
           movimiento_id: out.movimientoId,
           categoria_id: out.categoriaId,

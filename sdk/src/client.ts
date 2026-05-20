@@ -30,6 +30,9 @@ import type {
   Regla,
   ResultadoCategorizacion,
   StatsPipeline,
+  SugerenciaDescripcion,
+  SugerenciaDescripcionInput,
+  SugerenciasDescripcionResult,
   SugerenciaGlobal,
   SugerenciaRegla,
 } from './types.js';
@@ -86,6 +89,8 @@ export class TaggerClient {
   readonly testBatch: ReturnType<typeof testBatchModule>;
   /** Estadísticas agregadas. */
   readonly stats: ReturnType<typeof statsModule>;
+  /** Autocomplete de descripciones per-user. */
+  readonly descripciones: ReturnType<typeof descripcionesModule>;
 
   constructor(opts: TaggerClientOptions) {
     if (!opts.apiKey) throw new Error('apiKey requerido');
@@ -105,6 +110,7 @@ export class TaggerClient {
     this.catalogo = catalogoModule(this);
     this.testBatch = testBatchModule(this);
     this.stats = statsModule(this);
+    this.descripciones = descripcionesModule(this);
   }
 
   /** Estado del servicio (DB, Ollama). */
@@ -588,6 +594,55 @@ function testBatchModule(c: TaggerClient) {
       if (opts.includeAmbiguo !== undefined) query.include_ambiguo = String(opts.includeAmbiguo);
       if (opts.includeGeneric !== undefined) query.include_generic = String(opts.includeGeneric);
       return c.request(`/test-batch/${encodeURIComponent(batchId)}/agreement-mcc`, { query });
+    },
+  };
+}
+
+function descripcionesModule(c: TaggerClient) {
+  return {
+    /**
+     * Autocomplete de descripciones para el usuario. Devuelve top-K
+     * descripciones que ese usuario tipeó antes y empiezan con `q`.
+     *
+     * Pasar `categoriaId` opcional para subir el ranking de descripciones
+     * cuya categoría top coincide (cat-aware boost).
+     */
+    async sugerir(
+      input: SugerenciaDescripcionInput,
+    ): Promise<SugerenciaDescripcion[]> {
+      const query: RequestOpts['query'] = { usuario: input.usuario, q: input.q };
+      if (input.limit !== undefined) query.limit = input.limit;
+      if (input.categoriaId !== undefined) query.categoria_id = input.categoriaId;
+      const r = await c.request<{
+        items: Array<{ descripcion: string; freq: number; categoria_slug?: string }>;
+      }>('/descripciones/sugerencias', { query });
+      return r.items.map((i) => ({
+        descripcion: i.descripcion,
+        freq: i.freq,
+        ...(i.categoria_slug ? { categoriaSlug: i.categoria_slug } : {}),
+      }));
+    },
+    /** Mismo endpoint, devuelve respuesta full con metadata. */
+    async sugerirFull(input: SugerenciaDescripcionInput): Promise<SugerenciasDescripcionResult> {
+      const query: RequestOpts['query'] = { usuario: input.usuario, q: input.q };
+      if (input.limit !== undefined) query.limit = input.limit;
+      if (input.categoriaId !== undefined) query.categoria_id = input.categoriaId;
+      const r = await c.request<{
+        usuario: string;
+        q: string;
+        limit: number;
+        items: Array<{ descripcion: string; freq: number; categoria_slug?: string }>;
+      }>('/descripciones/sugerencias', { query });
+      return {
+        usuario: r.usuario,
+        q: r.q,
+        limit: r.limit,
+        items: r.items.map((i) => ({
+          descripcion: i.descripcion,
+          freq: i.freq,
+          ...(i.categoria_slug ? { categoriaSlug: i.categoria_slug } : {}),
+        })),
+      };
     },
   };
 }

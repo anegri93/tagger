@@ -242,6 +242,51 @@ const sim = await tagger.categorias.similares('hogar', { limit: 3 });
 | `agreement(batchId, {groundTruth?})` | GET `/test-batch/:batch_id/agreement` |
 | `agreementMcc(batchId, {...})` | GET `/test-batch/:batch_id/agreement-mcc` |
 
+### `tagger.descripciones.*`
+
+| Método | Endpoint |
+|---|---|
+| `sugerir({usuario, q, limit?, categoriaId?})` | GET `/descripciones/sugerencias` |
+| `sugerirFull({usuario, q, limit?, categoriaId?})` | GET `/descripciones/sugerencias` (full response) |
+
+#### Autocomplete per-user de descripciones
+
+Cuando el user tipea la descripción de una transferencia, sugiere descripciones
+que escribió antes. Lookup btree prefix, scope estricto per-user.
+
+```ts
+const items = await tagger.descripciones.sugerir({
+  usuario: 'user_123',
+  q: 'alq',
+  limit: 5,
+});
+// → [
+//     { descripcion: 'alquiler', freq: 8, categoriaSlug: 'hogar' },
+//     { descripcion: 'alquiler departamento', freq: 5, categoriaSlug: 'hogar' }
+//   ]
+```
+
+Recomendaciones cliente:
+- **Debounce 150ms** en cada `input` event.
+- **Min 2 chars** en `q` (el server valida y rechaza con 400 si menos).
+- **AbortController** para cancelar el request previo al tipear nueva tecla.
+- Mostrar con `<datalist>` (nativo) o dropdown custom.
+
+Cat-aware boost: pasá `categoriaId` para subir el ranking de descripciones cuya
+categoría top coincide con la elegida en el form:
+
+```ts
+const items = await tagger.descripciones.sugerir({
+  usuario: 'user_123',
+  q: 'al',
+  categoriaId: idHogar,
+});
+```
+
+Las descripciones se persisten automáticamente cada vez que llamás a
+`movimientos.categorizar(...)` con `descripcion` no nula + `origen`. No hay
+endpoint de write separado — el sistema aprende del corpus real.
+
 ### `tagger.stats.*`
 
 | Método | Endpoint |
@@ -299,6 +344,7 @@ Comercios: `Comercio`, `ActualizarComercio`.
 Import: `ImportarMovimientosInput`, `ImportarMovimientosResult`, `ImportarCatalogoInput`, `ImportarCatalogoResult`, `ImportStatus`.
 Batch: `IniciarBatchInput`, `BatchRun`, `BatchStats`.
 Stats: `StatsPipeline`, `HealthStatus`.
+Descripciones: `SugerenciaDescripcionInput`, `SugerenciaDescripcion`, `SugerenciasDescripcionResult`.
 
 ## Desarrollo del SDK
 

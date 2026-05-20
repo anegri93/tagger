@@ -839,6 +839,23 @@
               <span id="m-monto-help" class="sr-only">Monto en guaraníes. Sólo dígitos.</span>
             </div>
           </div>
+          <div class="field">
+            <label for="m-descripcion">Descripción (opcional)</label>
+            <input
+              id="m-descripcion"
+              name="descripcion"
+              type="text"
+              list="m-descripcion-sug"
+              placeholder="alquiler, salario empleada, regalo…"
+              autocomplete="off"
+              maxlength="200"
+              aria-describedby="m-descripcion-help"
+            />
+            <datalist id="m-descripcion-sug"></datalist>
+            <span id="m-descripcion-help" class="sr-only">
+              Concepto o referencia. Sugerencias basadas en lo que escribiste antes.
+            </span>
+          </div>
           <!-- Modo manual: el user ya sabe la cat al cargar y no quiere cascada. -->
           <label class="manual-toggle" for="m-modo-manual">
             <input type="checkbox" id="m-modo-manual" />
@@ -1062,6 +1079,42 @@
         }),
       );
 
+      // ===== autocomplete descripción =====
+      // Debounce 150ms + min 2 chars + abort en cambio de tecla.
+      let descAbort = null;
+      let descTimer = null;
+      $('m-descripcion').addEventListener('input', () => {
+        const q = $('m-descripcion').value.trim();
+        const usuario = getUsuario();
+        if (descTimer) clearTimeout(descTimer);
+        if (descAbort) descAbort.abort();
+        if (!usuario || q.length < 2) {
+          $('m-descripcion-sug').innerHTML = '';
+          return;
+        }
+        descTimer = setTimeout(async () => {
+          descAbort = new AbortController();
+          try {
+            const params = new URLSearchParams({ usuario, q, limit: '10' });
+            const r = await window.taggerApi('/descripciones/sugerencias?' + params.toString(), {
+              signal: descAbort.signal,
+            });
+            const dl = $('m-descripcion-sug');
+            dl.innerHTML = '';
+            for (const it of r.items || []) {
+              const opt = document.createElement('option');
+              opt.value = it.descripcion;
+              if (it.categoria_slug) opt.label = it.categoria_slug;
+              dl.appendChild(opt);
+            }
+          } catch (e) {
+            if (e?.name !== 'AbortError') {
+              // Silent: autocomplete no debe romper UX.
+            }
+          }
+        }, 150);
+      });
+
       // ===== categorizar =====
       // Submit del <form> cubre Enter en cualquier input + click en botón submit.
       $('form-categorizar').addEventListener('submit', (e) => {
@@ -1078,9 +1131,11 @@
           $('m-nombre').focus();
           return;
         }
+        const descripcion = $('m-descripcion').value.trim();
         const body = { nombre_bancard: nombre };
         if (monto) body.monto = Number(monto);
         if (origen) body.origen = origen;
+        if (descripcion) body.descripcion = descripcion;
 
         // Modo manual: usuario eligió cat en el form. Mandamos categoria_id + aprender.
         const manual = $('m-modo-manual').checked;
@@ -1105,7 +1160,9 @@
           });
           lastMovimientoId = r.movimiento_id;
           lastNombreBancard = nombre;
-          // Reset modo manual del form (próximo submit vuelve a cascada normal).
+          // Reset descripción + modo manual del form (próximo submit vuelve a cascada normal).
+          $('m-descripcion').value = '';
+          $('m-descripcion-sug').innerHTML = '';
           $('m-modo-manual').checked = false;
           $('m-manual-panel').hidden = true;
           modoManualCat.id = null;

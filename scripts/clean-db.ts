@@ -11,6 +11,7 @@ async function main() {
     { op: 'DROP', target: 'reglas_regex' },
     { op: 'TRUNCATE', target: 'correcciones_usuario' },
     { op: 'TRUNCATE', target: 'movimientos' },
+    { op: 'TRUNCATE', target: 'descripcion_uso' },
     { op: 'TRUNCATE', target: 'comercios_catalogo' },
   ];
 
@@ -30,6 +31,9 @@ async function main() {
 
   await db.execute(sql`TRUNCATE TABLE movimientos CASCADE`);
   console.log('TRUNCATE movimientos');
+
+  await db.execute(sql`TRUNCATE TABLE descripcion_uso CASCADE`);
+  console.log('TRUNCATE descripcion_uso');
 
   await db.execute(sql`TRUNCATE TABLE comercios_catalogo CASCADE`);
   console.log('TRUNCATE comercios_catalogo');

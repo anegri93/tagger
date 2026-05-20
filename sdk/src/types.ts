@@ -427,6 +427,35 @@ export interface StatsPipeline {
 }
 
 // =========================================================================
+// Descripciones (autocomplete per-user)
+// =========================================================================
+
+export interface SugerenciaDescripcionInput {
+  /** Id del usuario final. Sin este campo no se devuelve nada (scope per-user). */
+  usuario: string;
+  /** Prefix a buscar. Min 2 chars, max 200. */
+  q: string;
+  /** Cap 1-20. Default 10. */
+  limit?: number;
+  /** Si se pasa, sube ranking de descripciones cuyo cat top coincide. */
+  categoriaId?: string;
+}
+
+export interface SugerenciaDescripcion {
+  descripcion: string;
+  freq: number;
+  /** Slug de la categoría más frecuente para esta descripción. */
+  categoriaSlug?: string;
+}
+
+export interface SugerenciasDescripcionResult {
+  usuario: string;
+  q: string;
+  limit: number;
+  items: SugerenciaDescripcion[];
+}
+
+// =========================================================================
 // Misc
 // =========================================================================
 

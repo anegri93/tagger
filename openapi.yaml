@@ -351,6 +351,55 @@ paths:
                         veces: { type: integer }
                         ejemplos: { type: array, items: { type: string } }
 
+  /descripciones/sugerencias:
+    get:
+      tags: [Descripciones]
+      summary: Autocomplete per-user de descripciones
+      description: |
+        Devuelve top-K descripciones que ESE usuario tipeó antes y empiezan con
+        `q`. Ordenadas por frecuencia descendente. Opcional `categoria_id`
+        boostea las descripciones cuya categoría top coincide.
+
+        Scope estricto per-user: nunca devuelve descripciones de otros usuarios.
+        Latencia objetivo: p99 < 50ms (lookup btree prefix).
+      parameters:
+        - in: query
+          name: usuario
+          required: true
+          schema: { type: string }
+          description: Id del usuario final (mismo que `origen` en categorizar).
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 200 }
+          description: Prefix a buscar (mín 2 chars).
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+        - in: query
+          name: categoria_id
+          schema: { type: string, format: uuid }
+          description: Opcional. Boost ranking de descripciones cuya cat top coincide.
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario: { type: string }
+                  q: { type: string }
+                  limit: { type: integer }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        descripcion: { type: string }
+                        freq: { type: integer }
+                        categoria_slug: { type: string }
+
   /reglas/{id}:
     patch:
       tags: [Reglas]
