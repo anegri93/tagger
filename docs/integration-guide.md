@@ -128,30 +128,59 @@ x-api-key: <API_KEY>
 
 {
   "categoria_id_nueva": "uuid-de-la-categoria-correcta",
-  "motivo": "era taxi"
+  "motivo": "era taxi",
+  "usuario": "user123",
+  "aprender": true
 }
 ```
+
+Campos:
+
+- `categoria_id_nueva` (UUID, **required**) — id de la categoría correcta.
+- `motivo` (string, opcional, max 500) — feedback opcional.
+- `usuario` (string, opcional, max 120) — id del usuario que corrige. Determina el scope de la regla aprendida.
+- `aprender` (boolean, opcional, default `true`):
+  - `true` (default): crea/actualiza regla user-scope con prioridad 1. Próximos movs del mismo nombre devuelven la categoría corregida automáticamente (capa 0 del pipeline).
+  - `false`: **excepción puntual**. Sólo modifica este movimiento. No contamina la memoria del usuario. Útil cuando el comercio en general tiene categoría correcta pero este mov específico es distinto.
 
 Mobile flow: tras `GET /categorias`, mapear slug elegido por usuario → `id` para enviar.
 
 Efecto:
 
-- `categoria_confirmada_id` actualizado
-- Registro en `correcciones_usuario` (audit)
-- No retroalimenta patrones automáticamente — feedback se procesa periódicamente offline
+- `categoria_confirmada_id` actualizado en `movimientos`
+- `fuente_categoria = 'manual'`, `requiere_revision = false`
+- Registro en `correcciones_usuario` (audit, siempre)
+- Si `aprender=true` + tiene usuario: upsert en `reglas` con `scope='usuario:<X>' tipo='literal' origen='correccion' prioridad=1`
 
 Response `200 OK`:
 
 ```json
 {
-  "ok": true,
   "correccion_id": "uuid",
   "categoria_anterior_id": "uuid | null",
-  "categoria_anterior": "slug | null",
+  "categoria_anterior": { "id": "uuid", "slug": "...", "nombre": "..." },
   "categoria_nueva_id": "uuid",
-  "categoria_nueva": "slug"
+  "categoria_nueva": { "id": "uuid", "slug": "...", "nombre": "..." }
 }
 ```
+
+### Caso de uso: excepción puntual (`aprender: false`)
+
+Estación de servicio "ESSO RUTA 1" — la mayoría de tus movs ahí son combustible. Pero hoy sólo bajaste a comprar algo del shop. Querés que ESE mov sea Supermercado, no Combustible, **sin** que próximos movs del mismo lugar cambien:
+
+```json
+{
+  "categoria_id_nueva": "<uuid-supermercado>",
+  "usuario": "user123",
+  "aprender": false
+}
+```
+
+Resultado:
+- El movimiento pasa a Supermercado.
+- No se crea regla user-scope.
+- Próxima vez "ESSO RUTA 1" sigue cayendo en Combustible (regla global o MCC habitual).
+- El audit cross-user (sugerencias-globales) sigue captando que existió esta corrección.
 
 ---
 
@@ -288,6 +317,8 @@ export interface CategorizarResponse {
 export interface CorreccionRequest {
   categoria_id_nueva: string; // UUID
   motivo?: string;
+  usuario?: string; // id del usuario; determina scope de la regla aprendida
+  aprender?: boolean; // default true. false = excepción puntual, no crea regla
 }
 
 export interface ReprocesarRequest {

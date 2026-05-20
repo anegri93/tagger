@@ -390,14 +390,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\"\n}"
+              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\",\n  \"usuario\": \"user123\",\n  \"aprender\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/correccion",
               "host": ["{{baseUrl}}"],
               "path": ["movimientos", "{{movimientoId}}", "correccion"]
             },
-            "description": "Corrección manual desde mobile.\n\n**Body:**\n- `categoria_id_nueva` (UUID, required) — id de la categoría correcta. Cliente lo obtiene del cache de `GET /categorias`.\n- `motivo` (string, opcional) — feedback opcional.\n\n**Response 200:**\n```json\n{\n  \"ok\": true,\n  \"correccion_id\": \"uuid\",\n  \"categoria_anterior_id\": \"uuid|null\",\n  \"categoria_anterior\": \"slug|null\",\n  \"categoria_nueva_id\": \"uuid\",\n  \"categoria_nueva\": \"slug\"\n}\n```\n\nVariables: usa `{{categoriaId}}` (auto-seteada de GET /categorias) y `{{movimientoId}}` (auto-seteada de POST categorizar)."
+            "description": "Corrección manual desde mobile.\n\n**Body:**\n- `categoria_id_nueva` (UUID, required) — id de la categoría correcta. Cliente lo obtiene del cache de `GET /categorias`.\n- `motivo` (string, opcional) — feedback opcional.\n- `usuario` (string, opcional) — id del usuario que corrige. Determina el scope de la regla aprendida.\n- `aprender` (boolean, opcional, default `true`) —\n  - `true` (default): crea/actualiza regla user-scope con prio 1. Próximos movs del mismo nombre devuelven la categoría corregida automáticamente.\n  - `false`: sólo modifica este movimiento. Excepción puntual sin contaminar memoria del usuario. Útil cuando el comercio en general tiene categoría correcta pero este mov específico es distinto (ej estación de servicio donde sólo compraste shop, no combustible).\n\nEl audit en `correcciones_usuario` se inserta siempre, así que las sugerencias cross-user (`GET /reglas/sugerencias-globales`) siguen funcionando.\n\n**Response 200:**\n```json\n{\n  \"correccion_id\": \"uuid\",\n  \"categoria_anterior_id\": \"uuid|null\",\n  \"categoria_anterior\": { \"id\": \"uuid\", \"slug\": \"...\", \"nombre\": \"...\" },\n  \"categoria_nueva_id\": \"uuid\",\n  \"categoria_nueva\": { \"id\": \"uuid\", \"slug\": \"...\", \"nombre\": \"...\" }\n}\n```\n\nVariables: usa `{{categoriaId}}` (auto-seteada de GET /categorias) y `{{movimientoId}}` (auto-seteada de POST categorizar)."
           }
         },
         {

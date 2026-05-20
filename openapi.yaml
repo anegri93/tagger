@@ -159,6 +159,10 @@ paths:
     post:
       tags: [Categorización]
       summary: Corrige manualmente la categoría asignada
+      description: |
+        Por default crea una regla user-scope (prioridad 1) que aprende para próximas
+        categorizaciones del mismo nombre. Pasar `aprender: false` para tratar el
+        movimiento como excepción puntual sin contaminar la memoria del usuario.
       parameters:
         - in: path
           name: id
@@ -180,6 +184,21 @@ paths:
                   type: string
                   maxLength: 500
                   example: 'era taxi, no restaurante'
+                usuario:
+                  type: string
+                  maxLength: 120
+                  description: Id del usuario que corrige. Determina el scope de la regla aprendida.
+                aprender:
+                  type: boolean
+                  default: true
+                  description: |
+                    Si `true` (default), crea/actualiza regla user-scope con prio 1 para que
+                    próximos movs del mismo nombre devuelvan la categoría corregida automático.
+
+                    Si `false`, sólo se modifica este movimiento. La memoria del usuario no se
+                    altera. Útil para excepciones puntuales (ej estación de servicio donde
+                    sólo compraste algo del shop). El registro en `correcciones_usuario` (audit)
+                    se inserta siempre, así que las sugerencias cross-user siguen funcionando.
       responses:
         '200':
           description: Corrección aplicada

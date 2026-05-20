@@ -228,7 +228,7 @@ open http://localhost:3000/ui/      # UIs
 | ------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?}` |
 | GET    | `/movimientos/:id`            | Detalle movimiento (incluye evidencia IA)                                                                                          |
-| POST   | `/movimientos/:id/correccion` | Corrección manual usuario                                                                                                          |
+| POST   | `/movimientos/:id/correccion` | Corrección manual. Body: `{categoria_id_nueva, usuario?, motivo?, aprender?}`. `aprender=true` (default) crea regla user-scope (capa 0). `aprender=false` aplica sólo a este mov (excepción puntual, no contamina memoria) |
 | POST   | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`.  |
 
 ### CRUD recursos
@@ -294,7 +294,7 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 | 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
 | 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
 | 5. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
-| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Si hay usuario y se puede derivar una clave (transferencia MANGO o nombre comercio), auto-upsert en `reglas` con `scope='usuario:X' tipo='literal' origen='correccion'`. Si se repite ≥N veces el mismo nombre aparece en `GET /reglas/sugerencias` para promover a regla global |
+| Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Body `{categoria_id_nueva, usuario?, aprender?}`. Si `aprender=true` (default) y hay usuario, auto-upsert en `reglas` con `scope='usuario:X' tipo='literal' origen='correccion' prioridad=1`. Si `aprender=false`, sólo modifica este mov (excepción puntual, no contamina memoria). Audit en `correcciones_usuario` se inserta siempre — `GET /reglas/sugerencias-globales` capta consensos aunque varios usuarios marquen `aprender=false` |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
 
