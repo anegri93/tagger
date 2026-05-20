@@ -179,6 +179,31 @@ await check('reprocesar(id)', async () => {
   expect(r.movimientoId === movId);
 });
 
+await check('corregir({aprender:false}) no crea regla user', async () => {
+  const cats = await tagger.categorias.listar();
+  const ropa = cats.find((c) => c.slug === 'ropa');
+  expect(ropa, 'no hay cat ropa');
+  // Nombre único alfanumérico (sin _ ni espacios que se quitan al normalizar)
+  const nombreUnico = `SDKEXCEP${Date.now()}`;
+  const usuario = 'sdk_excepcion_' + Date.now();
+  const mov = await tagger.movimientos.categorizar({
+    nombreBancard: nombreUnico,
+    monto: 1000,
+    origen: usuario,
+  });
+  await tagger.movimientos.corregir({
+    movimientoId: mov.movimientoId,
+    categoriaIdNueva: ropa.id,
+    usuario,
+    aprender: false,
+  });
+  const reglasUser = await tagger.reglas.listar({ scope: `usuario:${usuario}` });
+  const hayRegla = reglasUser.some((r) =>
+    String(r.valor_normalizado).includes(nombreUnico),
+  );
+  if (hayRegla) throw new Error('se creó regla cuando aprender=false (server desactualizado?)');
+});
+
 // ============== sugerencias contextuales (trigram) ==============
 console.log('\n-- sugerencias contextuales --');
 await check('categorias.similares("hogar", limit=3)', async () => {

@@ -136,7 +136,8 @@ export function crearCorreccionService(
       });
 
       // Hook: si hay usuario y clave derivable, guardar como regla literal user-scope.
-      if (memoria) {
+      // Saltear si aprender=false (excepción puntual, no contamina memoria).
+      if (memoria && input.aprender !== false) {
         const usuario = input.usuario ?? mov.origen;
         const clave = claveMemoria({
           nombreBancard: mov.nombreBancard,

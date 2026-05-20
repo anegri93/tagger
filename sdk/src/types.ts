@@ -125,6 +125,13 @@ export interface CorreccionInput {
   categoriaIdNueva: string;
   usuario?: string;
   motivo?: string;
+  /**
+   * Si false, sólo corrige este movimiento sin crear regla user-scope para
+   * próximas categorizaciones. Útil para excepciones puntuales (ej una compra
+   * en el shop de una estación de servicio cuya categoría habitual es Combustible).
+   * Default: true (corrección normal, aprende para próximas veces).
+   */
+  aprender?: boolean;
 }
 
 export interface CorreccionResult {

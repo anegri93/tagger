@@ -48,7 +48,26 @@ describe('POST /movimientos/:id/correccion', () => {
       categoriaIdNueva: CAT,
       motivo: 'fix',
       usuario: undefined,
+      aprender: undefined,
     });
+  });
+
+  it('propaga aprender=false al service (excepción puntual)', async () => {
+    const svc = {
+      aplicar: vi
+        .fn()
+        .mockResolvedValue({ ok: true, correccionId: 'c-2', categoriaAnteriorId: null }),
+    };
+    const app = await build(svc);
+    const r = await app.inject({
+      method: 'POST',
+      url: `/movimientos/${MOV}/correccion`,
+      payload: { categoria_id_nueva: CAT, aprender: false },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(svc.aplicar).toHaveBeenCalledWith(
+      expect.objectContaining({ aprender: false }),
+    );
   });
 
   it('404 si movimiento no existe', async () => {

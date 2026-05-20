@@ -65,11 +65,36 @@ const r2 = await tagger.movimientos.categorizar({
 |---|---|
 | `categorizar(input)` | POST `/categorizar-movimiento` |
 | `obtener(id)` | GET `/movimientos/:id` |
-| `corregir({movimientoId, categoriaIdNueva, usuario?})` | POST `/movimientos/:id/correccion` |
+| `corregir({movimientoId, categoriaIdNueva, usuario?, motivo?, aprender?})` | POST `/movimientos/:id/correccion` |
 | `reprocesar(id)` | POST `/movimientos/:id/reprocesar` |
 | `importar({rows, batchId?})` | POST `/movimientos/importar` |
 | `statusImport()` | GET `/movimientos/importar/status` |
 | `categoriasSugeridas(id, {q?, limit?, offset?, umbral?})` | GET `/movimientos/:id/categorias-sugeridas` |
+
+#### Corregir con o sin aprender (`aprender`)
+
+Por default, corregir un movimiento crea una regla user-scope con prioridad 1: las próximas categorizaciones del mismo nombre devuelven la categoría corregida automáticamente. Esto es lo deseado en la mayoría de los casos.
+
+Para **excepciones puntuales** (ej: una estación de servicio cuya categoría habitual es Combustible, pero esta vez compraste algo del shop), pasá `aprender: false`. Sólo se modifica este movimiento; no se crea regla.
+
+```ts
+// Caso normal: aprende. Próximos movs con mismo nombre van a Supermercado.
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idSupermercado,
+  usuario: 'user123',
+}); // aprender: true por default
+
+// Excepción única: sólo este mov pasa a Supermercado. Próximos siguen en Combustible.
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idSupermercado,
+  usuario: 'user123',
+  aprender: false,
+});
+```
+
+El registro `correcciones_usuario` (audit) se inserta siempre, así que la sugerencia cross-user via `tagger.reglas.sugerenciasGlobales()` sigue captando consensos aunque varios usuarios marquen `aprender: false`.
 
 #### Sobre `descripcion` y categorización contextual
 

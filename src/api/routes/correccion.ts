@@ -7,6 +7,13 @@ const bodySchema = z.object({
   categoria_id_nueva: z.string().regex(UUID_RE),
   motivo: z.string().max(500).optional(),
   usuario: z.string().max(120).optional(),
+  /**
+   * Si false, sólo corrige el movimiento (audit) sin crear/actualizar regla
+   * user-scope. Útil para excepciones puntuales (ej comercio cuya categoría
+   * habitual es correcta, pero este mov específico es diferente).
+   * Default: true (comportamiento histórico).
+   */
+  aprender: z.boolean().optional(),
 });
 
 export interface CorreccionService {
@@ -15,6 +22,7 @@ export interface CorreccionService {
     categoriaIdNueva: string;
     motivo?: string | undefined;
     usuario?: string | undefined;
+    aprender?: boolean | undefined;
   }): Promise<
     | { ok: true; correccionId: string; categoriaAnteriorId: string | null }
     | { ok: false; error: 'movimiento_no_encontrado' | 'categoria_invalida' }
@@ -42,6 +50,7 @@ export const correccionRoute =
         categoriaIdNueva: body.data.categoria_id_nueva,
         motivo: body.data.motivo,
         usuario: body.data.usuario,
+        aprender: body.data.aprender,
       });
       if (!r.ok) {
         const code = r.error === 'movimiento_no_encontrado' ? 404 : 400;

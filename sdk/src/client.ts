@@ -239,6 +239,7 @@ function movimientosModule(c: TaggerClient) {
       const body: Record<string, unknown> = { categoria_id_nueva: input.categoriaIdNueva };
       if (input.usuario !== undefined) body.usuario = input.usuario;
       if (input.motivo !== undefined) body.motivo = input.motivo;
+      if (input.aprender !== undefined) body.aprender = input.aprender;
       const r = await c.request<{
         correccion_id: string;
         categoria_anterior: Categoria | null;

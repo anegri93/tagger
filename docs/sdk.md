@@ -89,6 +89,31 @@ tagger.movimientos.statusImport(): Promise<ImportStatus>
 tagger.movimientos.categoriasSugeridas(id, {q?, limit?, offset?, umbral?}): Promise<CategoriasSugeridasResult>
 ```
 
+### Corregir con o sin aprender (`aprender`)
+
+Por default, `corregir` crea regla user-scope (prio 1) para que próximas categorizaciones del mismo nombre devuelvan la categoría corregida automáticamente.
+
+Para **excepciones puntuales** (estación de servicio donde sólo compraste algo del shop, mercado donde compraste regalo, etc), pasá `aprender: false`. Sólo el movimiento se actualiza; la memoria del usuario no se contamina.
+
+```ts
+// Caso normal — aprende
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idSupermercado,
+  usuario: 'user123',
+});
+
+// Excepción única — no aprende
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idSupermercado,
+  usuario: 'user123',
+  aprender: false,
+});
+```
+
+El audit (`correcciones_usuario`) se inserta siempre, así que sugerencias cross-user siguen funcionando.
+
 ### El campo `descripcion` y la cascada
 
 El campo `descripcion` no es decorativo. El pipeline lo **concatena** con `nombreBancard` y `nombreComercio` antes de evaluar las reglas globales. Eso permite que el contexto del gasto influya en la categorización.
