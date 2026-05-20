@@ -489,7 +489,7 @@ tagger/
 │   │   ├── repos/          (CRUD writers/readers + cache)
 │   │   ├── loaders/        (csv stream helper)
 │   │   └── migrations/     (drizzle-kit generated)
-│   ├── domain/             (types, normalize, brand, confianza)
+│   ├── domain/             (types, normalize, confianza)
 │   ├── layers/             (reglas, mcc, ia)
 │   ├── pipeline/           (categorizar, persistir, ia-fallback)
 │   ├── lib/                (ollama client, logger)
