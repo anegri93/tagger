@@ -106,14 +106,46 @@ Cuando usuario corrige una categoría en mobile, llamar:
 
 ```bash
 POST /movimientos/:id/correccion
-{"categoria_id_nueva":"<uuid>","motivo":"era taxi"}
+{
+  "categoria_id_nueva":"<uuid>",
+  "motivo":"era taxi",
+  "usuario":"user123",
+  "aprender":true
+}
 ```
+
+Campos:
+
+- `categoria_id_nueva` (UUID, requerido)
+- `motivo` (string, opcional)
+- `usuario` (string, opcional) — id del usuario, determina scope de regla aprendida
+- `aprender` (boolean, opcional, default `true`):
+  - `true`: actualiza mov + upsert regla user-scope (`scope='usuario:<id>' tipo='literal' prio=1 origen='correccion'`)
+  - `false`: sólo actualiza el mov (excepción puntual, no contamina memoria)
 
 Efecto:
 
-- Actualiza `categoria_confirmada_id` del movimiento
-- Registro en `correcciones_usuario` (audit trail)
-- **No** retroalimenta patrones automáticamente (decisión manual via `/ui/recat/`)
+- `categoria_confirmada_id` del mov actualizado
+- `fuente_categoria = 'manual'`, `requiere_revision = false`
+- Registro en `correcciones_usuario` (audit, siempre)
+- Si `aprender=true` + tiene `usuario`: regla user-scope creada/actualizada → próximos movs del mismo nombre devuelven la nueva categoría automático (capa 0 del pipeline)
+
+### Categorización manual al cargar (alternativa)
+
+Si la app crea el mov con cat ya elegida por el user (gasto manual sin cascada), usar `POST /categorizar-movimiento` con `categoria_id` directo:
+
+```bash
+POST /categorizar-movimiento
+{
+  "nombre_bancard":"ALMACEN DON JUAN",
+  "monto":35000,
+  "origen":"user123",
+  "categoria_id":"<uuid>",
+  "aprender":true
+}
+```
+
+Efecto: skip cascada, mov se guarda con `fuente='manual'` `confianza=1`. Si `aprender=true` + `origen` → también upsert regla user-scope.
 
 ---
 
@@ -146,26 +178,39 @@ No hay endpoint masivo. Para limpiar backlog usar script:
 
 ## Recategorización del catálogo
 
-Después de agregar patrones/MCCs nuevos, re-evaluar comercios existentes:
+> Nota: `/ui/recat/` fue removido en la simplificación del pipeline (commit e96b04e).
+> Para detectar drift entre reglas/MCC y movs existentes, usar `POST /movimientos/:id/reprocesar`
+> sobre movs específicos, o re-ejecutar `test-batch` con `source=catalogo` para benchmark masivo.
 
-### Workflow
+Después de agregar reglas/MCCs nuevos, opciones para re-evaluar:
 
-1. UI: `http://localhost:3000/ui/recat/`
-2. ▶ **Correr recategorización** → ejecuta cascada (bypass catálogo) sobre todo `comercios_catalogo`
-3. Resultado va a columnas shadow: `categoria_nueva_id`, `fuente_nueva`, `confianza_nueva`, `recategorizado_at`
-4. Ver **Comparación** (totales: match / diff / sin_categoria)
-5. Inspeccionar **Diffs por categoría** (drill-down → ver rows específicos)
-6. **Aplicar diff** (promueve `categoria_nueva_id → categoria_id`):
-   - Botón por celda de tabla diffs
-   - O CLI: `pnpm tsx scripts/aplicar-recat.ts --apply`
+### Mov individual
 
-### Sugerencias automáticas
+```bash
+POST /movimientos/<id>/reprocesar
+{ "bypass_catalogo": false }
+```
 
-En `/ui/recat/`:
+Re-corre cascada sobre ese mov. Útil para auditar correcciones específicas.
 
-- **Sugerencias patrones** → rule-based desde sin_cat
-- **Sugerencias IA** → Ollama itera y propone patrones nuevos (5 iteraciones por defecto)
-- **Marcas candidatas** → prefijos frecuentes que aún no son patrón
+### Benchmark masivo (sin tocar movs reales)
+
+```bash
+POST /test-batch/start
+{ "batch_id": "regression-2026-05", "source": "mcc_por_nombre", "concurrency": 30 }
+```
+
+Corre cascada sobre el catálogo `mcc_por_nombre` (~65k entradas) y genera stats de drift (match / mismatch / sin_match) vs lo curado. Inspeccionar en `/ui/test-monitor/`.
+
+### Sugerencias de reglas globales
+
+Cross-user: cuando varios usuarios corrigieron el mismo nombre a la misma cat:
+
+```bash
+GET /reglas/sugerencias-globales?min_usuarios=3&min_total=5
+```
+
+Aparece en `/ui/dashboard/` con botón "+ Regla global" para promover.
 
 ---
 
@@ -261,15 +306,9 @@ docker exec tagger-ollama-1 ollama pull gemma2:2b
 Cascada agotada sin match. Opciones:
 
 - Esperar IA fallback (async) — re-fetch `/movimientos/:id` después de ~5s
-- Agregar patrón manual via `/ui/categorias/<slug>` → tab Patrones
-- Recategorizar después con `/ui/recat/`
-
-### Drift entre `categoria_id` y `categoria_nueva_id` en comercios
-
-Recategorización corrió pero no se aplicó. Opciones:
-
-- Revisar diffs en `/ui/recat/`
-- Aplicar selectivamente (UI) o masivamente (`pnpm tsx scripts/aplicar-recat.ts --apply`)
+- Agregar regla manual via `/ui/categorias/<slug>` → tab Patrones
+- POST `/movimientos/:id/correccion` con la cat correcta (audit + memoria user)
+- Re-ejecutar cascada sobre ese mov: `POST /movimientos/:id/reprocesar`
 
 ---
 

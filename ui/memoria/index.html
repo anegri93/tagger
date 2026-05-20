@@ -305,6 +305,159 @@
         min-width: 200px;
         margin: 0;
       }
+      /* Form: toggle manual + categoría elegida */
+      .manual-toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        margin-top: 12px;
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+      .manual-toggle:hover {
+        border-color: var(--accent);
+      }
+      .manual-toggle:has(input:checked) {
+        background: rgba(46, 160, 67, 0.08);
+        border-color: var(--success);
+      }
+      .manual-toggle input {
+        margin-top: 3px;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .manual-toggle span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+      }
+      #m-manual-panel {
+        margin-top: 10px;
+        padding: 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+      }
+      #btn-elegir-cat {
+        font-size: 13px;
+      }
+      .cat-chosen {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-left: 10px;
+      }
+      .cat-chosen.set {
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      /* Resultado: hero + acción única para corregir */
+      .result-actions {
+        margin-top: 14px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* Modal "Cambiar categoría" — patrón modern-web-guidance:
+         <dialog closedby="any"> dismiss con backdrop + Esc, focus trap nativo. */
+      #dlg-cambiar {
+        width: min(540px, 92vw);
+        max-height: 88vh;
+        padding: 18px 18px 16px;
+        background: var(--bg-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+      }
+      #dlg-cambiar::backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+      }
+      .dlg-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .dlg-head h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+      .dlg-close {
+        background: transparent;
+        border: none;
+        color: var(--text-3);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px 8px;
+        min-height: auto;
+      }
+      .dlg-close:hover {
+        color: var(--text);
+      }
+      .dlg-sub {
+        margin: 0 0 12px;
+        color: var(--text-3);
+        font-size: 13px;
+      }
+      #dlg-cat-filter {
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .dlg-cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+        gap: 6px;
+        max-height: 280px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+        padding: 2px;
+      }
+      .dlg-cat-grid .cat-btn {
+        padding: 8px 10px;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        font-size: 13px;
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.15s, background 0.15s;
+        min-height: auto;
+      }
+      .dlg-cat-grid .cat-btn:hover {
+        border-color: var(--accent);
+      }
+      .dlg-cat-grid .cat-btn.selected {
+        background: rgba(46, 160, 67, 0.15);
+        border-color: var(--success);
+        color: var(--success);
+        font-weight: 600;
+      }
+      .dlg-cat-grid .empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: var(--text-3);
+        font-size: 13px;
+        padding: 20px;
+      }
+      .dlg-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding-top: 6px;
+        border-top: 1px solid var(--border);
+        margin-top: 4px;
+      }
+
       /* Radio group "Alcance de la corrección" — radio agrupado con copy explícito,
          dos labels clickeables, accent-color y :has() para feedback visual del seleccionado. */
       .aprender-fieldset {
@@ -313,6 +466,9 @@
         border: none;
         padding: 0;
         margin: 14px 0 0;
+      }
+      .aprender-fieldset[hidden] {
+        display: none !important;
       }
       .aprender-radio {
         display: flex;
@@ -683,15 +839,48 @@
               <span id="m-monto-help" class="sr-only">Monto en guaraníes. Sólo dígitos.</span>
             </div>
           </div>
+          <!-- Modo manual: el user ya sabe la cat al cargar y no quiere cascada. -->
+          <label class="manual-toggle" for="m-modo-manual">
+            <input type="checkbox" id="m-modo-manual" />
+            <span>
+              <strong>Yo elijo la categoría (manual)</strong>
+              <span class="aprender-sub">
+                Saltea el pipeline y guarda con la cat elegida. Opcional: aprender para próximos.
+              </span>
+            </span>
+          </label>
+          <div id="m-manual-panel" hidden>
+            <button type="button" id="btn-elegir-cat" class="btn btn-ghost">
+              Elegir categoría…
+            </button>
+            <span id="m-cat-elegida" class="cat-chosen" aria-live="polite">Ninguna seleccionada</span>
+            <fieldset class="aprender-fieldset" aria-label="Alcance">
+              <legend class="sr-only">Alcance</legend>
+              <label class="aprender-radio">
+                <input type="radio" name="m-aprender-scope" value="adelante" />
+                <span>
+                  <strong>📌 Este movimiento en adelante</strong>
+                  <span class="aprender-sub">Próximos del mismo nombre irán a esta categoría.</span>
+                </span>
+              </label>
+              <label class="aprender-radio">
+                <input type="radio" name="m-aprender-scope" value="solo" checked />
+                <span>
+                  <strong>⚡ Solo este movimiento</strong>
+                  <span class="aprender-sub">No aprende para futuros (default cuando es manual).</span>
+                </span>
+              </label>
+            </fieldset>
+          </div>
           <div class="actions">
             <button type="submit" id="btn-crear" class="btn btn-primary">Categorizar →</button>
           </div>
         </form>
       </section>
 
-      <!-- 2. Resultado -->
-      <div class="card" id="card-resultado" hidden>
-        <h2>2. Resultado</h2>
+      <!-- 2. Resultado — UI mínima: cat asignada + 1 botón para cambiar -->
+      <section class="card" id="card-resultado" hidden aria-labelledby="paso2-title">
+        <h2 id="paso2-title">2. Resultado</h2>
         <div class="result-hero" id="hero">
           <div class="icon" id="hero-icon">✓</div>
           <div style="flex: 1; min-width: 0">
@@ -700,55 +889,10 @@
             <div class="why" id="hero-why">—</div>
           </div>
         </div>
-        <div id="corregir-row" style="margin-top: 14px">
-          <div style="font-size: 12px; color: var(--text-3); margin-bottom: 6px">
-            ¿No es correcto? Elegí una alternativa similar:
-          </div>
-          <div id="similares-chips" class="sim-chips">
-            <div class="empty" style="margin: 0">Sin categoría origen — usá buscar o lista completa.</div>
-          </div>
-          <div class="sim-actions">
-            <button id="btn-sim-mas" class="btn btn-ghost" type="button" hidden>Ver más</button>
-            <button id="btn-sim-toggle-buscar" class="btn btn-ghost" type="button">Buscar otra…</button>
-            <button id="btn-sim-toggle-todas" class="btn btn-ghost" type="button">Ver lista completa</button>
-          </div>
-          <div id="sim-buscar-row" class="row" hidden style="margin-top: 8px">
-            <div class="field" style="flex: 2">
-              <input id="sim-buscar" type="text" placeholder="Buscar por nombre… (ej: super, farmacia)" />
-            </div>
-            <div>
-              <button id="btn-sim-buscar" class="btn btn-ghost" type="button">Buscar</button>
-            </div>
-          </div>
-          <div class="corregir" id="sim-todas-row" hidden style="margin-top: 8px">
-            <div class="field">
-              <label>Toda la lista</label>
-              <select id="c-categoria"></select>
-            </div>
-          </div>
-          <fieldset class="aprender-fieldset" aria-label="Alcance de la corrección">
-            <legend class="sr-only">Alcance de la corrección</legend>
-            <label class="aprender-radio">
-              <input type="radio" name="c-aprender-scope" value="adelante" checked />
-              <span>
-                <strong>📌 Este movimiento en adelante</strong>
-                <span class="aprender-sub">Aprende. Próximos movs con el mismo nombre van a la nueva categoría automático.</span>
-              </span>
-            </label>
-            <label class="aprender-radio">
-              <input type="radio" name="c-aprender-scope" value="solo" />
-              <span>
-                <strong>⚡ Solo este movimiento</strong>
-                <span class="aprender-sub">Excepción puntual. Modifica sólo este mov; no se guarda regla.</span>
-              </span>
-            </label>
-          </fieldset>
-          <div style="margin-top: 12px">
-            <button id="btn-corregir" class="btn btn-primary" disabled aria-disabled="true">
-              Guardar corrección
-            </button>
-            <span id="sim-elegida" style="font-size: 12px; color: var(--text-3); margin-left: 8px" aria-live="polite"></span>
-          </div>
+        <div class="result-actions">
+          <button id="btn-abrir-cambiar" class="btn btn-ghost" type="button">
+            ✎ Cambiar categoría
+          </button>
         </div>
         <details class="tech">
           <summary>Ver detalles técnicos del pipeline</summary>
@@ -764,7 +908,7 @@
           </div>
           <pre class="raw" id="resultado-raw"></pre>
         </details>
-      </div>
+      </section>
 
       <!-- 3. Lo que aprendí de vos -->
       <div class="card full">
@@ -805,6 +949,47 @@
       </div>
     </main>
 
+    <!-- Modal: cambiar categoría — 1 control: grid de cats con filter + radio scope + guardar -->
+    <dialog id="dlg-cambiar" closedby="any" aria-labelledby="dlg-cambiar-title">
+      <header class="dlg-head">
+        <h3 id="dlg-cambiar-title">Cambiar categoría</h3>
+        <button class="dlg-close" id="dlg-cambiar-close" type="button" aria-label="Cerrar">✕</button>
+      </header>
+      <p class="dlg-sub" id="dlg-cambiar-sub">—</p>
+      <input
+        id="dlg-cat-filter"
+        type="search"
+        placeholder="Buscar categoría…"
+        autocomplete="off"
+        enterkeyhint="search"
+        aria-label="Filtrar categorías"
+      />
+      <div class="dlg-cat-grid" id="dlg-cat-grid" role="radiogroup" aria-label="Categorías"></div>
+      <fieldset id="dlg-scope-fieldset" class="aprender-fieldset" aria-label="Alcance del cambio">
+        <legend class="sr-only">Alcance del cambio</legend>
+        <label class="aprender-radio">
+          <input type="radio" name="dlg-scope" value="adelante" checked />
+          <span>
+            <strong>📌 Este movimiento en adelante</strong>
+            <span class="aprender-sub">Próximos del mismo nombre irán a la nueva categoría.</span>
+          </span>
+        </label>
+        <label class="aprender-radio">
+          <input type="radio" name="dlg-scope" value="solo" />
+          <span>
+            <strong>⚡ Solo este movimiento</strong>
+            <span class="aprender-sub">Excepción puntual. No aprende para futuros.</span>
+          </span>
+        </label>
+      </fieldset>
+      <footer class="dlg-actions">
+        <button type="button" class="btn btn-ghost" id="dlg-cambiar-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="dlg-cambiar-guardar" disabled>
+          Guardar
+        </button>
+      </footer>
+    </dialog>
+
     <div class="toast-host" id="toast-host" aria-live="polite" aria-atomic="false"></div>
 
     <script>
@@ -816,17 +1001,6 @@
       let lastOrigen = null;
       let categoriasCache = null;
       let historial = loadHistorial();
-      // Estado del selector de similares
-      const SIM_UMBRAL_DEFAULT = 0.05;
-      let simState = {
-        offset: 0,
-        limit: 5,
-        q: null,
-        umbral: SIM_UMBRAL_DEFAULT,
-        cargados: [], // items acumulados
-        elegidaId: null,
-        elegidaNombre: null,
-      };
 
       // ===== toast =====
       function toast(msg, type = 'info') {
@@ -869,9 +1043,6 @@
         if (categoriasCache) return categoriasCache;
         const r = await window.taggerApi('/categorias');
         categoriasCache = r.items || [];
-        $('c-categoria').innerHTML = categoriasCache
-          .map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`)
-          .join('');
         return categoriasCache;
       }
 
@@ -910,6 +1081,22 @@
         const body = { nombre_bancard: nombre };
         if (monto) body.monto = Number(monto);
         if (origen) body.origen = origen;
+
+        // Modo manual: usuario eligió cat en el form. Mandamos categoria_id + aprender.
+        const manual = $('m-modo-manual').checked;
+        if (manual) {
+          if (!modoManualCat.id) {
+            toast('Elegí una categoría primero', 'err');
+            return;
+          }
+          body.categoria_id = modoManualCat.id;
+          const aprenderRadio = document.querySelector('input[name="m-aprender-scope"]:checked');
+          body.aprender = aprenderRadio?.value === 'adelante';
+          if (!origen && body.aprender) {
+            toast('Para aprender necesitás tu nombre arriba', 'err');
+            return;
+          }
+        }
         try {
           const r = await window.taggerApi('/categorizar-movimiento', {
             method: 'POST',
@@ -918,9 +1105,15 @@
           });
           lastMovimientoId = r.movimiento_id;
           lastNombreBancard = nombre;
-          // Reset radio "alcance" al default ("este en adelante") cada vez que categorizás un mov nuevo.
+          // Reset modo manual del form (próximo submit vuelve a cascada normal).
+          $('m-modo-manual').checked = false;
+          $('m-manual-panel').hidden = true;
+          modoManualCat.id = null;
+          modoManualCat.nombre = null;
+          actualizarCatChosen();
+          // Reset radio scope del modal corregir al default ("adelante").
           const radioAdelante = document.querySelector(
-            'input[name="c-aprender-scope"][value="adelante"]',
+            'input[name="dlg-scope"][value="adelante"]',
           );
           if (radioAdelante) radioAdelante.checked = true;
           lastOrigen = origen;
@@ -1016,128 +1209,19 @@
         $('resultado-raw').textContent = JSON.stringify(r, null, 2);
         // Tracer
         renderTracer(fuente);
-        // Si tiene categoría, preseleccionar en el select
-        if (cat?.id && $('c-categoria').options.length) {
-          $('c-categoria').value = cat.id;
-        }
-        // Reset + cargar similares
-        resetSimilares();
-        cargarSimilares({ reset: true });
-        // Scroll suave
+        // Scroll suave al resultado
         $('card-resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      // ===== similares =====
-      function resetSimilares() {
-        simState = { offset: 0, limit: 5, q: null, umbral: SIM_UMBRAL_DEFAULT, cargados: [], elegidaId: null, elegidaNombre: null };
-        $('sim-elegida').textContent = '';
-        $('btn-corregir').disabled = true;
-        $('btn-sim-mas').hidden = true;
-        $('sim-buscar-row').hidden = true;
-        $('sim-todas-row').hidden = true;
-        $('similares-chips').innerHTML = '<div class="empty" style="margin:0">Buscando categorías similares…</div>';
-      }
+      // resetSimilares: legacy, dejado vacío para compat (referenciado en categorizar).
+      function resetSimilares() {}
 
-      async function cargarSimilares({ reset = false } = {}) {
-        if (!lastMovimientoId) {
-          $('similares-chips').innerHTML =
-            '<div class="empty" style="margin:0">Categorizá un movimiento primero.</div>';
-          return;
-        }
-        if (reset) {
-          simState.offset = 0;
-          simState.cargados = [];
-        }
-        const params = new URLSearchParams({
-          limit: String(simState.limit),
-          offset: String(simState.offset),
-          umbral: String(simState.umbral),
-        });
-        if (simState.q) params.set('q', simState.q);
-        try {
-          const r = await window.taggerApi(
-            `/movimientos/${lastMovimientoId}/categorias-sugeridas?` + params.toString(),
-          );
-          const items = r.items || [];
-          simState.cargados = simState.cargados.concat(items);
-          // si pagina llena → puede haber más
-          $('btn-sim-mas').hidden = items.length < simState.limit;
-          renderSimilaresChips();
-        } catch (e) {
-          $('similares-chips').innerHTML =
-            '<div class="empty" style="margin:0">No pude cargar similares.</div>';
-        }
-      }
-
-      function renderSimilaresChips() {
-        const cont = $('similares-chips');
-        if (!simState.cargados.length) {
-          cont.innerHTML =
-            '<div class="empty" style="margin:0">Sin similares — usá "Buscar otra" o "Ver lista completa".</div>';
-          return;
-        }
-        cont.innerHTML = simState.cargados
-          .map((c) => {
-            const sel = simState.elegidaId === c.id ? ' selected' : '';
-            const score = Number.isFinite(c.similitud)
-              ? `<span class="sim-score">${(c.similitud * 100).toFixed(0)}%</span>`
-              : '';
-            return `<button class="sim-chip${sel}" type="button" data-id="${escapeHtml(c.id)}" data-nombre="${escapeHtml(c.nombre)}" title="${escapeHtml(c.descripcion || '')}">${escapeHtml(c.nombre)} ${score}</button>`;
-          })
-          .join('');
-        cont.querySelectorAll('.sim-chip').forEach((el) =>
-          el.addEventListener('click', () => {
-            seleccionarCategoria(el.getAttribute('data-id'), el.getAttribute('data-nombre'));
-          }),
-        );
-      }
-
-      function seleccionarCategoria(id, nombre) {
-        simState.elegidaId = id;
-        simState.elegidaNombre = nombre;
-        $('btn-corregir').disabled = false;
-        $('sim-elegida').textContent = '→ ' + (nombre || id);
-        // refresca estado visual chips
-        document.querySelectorAll('.sim-chip').forEach((el) => {
-          el.classList.toggle('selected', el.getAttribute('data-id') === id);
-        });
-        // sync select completo
-        if ($('c-categoria').options.length) $('c-categoria').value = id;
-      }
-
-      $('btn-sim-mas').addEventListener('click', () => {
-        simState.offset += simState.limit;
-        cargarSimilares();
-      });
-
-      $('btn-sim-toggle-buscar').addEventListener('click', () => {
-        const row = $('sim-buscar-row');
-        row.hidden = !row.hidden;
-        if (!row.hidden) $('sim-buscar').focus();
-      });
-
-      $('btn-sim-buscar').addEventListener('click', () => {
-        const q = $('sim-buscar').value.trim();
-        simState.q = q || null;
-        cargarSimilares({ reset: true });
-      });
-      $('sim-buscar').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') $('btn-sim-buscar').click();
-      });
-
-      $('btn-sim-toggle-todas').addEventListener('click', async () => {
-        await cargarCategorias();
-        const row = $('sim-todas-row');
-        row.hidden = !row.hidden;
-        if (!row.hidden && simState.elegidaId) $('c-categoria').value = simState.elegidaId;
-      });
-
-      // cambio en select completo selecciona también
+      // === Cargar similares no usado en nuevo flujo (modal lista TODAS las cats) ===
+      async function cargarSimilares() {}
+      // cambio en select completo selecciona también (legacy noop)
       document.addEventListener('change', (e) => {
-        if (e.target && e.target.id === 'c-categoria') {
-          const id = e.target.value;
-          const opt = e.target.options[e.target.selectedIndex];
-          seleccionarCategoria(id, opt ? opt.textContent : id);
+        if (false) {
+          const opt = e.target;
         }
       });
 
@@ -1171,25 +1255,141 @@
         });
       }
 
-      // ===== corregir =====
-      $('btn-corregir').addEventListener('click', async () => {
+      // ===== Modo manual del form 1 =====
+      // El user marca el checkbox + elige cat → submit del form usa categoria_id directo
+      // (skip cascada en backend, mov se guarda como fuente='manual').
+      const modoManualCat = { id: null, nombre: null };
+
+      $('m-modo-manual').addEventListener('change', (e) => {
+        $('m-manual-panel').hidden = !e.target.checked;
+        if (!e.target.checked) {
+          modoManualCat.id = null;
+          modoManualCat.nombre = null;
+          actualizarCatChosen();
+        }
+      });
+
+      $('btn-elegir-cat').addEventListener('click', async () => {
+        await cargarCategorias();
+        abrirDialogoElegirCat();
+      });
+
+      function actualizarCatChosen() {
+        const el = $('m-cat-elegida');
+        if (modoManualCat.nombre) {
+          el.textContent = '→ ' + modoManualCat.nombre;
+          el.classList.add('set');
+        } else {
+          el.textContent = 'Ninguna seleccionada';
+          el.classList.remove('set');
+        }
+      }
+
+      // ===== Modal "Cambiar categoría" / "Elegir categoría" =====
+      // Reusable: mismo modal sirve para "elegir cat al cargar" (form 1) y
+      // "cambiar cat después" (card Resultado). Se controla con `dlgMode`.
+      let dlgMode = 'cambiar'; // 'cambiar' (post-cat) | 'elegir' (pre-cat manual)
+      let dlgElegida = { id: null, nombre: null };
+
+      function abrirDialogoElegirCat() {
+        dlgMode = 'elegir';
+        dlgElegida = { id: modoManualCat.id, nombre: modoManualCat.nombre };
+        $('dlg-cambiar-title').textContent = 'Elegir categoría';
+        $('dlg-cambiar-sub').textContent =
+          'Esta cat se asigna directo. El sistema no va a adivinar.';
+        $('dlg-cat-filter').value = '';
+        $('dlg-cambiar-guardar').disabled = !dlgElegida.id;
+        $('dlg-cambiar-guardar').textContent = 'Seleccionar';
+        // Hide radio scope en modo elegir — eso ya está en el form principal
+        $('dlg-scope-fieldset').hidden = true;
+        $('dlg-scope-fieldset').style.display = 'none';
+        renderCatsGrid('');
+        $('dlg-cambiar').showModal();
+      }
+
+      function abrirDialogoCambiar() {
         if (!lastMovimientoId) {
           toast('Categorizá un movimiento primero', 'err');
           return;
         }
-        const categoria_id_nueva = simState.elegidaId || $('c-categoria').value;
-        if (!categoria_id_nueva) {
-          toast('Elegí una categoría primero', 'err');
+        dlgMode = 'cambiar';
+        dlgElegida = { id: null, nombre: null };
+        $('dlg-cambiar-title').textContent = 'Cambiar categoría';
+        $('dlg-cambiar-sub').textContent =
+          `${lastNombreBancard ?? '(sin nombre)'} · cat actual: ${$('hero-cat').textContent}`;
+        $('dlg-cat-filter').value = '';
+        $('dlg-cambiar-guardar').disabled = true;
+        $('dlg-cambiar-guardar').textContent = 'Guardar';
+        $('dlg-scope-fieldset').hidden = false;
+        $('dlg-scope-fieldset').style.display = '';
+        // Default scope = "este en adelante"
+        const radioAdelante = document.querySelector('input[name="dlg-scope"][value="adelante"]');
+        if (radioAdelante) radioAdelante.checked = true;
+        renderCatsGrid('');
+        $('dlg-cambiar').showModal();
+      }
+
+      function renderCatsGrid(filter) {
+        const grid = $('dlg-cat-grid');
+        const cats = categoriasCache || [];
+        const f = filter.trim().toLowerCase();
+        const filtradas = f
+          ? cats.filter(
+              (c) =>
+                c.nombre.toLowerCase().includes(f) || (c.slug || '').toLowerCase().includes(f),
+            )
+          : cats;
+        if (!filtradas.length) {
+          grid.innerHTML = '<div class="empty">Sin resultados.</div>';
           return;
         }
+        const heroSlug = ($('hero-cat').textContent || '').toLowerCase();
+        grid.innerHTML = filtradas
+          .map((c) => {
+            const sel = dlgElegida.id === c.id ? ' selected' : '';
+            const actual = c.nombre.toLowerCase() === heroSlug ? ' aria-current="true"' : '';
+            return `<button type="button" class="cat-btn${sel}"${actual} role="radio" aria-checked="${dlgElegida.id === c.id ? 'true' : 'false'}" data-id="${escapeHtml(c.id)}" data-nombre="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</button>`;
+          })
+          .join('');
+        grid.querySelectorAll('.cat-btn').forEach((btn) =>
+          btn.addEventListener('click', () => {
+            dlgElegida = {
+              id: btn.getAttribute('data-id'),
+              nombre: btn.getAttribute('data-nombre'),
+            };
+            grid.querySelectorAll('.cat-btn').forEach((b) => {
+              const isSel = b === btn;
+              b.classList.toggle('selected', isSel);
+              b.setAttribute('aria-checked', isSel ? 'true' : 'false');
+            });
+            $('dlg-cambiar-guardar').disabled = false;
+          }),
+        );
+      }
+
+      async function guardarCambioCat() {
+        if (!dlgElegida.id) return;
+
+        // Modo "elegir": viene del form 1, solo seteamos la cat elegida y cerramos.
+        // El categorizar real ocurre cuando user clickea "Categorizar →".
+        if (dlgMode === 'elegir') {
+          modoManualCat.id = dlgElegida.id;
+          modoManualCat.nombre = dlgElegida.nombre;
+          actualizarCatChosen();
+          $('dlg-cambiar').close();
+          return;
+        }
+
+        // Modo "cambiar": POST correccion sobre el mov actual.
+        if (!lastMovimientoId) return;
         const aprender =
-          (document.querySelector('input[name="c-aprender-scope"]:checked') || {}).value !== 'solo';
-        const body = { categoria_id_nueva, aprender };
+          (document.querySelector('input[name="dlg-scope"]:checked') || {}).value !== 'solo';
+        const body = { categoria_id_nueva: dlgElegida.id, aprender };
         if (lastOrigen) body.usuario = lastOrigen;
-        const btn = $('btn-corregir');
-        const labelOrig = btn.textContent;
+        const btn = $('dlg-cambiar-guardar');
         btn.disabled = true;
         btn.setAttribute('aria-busy', 'true');
+        const labelOrig = btn.textContent;
         btn.textContent = 'Guardando…';
         try {
           const r = await window.taggerApi(`/movimientos/${lastMovimientoId}/correccion`, {
@@ -1197,24 +1397,16 @@
             body: JSON.stringify(body),
             headers: { 'content-type': 'application/json' },
           });
-          const nombre = r.categoria_nueva?.nombre ?? '—';
-          toast(
-            aprender
-              ? `✓ Aprendido: ahora es ${nombre}`
-              : `✓ Excepción aplicada: este mov → ${nombre} (sin aprender)`,
-            'ok',
-          );
-          // Refrescar hero
-          const nuevaCat = (categoriasCache || []).find((c) => c.id === categoria_id_nueva);
-          if (nuevaCat) {
-            $('hero-cat').textContent = nuevaCat.nombre;
-            $('hero-icon').textContent = aprender ? '✅' : '⚡';
-            $('hero').classList.remove('pendiente', 'sin');
-            $('hero-why').textContent = aprender
-              ? 'Lo aprendí de vos. La próxima vez sale automático si es una transferencia, o se sugiere como regla.'
-              : 'Excepción puntual. La memoria personal no se modificó; el comercio sigue con su categoría habitual.';
-          }
+          const nombre = r.categoria_nueva?.nombre ?? dlgElegida.nombre ?? '—';
+          $('hero-cat').textContent = nombre;
+          $('hero-icon').textContent = aprender ? '✅' : '⚡';
+          $('hero').classList.remove('pendiente', 'sin');
+          $('hero-why').textContent = aprender
+            ? 'Aprendido. Próximos movs con el mismo nombre van acá automático.'
+            : 'Excepción puntual. La memoria personal no se modificó.';
+          toast(aprender ? `✓ Aprendido: ${nombre}` : `✓ Excepción: este mov → ${nombre}`, 'ok');
           cargarAprendido();
+          $('dlg-cambiar').close();
         } catch (e) {
           toast('Error: ' + (e?.message || 'falló'), 'err');
         } finally {
@@ -1222,7 +1414,30 @@
           btn.removeAttribute('aria-busy');
           btn.textContent = labelOrig;
         }
+      }
+
+      $('btn-abrir-cambiar').addEventListener('click', async () => {
+        await cargarCategorias();
+        abrirDialogoCambiar();
       });
+      $('dlg-cambiar-close').addEventListener('click', () => $('dlg-cambiar').close());
+      $('dlg-cambiar-cancel').addEventListener('click', () => $('dlg-cambiar').close());
+      $('dlg-cambiar-guardar').addEventListener('click', guardarCambioCat);
+      $('dlg-cat-filter').addEventListener('input', (e) => renderCatsGrid(e.target.value));
+
+      // Fallback light-dismiss para browsers sin closedby (Safari)
+      if (!('closedBy' in HTMLDialogElement.prototype)) {
+        $('dlg-cambiar').addEventListener('click', (event) => {
+          if (event.target !== $('dlg-cambiar')) return;
+          const rect = $('dlg-cambiar').getBoundingClientRect();
+          const inside =
+            rect.top <= event.clientY &&
+            event.clientY <= rect.top + rect.height &&
+            rect.left <= event.clientX &&
+            event.clientX <= rect.left + rect.width;
+          if (!inside) $('dlg-cambiar').close();
+        });
+      }
 
       // ===== sección "lo que aprendí" — endpoint unificado /reglas =====
       async function cargarAprendido() {
