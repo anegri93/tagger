@@ -293,7 +293,21 @@ function Movimientos({
       <StatusBar />
       <div className="content">
         <button className="back" onClick={onBack}>‹</button>
-        <h1 className="title">Movimientos</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h1 className="title" style={{ margin: '4px 0 14px', flex: 1 }}>Movimientos</h1>
+          <button
+            onClick={onOpenNewMov}
+            title="Nuevo movimiento"
+            style={{
+              background: 'linear-gradient(135deg,#16c6a4,#0fa987)',
+              color: '#fff', border: 0, borderRadius: '50%',
+              width: 40, height: 40, fontSize: 24, lineHeight: 1,
+              cursor: 'pointer', display: 'grid', placeItems: 'center',
+              boxShadow: '0 6px 14px rgba(22,198,164,.35)', fontWeight: 700,
+              marginBottom: 10, flex: '0 0 40px',
+            }}
+          >+</button>
+        </div>
         {/* Summary + AvatarPulse ocultos por ahora */}
         <div className="vchips">
           {VIEWS.map((v) => (
@@ -333,7 +347,6 @@ function Movimientos({
         {view === 'cf' && <CashflowView movs={realMovs} />}
         {view === 'fut' && <FutureView forecast={forecast} onSel={setSel} />}
       </div>
-      <NewMovFab onOpen={onOpenNewMov} />
       <IAChatBar onOpen={() => setChatOpen(true)} />
       {selected && (
         <DetailSheet
