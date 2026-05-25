@@ -82,6 +82,48 @@ flowchart LR
     C3 --> OK
 ```
 
+**Flujo sobre tablas** — qué SELECT/INSERT ejecuta cada capa contra Postgres:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Cliente API
+    participant P as pipeline/categorizar
+    participant R as layers/reglas
+    participant M as layers/mcc
+    participant I as layers/ia
+    participant DB as Postgres
+    participant PER as pipeline/persistir
+
+    U->>P: { nombre, monto, usuario? }
+    Note over P: normalize(nombre)
+
+    P->>R: Capa 0 — scope=usuario:<id>
+    R->>DB: SELECT reglas WHERE scope='usuario:<id>' AND activo
+    DB-->>R: filas (cache LRU TTL 60s)
+    R-->>P: hit? → ResultadoCapa
+
+    P->>R: Capa 1 — scope=global
+    R->>DB: SELECT reglas WHERE scope='global' AND activo
+    DB-->>R: literal + contiene + regex
+    R-->>P: hit? → ResultadoCapa
+
+    P->>M: Capa 2 — MCC
+    M->>DB: SELECT mcc_por_nombre WHERE nombre_normalizado=?
+    DB-->>M: ~65k indexado UNIQUE
+    M->>DB: SELECT mcc_catalogo WHERE cod_mcc=?
+    DB-->>M: categoria_id
+    M-->>P: hit? → ResultadoCapa
+
+    P->>I: Capa 3 — IA fallback (setImmediate)
+    I-->>P: ResultadoCapa fuente='ia' + requiereRevision=true
+
+    P->>PER: persistirMovimiento(input, resultado)
+    PER->>DB: INSERT movimientos (categoria_predicha_id, fuente, confianza, evidencia jsonb)
+    DB-->>PER: id
+    PER-->>U: { movimientoId, categoriaId, fuente, requiereRevision }
+```
+
 **Bucle de aprendizaje** — qué pasa cuando un usuario corrige un movimiento:
 
 ```mermaid
