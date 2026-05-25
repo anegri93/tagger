@@ -41,6 +41,10 @@ services:
       # SEED_STRATEGY: auto (default) corre seed solo si hash cambió o DB vacía.
       # Alternativas: 'always' (cada arranque), 'never' (skip), 'skip-poblado' (legacy).
       SEED_STRATEGY: ${SEED_STRATEGY:-auto}
+      # Chat IA proxy a OpenRouter (demo UI).
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      PUBLIC_URL: ${PUBLIC_URL:-}
     expose:
       - '3000'
 
