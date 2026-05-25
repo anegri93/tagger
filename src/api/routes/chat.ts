@@ -28,17 +28,9 @@ const FALLBACK_MODELS = [
 ];
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Anonimiza nombres de personas — mantiene primer letra para legibilidad.
+// Anonimización desactivada — demo single-user, los datos son del propio usuario.
 function anonymize(nombre: string): string {
-  // Heurística: nombres con espacios "Apellido Nombre" → iniciales.
-  const t = nombre.trim();
-  if (/^(transferencia|pago|recarga|envio|cobro)/i.test(t)) return t;
-  if (t.length <= 3) return t;
-  return t
-    .split(/\s+/)
-    .map((w, i) => (i === 0 ? w[0] + '***' : w[0] ?? ''))
-    .join(' ')
-    .trim();
+  return nombre;
 }
 
 function buildSystemPrompt(movs: z.infer<typeof movSchema>[], usuario?: string) {
@@ -78,7 +70,7 @@ Reglas:
 - Si el usuario pregunta sobre un comercio o categoría, calculá totales desde los datos provistos.
 - Si no tenés información suficiente, decilo: "No tengo ese dato en tus movimientos recientes".
 - No inventes números. Si necesitás un cálculo no presente, decilo.
-- Los nombres de personas están anonimizados (J*** P***) — no pidas datos personales.
+- Los nombres del usuario y comercios aparecen tal cual están en sus movimientos.
 - No respondas preguntas fuera del dominio financiero.
 
 Resumen del usuario${usuario ? ` (id: ${usuario})` : ''}:
