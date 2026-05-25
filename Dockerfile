@@ -13,7 +13,6 @@ RUN pnpm install --frozen-lockfile
 # --- build backend + sdk + ui/demo bundle ---
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/sdk/node_modules ./sdk/node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY sdk ./sdk
 COPY src ./src
@@ -39,7 +38,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache wget
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=prod-deps /app/sdk/node_modules ./sdk/node_modules
 COPY --from=build /app/sdk/dist ./sdk/dist
 COPY --from=build /app/sdk/package.json ./sdk/package.json
 COPY --from=build /app/dist ./dist

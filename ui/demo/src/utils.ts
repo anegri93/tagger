@@ -148,6 +148,8 @@ function detectRecurrence(movs: UiMov[]) {
       );
     }
     const avgGap = gaps.reduce((s, g) => s + g, 0) / gaps.length;
+    // Guard: avgGap < 1 día (mismo día o backwards) → no es recurrente real, evita loop infinito en forecastEngine.
+    if (!Number.isFinite(avgGap) || avgGap < 1) continue;
     const variance = gaps.reduce((s, g) => s + (g - avgGap) ** 2, 0) / gaps.length;
     const last = sorted[sorted.length - 1];
     const conf = variance < 10 ? 'alta' : variance < 50 ? 'media' : 'baja';
@@ -165,8 +167,10 @@ export function forecastEngine(movs: UiMov[], dismissed: Record<string, boolean>
   const phantoms: Phantom[] = [];
   let pid = 1000;
   recs.forEach((r) => {
-    let next = addDays(new Date(r.last.date), Math.round(r.avgGap));
-    while (next <= addDays(TODAY_DT, HORIZON_DAYS)) {
+    const step = Math.max(1, Math.round(r.avgGap));
+    let next = addDays(new Date(r.last.date), step);
+    let iter = 0;
+    while (next <= addDays(TODAY_DT, HORIZON_DAYS) && iter++ < 200) {
       if (next > TODAY_DT) {
         const id = 'p-' + pid++;
         if (!dismissed[id] && !dismissed['pname-' + r.name]) {
@@ -185,7 +189,7 @@ export function forecastEngine(movs: UiMov[], dismissed: Record<string, boolean>
           });
         }
       }
-      next = addDays(next, Math.round(r.avgGap));
+      next = addDays(next, step);
     }
   });
   const balanceNow = movs.reduce((s, m) => s + m.amt, 0);
