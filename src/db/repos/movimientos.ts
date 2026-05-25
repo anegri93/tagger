@@ -1,9 +1,13 @@
-import { eq } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import type { Db } from '../client.js';
 import { movimientos } from '../schema/index.js';
 import type { MovimientoRepository, MovimientoNuevo } from '../../pipeline/persistir.js';
 import type { MovimientoUpdater } from '../../pipeline/ia-fallback.js';
-import type { MovimientoReader, MovimientoGetData } from '../../api/routes/movimiento-get.js';
+import type {
+  MovimientoReader,
+  MovimientoGetData,
+  MovimientoLister,
+} from '../../api/routes/movimiento-get.js';
 import type { Evidencia, FuenteCategoria } from '../schema/movimientos.js';
 
 export function crearMovimientoRepository(db: Db): MovimientoRepository {
@@ -115,6 +119,37 @@ export function crearMovimientoInputReader(db: Db): MovimientoInputReader {
         .where(eq(movimientos.id, id))
         .limit(1);
       return rows[0] ?? null;
+    },
+  };
+}
+
+export function crearMovimientoLister(db: Db): MovimientoLister {
+  return {
+    async listar({ limit, offset, origen }) {
+      const where = origen !== undefined ? eq(movimientos.origen, origen) : undefined;
+      const rowsQ = db
+        .select({
+          id: movimientos.id,
+          descripcion: movimientos.descripcion,
+          nombreComercio: movimientos.nombreComercio,
+          monto: movimientos.monto,
+          categoriaPredichaId: movimientos.categoriaPredichaId,
+          categoriaConfirmadaId: movimientos.categoriaConfirmadaId,
+          fuenteCategoria: movimientos.fuenteCategoria,
+          confianza: movimientos.confianza,
+          requiereRevision: movimientos.requiereRevision,
+          origen: movimientos.origen,
+          createdAt: movimientos.createdAt,
+        })
+        .from(movimientos);
+      const rows = await (where ? rowsQ.where(where) : rowsQ)
+        .orderBy(desc(movimientos.createdAt))
+        .limit(limit)
+        .offset(offset);
+      const totalQ = db.select({ n: sql<number>`count(*)::int` }).from(movimientos);
+      const totalRows = await (where ? totalQ.where(where) : totalQ);
+      const total = totalRows[0]?.n ?? 0;
+      return { items: rows, total };
     },
   };
 }

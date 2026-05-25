@@ -19,6 +19,24 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
 fi
 rm -f "$PID_FILE"
 
+# Detectar instancias huérfanas escuchando en 3000 (e.g. de pnpm dev manuales o nohup).
+PORT=${PORT:-3000}
+if command -v lsof >/dev/null 2>&1; then
+  STALE_PIDS=$(lsof -ti tcp:$PORT -sTCP:LISTEN 2>/dev/null || true)
+  if [[ -n "$STALE_PIDS" ]]; then
+    err "puerto $PORT ocupado por PID(s): $STALE_PIDS — matando antes de arrancar"
+    kill -9 $STALE_PIDS 2>/dev/null || true
+    sleep 1
+  fi
+fi
+# tsx watch huérfanos sin LISTEN (preflight wrappers)
+STALE_TSX=$(pgrep -f "tsx.*watch.*src/main\.ts" 2>/dev/null || true)
+if [[ -n "$STALE_TSX" ]]; then
+  err "tsx watch huérfanos: $STALE_TSX — limpiando"
+  kill -9 $STALE_TSX 2>/dev/null || true
+  sleep 1
+fi
+
 # .env (auto-genera API_KEY si .env no existe)
 if [[ ! -f .env ]]; then
   if [[ ! -f .env.example ]]; then

@@ -10,6 +10,7 @@ const SKIP_PATHS = new Set([
   '/favicon.ico',
   '/version',
   '/openapi.yaml',
+  '/demo/config',
 ]);
 
 const SKIP_PREFIXES = ['/ui/', '/postman/', '/docs/'];

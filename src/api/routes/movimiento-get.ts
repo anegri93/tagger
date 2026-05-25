@@ -4,6 +4,35 @@ import { z } from 'zod';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const paramsSchema = z.object({ id: z.string().regex(UUID_RE) });
 
+const listQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+  origen: z.string().min(1).max(200).optional(),
+  usuario: z.string().min(1).max(200).optional(),
+});
+
+export interface MovimientoListItem {
+  id: string;
+  descripcion: string | null;
+  nombreComercio: string | null;
+  monto: string | null;
+  categoriaPredichaId: string | null;
+  categoriaConfirmadaId: string | null;
+  fuenteCategoria: string | null;
+  confianza: string | null;
+  requiereRevision: boolean;
+  origen: string | null;
+  createdAt: Date | string;
+}
+
+export interface MovimientoLister {
+  listar(opts: {
+    limit: number;
+    offset: number;
+    origen?: string;
+  }): Promise<{ items: MovimientoListItem[]; total: number }>;
+}
+
 export interface MovimientoGetData {
   id: string;
   descripcion: string | null;
@@ -30,6 +59,52 @@ export interface CategoriaResolverPort {
     ids: ReadonlyArray<string | null | undefined>,
   ): Promise<Map<string, { id: string; slug: string; nombre: string }>>;
 }
+
+export const movimientoListRoute =
+  (lister: MovimientoLister, categorias: CategoriaResolverPort): FastifyPluginAsync =>
+  async (app) => {
+    app.get('/movimientos', async (req, reply) => {
+      const parsed = listQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'invalid_input', issues: parsed.error.flatten() });
+      }
+      const q = parsed.data;
+      const filter: Parameters<MovimientoLister['listar']>[0] = {
+        limit: q.limit,
+        offset: q.offset,
+      };
+      if (q.origen !== undefined) filter.origen = q.origen;
+      const { items, total } = await lister.listar(filter);
+      const ids: Array<string | null> = [];
+      for (const m of items) {
+        ids.push(m.categoriaPredichaId);
+        ids.push(m.categoriaConfirmadaId);
+      }
+      const map = await categorias.porIds(ids);
+      const out = items.map((m) => {
+        const predicha = m.categoriaPredichaId ? (map.get(m.categoriaPredichaId) ?? null) : null;
+        const confirmada = m.categoriaConfirmadaId
+          ? (map.get(m.categoriaConfirmadaId) ?? null)
+          : null;
+        const categoria = confirmada ?? predicha;
+        return {
+          id: m.id,
+          descripcion: m.descripcion,
+          nombre_comercio: m.nombreComercio,
+          monto: m.monto,
+          categoria_predicha_id: m.categoriaPredichaId,
+          categoria_confirmada_id: m.categoriaConfirmadaId,
+          categoria,
+          fuente_categoria: m.fuenteCategoria,
+          confianza: m.confianza,
+          requiere_revision: m.requiereRevision,
+          origen: m.origen,
+          created_at: m.createdAt,
+        };
+      });
+      return reply.send({ items: out, total, limit: q.limit, offset: q.offset });
+    });
+  };
 
 export const movimientoGetRoute =
   (reader: MovimientoReader, categorias: CategoriaResolverPort): FastifyPluginAsync =>

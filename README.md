@@ -259,6 +259,34 @@ open http://localhost:3000/ui/      # UIs
 | `IA_ENABLED`            | `true`                                           | Si `false` → no schedula IA fallback. Movimientos sin match quedan `requiere_revision=true` sin categoría |
 | `CONFIDENCE_THRESHOLD`  | `0.7`                                            | Umbral para marcar `requiere_revision=true`                                                               |
 | `LOG_LEVEL`             | `info`                                           | `fatal` \| `error` \| `warn` \| `info` \| `debug` \| `trace`                                              |
+| `OPENROUTER_API_KEY`    | _(opcional)_                                     | Habilita `POST /chat` (proxy a OpenRouter) usado por el demo UI                                           |
+| `OPENROUTER_MODEL`      | `openai/gpt-oss-120b:free`                       | Modelo preferido. Fallback automático a otros gratuitos si rate-limited                                   |
+| `PUBLIC_URL`            | `http://localhost:3000`                          | URL pública del deploy. Usado en `HTTP-Referer` a OpenRouter                                              |
+
+---
+
+## Deploy (Dokploy / Docker)
+
+### Vars requeridas en el panel de Dokploy
+
+| Var                  | Obligatoria | Notas                                                              |
+| -------------------- | ----------- | ------------------------------------------------------------------ |
+| `DATABASE_URL`       | sí          | Postgres reachable desde el container                              |
+| `API_KEY`            | sí          | mínimo 16 chars. Se sirve también vía `GET /demo/config` al demo UI |
+| `OPENROUTER_API_KEY` | opcional    | Sin esto, `POST /chat` devuelve 503 `openrouter_no_configurado`    |
+| `OPENROUTER_MODEL`   | opcional    | Sobrescribe el modelo default                                      |
+| `PUBLIC_URL`         | recomendada | `https://tu-dominio.example.com`                                    |
+| `IA_ENABLED`         | opcional    | `false` para deshabilitar Ollama fallback en deploys sin Ollama    |
+
+### Build
+
+`docker build` corre 3 pasos clave:
+1. `pnpm install` con workspace (root + sdk)
+2. `cd sdk && pnpm build` (compila SDK)
+3. `pnpm build` (backend TS → dist)
+4. `pnpm run build:demo` (bundle React demo → `ui/demo/app.js`)
+
+La API_KEY NO se inyecta en build — el demo la fetcha en runtime via `GET /demo/config`.
 
 ---
 

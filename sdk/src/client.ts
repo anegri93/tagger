@@ -7,6 +7,8 @@ import type {
   BatchRun,
   BatchStats,
   Categoria,
+  ChatInput,
+  ChatResult,
   CategoriasSugeridasResult,
   CategoriaUsage,
   Comercio,
@@ -23,6 +25,8 @@ import type {
   Mcc,
   Movimiento,
   MovimientoInput,
+  MovimientoListado,
+  MovimientosListResult,
   NuevaCategoria,
   NuevaMarca,
   NuevaRegla,
@@ -91,6 +95,8 @@ export class TaggerClient {
   readonly stats: ReturnType<typeof statsModule>;
   /** Autocomplete de descripciones per-user. */
   readonly descripciones: ReturnType<typeof descripcionesModule>;
+  /** Chat IA contextual con movimientos. */
+  readonly chat: ReturnType<typeof chatModule>;
 
   constructor(opts: TaggerClientOptions) {
     if (!opts.apiKey) throw new Error('apiKey requerido');
@@ -111,6 +117,7 @@ export class TaggerClient {
     this.testBatch = testBatchModule(this);
     this.stats = statsModule(this);
     this.descripciones = descripcionesModule(this);
+    this.chat = chatModule(this);
   }
 
   /** Estado del servicio (DB, Ollama). */
@@ -231,6 +238,22 @@ function movimientosModule(c: TaggerClient) {
         confianza: r.confianza,
         requiereRevision: r.requiere_revision,
       };
+    },
+
+    /**
+     * Lista movimientos paginados ordenados por created_at desc.
+     * Filtro opcional por `origen` (string libre, ej `'demo-ui'`, `'api'`).
+     * Cada item trae embebida la `categoria` (confirmada si existe, sino predicha).
+     */
+    async listar(
+      opts: { limit?: number; offset?: number; origen?: string } = {},
+    ): Promise<MovimientoListado[]> {
+      const query: RequestOpts['query'] = {};
+      if (opts.limit !== undefined) query.limit = opts.limit;
+      if (opts.offset !== undefined) query.offset = opts.offset;
+      if (opts.origen !== undefined) query.origen = opts.origen;
+      const r = await c.request<MovimientosListResult>('/movimientos', { query });
+      return r.items;
     },
 
     /** Lee un movimiento por id. */
@@ -656,6 +679,21 @@ function statsModule(c: TaggerClient) {
       const reqOpts: RequestOpts = {};
       if (opts.ventana !== undefined) reqOpts.query = { ventana: opts.ventana };
       return c.request<StatsPipeline>('/stats/pipeline', reqOpts);
+    },
+  };
+}
+
+function chatModule(c: TaggerClient) {
+  return {
+    /**
+     * Pregunta al chat IA con contexto de movimientos.
+     * Proxy server-side a OpenRouter — la API key del LLM nunca llega al browser.
+     */
+    async preguntar(input: ChatInput): Promise<ChatResult> {
+      const body: Record<string, unknown> = { messages: input.messages };
+      if (input.movs) body.movs = input.movs;
+      if (input.usuario) body.usuario = input.usuario;
+      return c.request<ChatResult>('/chat', { method: 'POST', body });
     },
   };
 }

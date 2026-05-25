@@ -58,6 +58,15 @@ export async function build(opts: BuildOptions = {}) {
     decorateReply: false,
   });
 
+  // Demo está en flujo activo — sin cache para evitar bundles stale.
+  app.addHook('onSend', async (req, reply, payload) => {
+    if (req.url.startsWith('/ui/demo/')) {
+      reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+      reply.header('Pragma', 'no-cache');
+    }
+    return payload;
+  });
+
   await app.register(staticPlugin, {
     root: resolve(ROOT, 'postman'),
     prefix: '/postman/',

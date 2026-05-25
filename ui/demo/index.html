@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tagger Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .new-mov-fab{position:absolute;left:18px;bottom:100px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#16c6a4,#0fa987);border:0;color:#fff;font-size:28px;line-height:1;display:grid;place-items:center;box-shadow:0 12px 24px rgba(22,198,164,.45);cursor:pointer;z-index:35;font-weight:700}
+      .new-mov-fab:active{transform:scale(.95)}
+      .nm-tabs{display:flex;background:#f1f4f9;border-radius:14px;padding:3px;margin:8px 0 14px;gap:2px}
+      .nm-tabs button{flex:1;background:none;border:0;padding:10px;border-radius:11px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+      .nm-tabs button.on{background:#fff;color:var(--blue3);box-shadow:0 2px 6px rgba(10,40,90,.08)}
+      .nm-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+      .nm-field label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+      .nm-field input,.nm-field select{padding:11px 14px;border:1px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;outline:0;background:#fff;color:var(--ink)}
+      .nm-field input:focus,.nm-field select:focus{border-color:var(--blue3)}
+      .nm-services{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+      .nm-services button{background:#fff;border:2px solid var(--line);border-radius:12px;padding:14px 6px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+      .nm-services button.on{border-color:var(--blue3);background:#eaf3ff;color:var(--blue3)}
+      .nm-submit{width:100%;background:var(--blue3);color:#fff;border:0;border-radius:22px;padding:13px;font-weight:700;font-size:15px;cursor:pointer;margin-top:6px}
+      .nm-submit:disabled{opacity:.5;cursor:not-allowed}
+      .nm-result{background:linear-gradient(135deg,#eaf3ff,#f6f2ff);border-radius:12px;padding:12px 14px;font-size:13px;margin-top:10px}
+      .nm-result b{display:block;font-size:14px;margin-bottom:2px}
+      .demo-banner{background:#fff8eb;border:1px solid #ffd99c;border-radius:12px;padding:10px 12px;font-size:12px;color:#a76b00;margin-bottom:10px}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // cache-bust durante desarrollo: cada reload baja bundle fresco
+      (function () {
+        var s = document.createElement('script');
+        s.src = 'app.js?v=' + Date.now();
+        s.defer = true;
+        document.head.appendChild(s);
+      })();
+    </script>
+  </body>
+</html>

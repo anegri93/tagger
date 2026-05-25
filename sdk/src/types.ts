@@ -1,5 +1,29 @@
 // Tipos compartidos con el backend tagger. Mantener en sync manualmente.
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatMovContext {
+  id: string;
+  nombre: string;
+  monto: number;
+  fecha: string;
+  categoria?: string | null;
+}
+
+export interface ChatInput {
+  messages: ChatMessage[];
+  movs?: ChatMovContext[];
+  usuario?: string;
+}
+
+export interface ChatResult {
+  text: string;
+  model: string;
+}
+
 export type FuenteCategoria =
   | 'literal'
   | 'contiene'
@@ -131,6 +155,32 @@ export interface Movimiento {
   evidencia: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Item ligero devuelto por GET /movimientos (lista paginada). Incluye una
+ * `categoria` embebida que es la confirmada si existe, sino la predicha.
+ */
+export interface MovimientoListado {
+  id: string;
+  descripcion: string | null;
+  nombre_comercio: string | null;
+  monto: string | null;
+  categoria_predicha_id: string | null;
+  categoria_confirmada_id: string | null;
+  categoria: { id: string; slug: string; nombre: string } | null;
+  fuente_categoria: FuenteCategoria | null;
+  confianza: string | null;
+  requiere_revision: boolean;
+  origen: string | null;
+  created_at: string;
+}
+
+export interface MovimientosListResult {
+  items: MovimientoListado[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface CorreccionInput {

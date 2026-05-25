@@ -4,7 +4,7 @@ import { healthRoute } from './api/routes/health.js';
 import { categorizarRoute } from './api/routes/categorizar.js';
 import { importarCatalogoRoute } from './api/routes/importar-catalogo.js';
 import { importarMovimientosRoute } from './api/routes/importar-movimientos.js';
-import { movimientoGetRoute } from './api/routes/movimiento-get.js';
+import { movimientoGetRoute, movimientoListRoute } from './api/routes/movimiento-get.js';
 import { movimientoReprocesarRoute } from './api/routes/movimiento-reprocesar.js';
 import { correccionRoute } from './api/routes/correccion.js';
 import { categoriasRoute } from './api/routes/categorias.js';
@@ -39,6 +39,7 @@ import {
   crearMovimientoReader,
   crearMovimientoInputReader,
   crearMovimientoReprocesador,
+  crearMovimientoLister,
 } from './db/repos/movimientos.js';
 import {
   crearCorreccionService,
@@ -59,6 +60,8 @@ import { crearTestBatchStatsReader } from './db/repos/test-batch-stats.js';
 import { statsPipelineRoute } from './api/routes/stats-pipeline.js';
 import { crearDescripcionUsoRepo } from './db/repos/descripcion-uso.js';
 import { descripcionesRoute } from './api/routes/descripciones.js';
+import { chatRoute } from './api/routes/chat.js';
+import { demoConfigRoute } from './api/routes/demo-config.js';
 
 async function pingDb(): Promise<boolean> {
   try {
@@ -136,6 +139,7 @@ async function main() {
     }),
   );
   await app.register(descripcionesRoute(descripcionUsoRepo));
+  await app.register(movimientoListRoute(crearMovimientoLister(db), categoriaResolver));
   await app.register(movimientoGetRoute(movReader, categoriaResolver));
   await app.register(
     movimientoReprocesarRoute({
@@ -168,6 +172,8 @@ async function main() {
   await app.register(analisisProfundoRoute(db));
   const testRunner = new TestBatchRunner({ capas, repo: movRepo, db });
   await app.register(testBatchControlRoute(testRunner));
+  await app.register(chatRoute);
+  await app.register(demoConfigRoute);
 
   await app.listen({ port: env.PORT, host: '0.0.0.0' });
   logger.info({ port: env.PORT }, 'tagger API listening');
