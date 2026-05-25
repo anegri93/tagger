@@ -409,7 +409,6 @@ export function DetailSheet({
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="grab" />
         <h3>{m.t}</h3>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{m.s}</div>
         <div className="amtbig" style={{ color: m.amt < 0 ? 'var(--pink)' : 'var(--teal)' }}>
           {m.amt < 0 ? '- ' : '+ '}{fmt(m.amt)}
         </div>
@@ -428,7 +427,6 @@ export function DetailSheet({
             )}
           </span>
         </div>
-        <div className="row"><span>Tipo</span><span>{m.s}</span></div>
         <div className="row"><span>Recurrente</span><span>{m.recurring ? 'Sí 🔁' : 'No'}</span></div>
         {m.forecast && (
           <div className="ai" style={{ flexDirection: 'column', gap: 10 }}>

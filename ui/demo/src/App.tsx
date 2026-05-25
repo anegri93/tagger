@@ -276,7 +276,6 @@ function Movimientos({
         <div className="mid">
           <b>{m.t}</b>
           <div className="meta">
-            <small>{m.s}</small>
             <span className={'cat ' + c.cls}>{c.label}</span>
             {m.recurring && <span className="rec">🔁 Recurrente</span>}
           </div>
