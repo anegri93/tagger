@@ -72,8 +72,11 @@ conocidos en milisegundos, y solo molesta a la IA cuando no tiene mejor opción.
 
 ```mermaid
 flowchart LR
-    IN([Movimiento]) --> C0[0 · Reglas tuyas]
-    C0 -->|hit| OK([Categoría asignada])
+    IN([Movimiento]) --> SUB{¿subcategoria_usuario_id?}
+    SUB -->|sí| RES[Resolver canónica padre]
+    RES --> OK([Categoría asignada<br/>canónica + subcat])
+    SUB -->|no| C0[0 · Reglas tuyas]
+    C0 -->|hit| OK
     C0 -->|no| C1[1 · Reglas globales]
     C1 -->|hit| OK
     C1 -->|no| C2[2 · MCC inteligente]
@@ -89,37 +92,46 @@ sequenceDiagram
     autonumber
     actor U as Cliente API
     participant P as pipeline/categorizar
+    participant SU as repo/categorias-usuario
     participant R as layers/reglas
     participant M as layers/mcc
     participant I as layers/ia
     participant DB as Postgres
     participant PER as pipeline/persistir
 
-    U->>P: { nombre, monto, usuario? }
+    U->>P: { nombre, monto, usuario?, subcategoria_usuario_id? }
     Note over P: normalize(nombre)
 
-    P->>R: Capa 0 — scope=usuario:<id>
-    R->>DB: SELECT reglas WHERE scope='usuario:<id>' AND activo
-    DB-->>R: filas (cache LRU TTL 60s)
-    R-->>P: hit? → ResultadoCapa
+    alt subcategoria_usuario_id presente
+        P->>SU: porId(subcat_id)
+        SU->>DB: SELECT categorias_usuario JOIN categorias
+        DB-->>SU: { usuario_id, canonica_id }
+        SU-->>P: validar pertenencia + canon padre
+        Note over P: salta cascada — fuente='manual'
+    else flujo normal
+        P->>R: Capa 0 — scope=usuario:<id>
+        R->>DB: SELECT reglas WHERE scope='usuario:<id>' AND activo
+        DB-->>R: filas (cache LRU TTL 60s)
+        R-->>P: hit? → ResultadoCapa
 
-    P->>R: Capa 1 — scope=global
-    R->>DB: SELECT reglas WHERE scope='global' AND activo
-    DB-->>R: literal + contiene + regex
-    R-->>P: hit? → ResultadoCapa
+        P->>R: Capa 1 — scope=global
+        R->>DB: SELECT reglas WHERE scope='global' AND activo
+        DB-->>R: literal + contiene + regex
+        R-->>P: hit? → ResultadoCapa
 
-    P->>M: Capa 2 — MCC
-    M->>DB: SELECT mcc_por_nombre WHERE nombre_normalizado=?
-    DB-->>M: ~65k indexado UNIQUE
-    M->>DB: SELECT mcc_catalogo WHERE cod_mcc=?
-    DB-->>M: categoria_id
-    M-->>P: hit? → ResultadoCapa
+        P->>M: Capa 2 — MCC
+        M->>DB: SELECT mcc_por_nombre WHERE nombre_normalizado=?
+        DB-->>M: ~65k indexado UNIQUE
+        M->>DB: SELECT mcc_catalogo WHERE cod_mcc=?
+        DB-->>M: categoria_id
+        M-->>P: hit? → ResultadoCapa
 
-    P->>I: Capa 3 — IA fallback (setImmediate)
-    I-->>P: ResultadoCapa fuente='ia' + requiereRevision=true
+        P->>I: Capa 3 — IA fallback (setImmediate)
+        I-->>P: ResultadoCapa fuente='ia' + requiereRevision=true
+    end
 
-    P->>PER: persistirMovimiento(input, resultado)
-    PER->>DB: INSERT movimientos (categoria_predicha_id, fuente, confianza, evidencia jsonb)
+    P->>PER: persistirMovimiento(input, resultado, subcat?)
+    PER->>DB: INSERT movimientos (categoria_predicha_id=canon, subcategoria_usuario_id?, fuente, confianza, evidencia)
     DB-->>PER: id
     PER-->>U: { movimientoId, categoriaId, fuente, requiereRevision }
 ```
@@ -128,10 +140,18 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    U([Usuario corrige]) --> R[(reglas scope='usuario:X')]
+    U([Usuario corrige]) --> M{¿con subcat<br/>personal?}
+    M -->|sí| MV[(movimientos.subcategoria_usuario_id<br/>= subcat user)]
+    M -->|sí| CA[(categoria_confirmada_id<br/>= canónica padre)]
+    M -->|no| CA
+    U --> R[(reglas scope='usuario:X')]
     R -->|próxima vez| C0[Capa 0]
     U --> S[(sugerencia para regla global)]
     S -->|admin aprueba| C1[Capa 1]
+    Note1[Display app: chip de subcat<br/>Reports Mango: agrupa por canónica]:::note
+    MV -.-> Note1
+    CA -.-> Note1
+    classDef note fill:#fef3c7,stroke:#d97706,color:#92400e
 ```
 
 **Sugerencias globales cross-user** (`/ui/dashboard/`): cuando ≥N usuarios distintos corrigen el mismo nombre a la misma categoría, aparece como candidato para promover a regla global (capa 1) y beneficia a todos los usuarios. Configurable vía `min_usuarios` y `min_total` en el endpoint `/reglas/sugerencias-globales`.
@@ -171,19 +191,22 @@ flowchart LR
                              ▼
        ┌─────────────────────────────────────────────┐
        │  Persistencia: tabla movimientos            │
-       │  ─ categoria_predicha_id, fuente, confianza │
-       │  ─ requiere_revision, evidencia jsonb       │
-       │  ─ batch_id, origen, latency_ms             │
+       │  ─ categoria_predicha_id (canónica)         │
+       │  ─ subcategoria_usuario_id (subcat user)    │
+       │  ─ fuente, confianza, requiere_revision     │
+       │  ─ evidencia jsonb, batch_id, origen        │
        └─────────────────────────────────────────────┘
 
 Postgres 16 (Drizzle ORM) ─── tablas:
-  ┌─ categorias              (slug PK, nombre)
+  ┌─ categorias              (slug PK, nombre — canónicas curadas Mango)
+  ├─ categorias_usuario      (usuario_id + canonica_id FK → subcategorías personales)
   ├─ reglas                  (scope + tipo + valor → categoría — unifica patrones globales + personales + memoria)
   ├─ mcc_catalogo            (cod_mcc → categoría)
   ├─ mcc_por_nombre          (~65k nombres → MCC + categoría inferida)
   ├─ marcas_conocidas        (IA hints dinámicos)
-  ├─ movimientos             (histórico predicciones)
-  ├─ correcciones_usuario    (correcciones manual cliente)
+  ├─ movimientos             (histórico predicciones; categoria_id=canon + subcategoria_usuario_id opcional)
+  ├─ correcciones_usuario    (correcciones manual cliente; preserva subcategoria_usuario_id)
+  ├─ presupuestos            (topes mensuales por canónica, versionado por vigente_desde)
   └─ test_ground_truth       (ground truth para validación pipeline)
 ```
 
@@ -431,6 +454,44 @@ test_ground_truth       (id, batch_id, nombre, nombre_normalizado, bancard_id,
 ```
 
 ### Modelo de categorías (canónicas + personales)
+
+```mermaid
+erDiagram
+    categorias ||--o{ categorias_usuario : "canonica_id (RESTRICT)"
+    categorias ||--o{ movimientos : "categoria_id"
+    categorias_usuario ||--o{ movimientos : "subcategoria_usuario_id (SET NULL)"
+    categorias ||--o{ presupuestos : "categoria_id (SET NULL)"
+    categorias ||--o{ reglas : "categoria_id"
+    categorias ||--o{ correcciones_usuario : "categoria_anterior_id / nueva_id"
+    categorias_usuario ||--o{ correcciones_usuario : "subcategoria_usuario_id (SET NULL)"
+
+    categorias {
+        uuid id PK
+        text slug UK
+        text nombre
+        boolean activo
+        uuid reemplazada_por_id "merger histórico"
+    }
+    categorias_usuario {
+        uuid id PK
+        text usuario_id
+        uuid canonica_id FK
+        text nombre
+        text slug
+        text emoji
+        text color
+        boolean activo
+        text origen "manual / sugerencia_mango"
+    }
+    movimientos {
+        uuid id PK
+        uuid categoria_predicha_id FK
+        uuid categoria_confirmada_id FK
+        uuid subcategoria_usuario_id FK
+        text fuente_categoria
+        text origen
+    }
+```
 
 Dos tablas separadas con responsabilidades distintas:
 

@@ -43,6 +43,9 @@ Opcionales:
 - `origen` (string) — etiqueta libre (`mobile`, `import`, etc.) para analytics
 - `batch_id` (string) — agrupar requests
 - `bypass_catalogo` (bool) — testing: salta capa 1, fuerza cascada pura
+- `categoria_id` (UUID) — categoría predefinida (skip cascada, `fuente='manual'`, `confianza=1`)
+- `aprender` (bool) — sólo con `categoria_id` + `origen`. Persiste regla user-scope
+- `subcategoria_usuario_id` (UUID) — subcategoría personal del user. Backend valida pertenencia, resuelve canónica padre y la usa como `categoria_id` efectiva. Mov queda con ambas columnas (canon + subcat). Reports rolan a canon.
 
 ### Response (200 OK)
 
@@ -280,6 +283,96 @@ Response:
 
 ---
 
+## Subcategorías personales (categorías del usuario)
+
+Cada user puede crear sus propias categorías ancladas a un rubro canónico. Mobile las muestra como cats de primera línea con nombre/emoji custom; reports internos rolan a la canónica padre.
+
+**Modelo en una frase**: misma DB, dos tablas — `categorias` (canónicas curadas Mango, ~30-100) + `categorias_usuario` (subcats user, cap 200 per user, siempre con `canonica_id` no-null).
+
+### Crear subcat
+
+```
+POST /categorias-usuario
+{
+  "usuario": "user_42",
+  "canonica_id": "uuid-entretenimiento",
+  "nombre": "Streaming",
+  "emoji": "🎬"
+}
+```
+
+Validaciones:
+- `canonica_id` debe ser cat activa y no reemplazada
+- `nombre` ≠ nombre de la canónica padre
+- Slug auto-generado del nombre (override con `slug` opcional). Único per `(usuario, slug)`
+- Máximo 200 subcats activas per user (429 `cap_alcanzado`)
+
+### Listar subcats del user
+
+```
+GET /categorias-usuario?usuario=user_42
+```
+
+Devuelve activas con datos del rubro padre poblados (`canonica_slug`, `canonica_nombre`).
+
+### Categorizar mov con subcat
+
+```
+POST /categorizar-movimiento
+{
+  "nombre_comercio": "NETFLIX",
+  "monto": 50000,
+  "origen": "user_42",
+  "subcategoria_usuario_id": "uuid-streaming"
+}
+```
+
+Backend valida que la subcat pertenece a `origen`, resuelve la canónica padre y la persiste como `categoria_id`. Mov queda con ambas columnas. Si caller también pasa `categoria_id`, se hace override silencioso con la canónica padre.
+
+### Corregir mov a subcat
+
+```
+POST /movimientos/:id/correccion
+{
+  "categoria_id_nueva": "uuid-entretenimiento",
+  "subcategoria_usuario_id": "uuid-streaming",
+  "usuario": "user_42",
+  "aprender": true
+}
+```
+
+Regla aprendida apunta sólo a la canónica (V1; rule engine no maneja subcats todavía).
+
+### Render mobile
+
+Cada mov en `GET /movimientos` y `GET /movimientos/:id` devuelve:
+
+```json
+{
+  "categoria_id": "uuid-entretenimiento",
+  "categoria_confirmada": { "slug": "entretenimiento", "nombre": "Entretenimiento" },
+  "subcategoria_usuario_id": "uuid-streaming",
+  "subcategoria": {
+    "id": "uuid-streaming",
+    "nombre": "Streaming",
+    "slug": "streaming",
+    "emoji": "🎬",
+    "color": null,
+    "canonica_id": "uuid-entretenimiento"
+  }
+}
+```
+
+Render recomendado: si `subcategoria != null`, mostrar chip con `subcategoria.emoji` + `subcategoria.nombre` y tooltip al rubro (`categoria_confirmada.nombre`). Sino, chip de la canónica directo.
+
+### Borrar / editar
+
+- `PATCH /categorias-usuario/:id` → editar nombre/emoji/color/activo (no se permite cambiar `usuario_id` ni `canonica_id`).
+- `DELETE /categorias-usuario/:id` → hard delete. FK `ON DELETE SET NULL` en movs: preservan canónica, no se pierde historial.
+- Alternativa soft hide: `PATCH activo=false`.
+
+---
+
 ## Códigos error
 
 | Código | Significado                                  | Retry                   |
@@ -330,6 +423,9 @@ export interface CategorizarRequest {
   // Sólo aplica si hay categoria_id + origen. Si true, guarda regla user-scope
   // para que próximos movs con el mismo nombre devuelvan esta cat automático.
   aprender?: boolean;
+  // Subcategoría personal del usuario. Backend valida pertenencia al `origen`,
+  // resuelve canónica padre y la usa como categoria_id efectiva (override silencioso).
+  subcategoria_usuario_id?: string;
 }
 
 export type Fuente =
@@ -359,6 +455,7 @@ export interface CorreccionRequest {
   motivo?: string;
   usuario?: string; // id del usuario; determina scope de la regla aprendida
   aprender?: boolean; // default true. false = excepción puntual, no crea regla
+  subcategoria_usuario_id?: string; // opcional: subcat user. Override silencioso de categoria_id_nueva con canon padre
 }
 
 export interface ReprocesarRequest {
@@ -384,6 +481,38 @@ export interface Categoria {
   nombre: string;
   descripcion: string | null;
   activo: boolean;
+}
+
+export interface CategoriaUsuario {
+  id: string;             // UUID
+  usuario_id: string;
+  canonica_id: string;    // FK → categorias.id (rubro padre)
+  canonica_slug: string;
+  canonica_nombre: string;
+  nombre: string;
+  slug: string;
+  emoji: string | null;
+  color: string | null;
+  activo: boolean;
+  origen: string;         // 'manual' por default
+  created_at: string;
+}
+
+export interface SubcategoriaRef {
+  id: string;
+  nombre: string;
+  slug: string;
+  emoji: string | null;
+  color: string | null;
+  canonica_id: string;
+}
+
+export interface MovimientoListItem {
+  // ... otros campos
+  categoria_id: string | null;
+  categoria_confirmada_id: string | null;
+  subcategoria_usuario_id: string | null;
+  subcategoria: SubcategoriaRef | null;
 }
 ```
 

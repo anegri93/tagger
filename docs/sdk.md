@@ -66,8 +66,9 @@ const r2 = await tagger.movimientos.categorizar({
 
 | Módulo | Propósito |
 |---|---|
-| `tagger.movimientos` | Categorizar, corregir, reprocesar, importar |
-| `tagger.categorias` | CRUD de categorías |
+| `tagger.movimientos` | Categorizar, listar, corregir, reprocesar, importar |
+| `tagger.categorias` | CRUD de categorías canónicas (Mango admin) |
+| `tagger.categoriasUsuario` | CRUD subcategorías personales del usuario (ancladas a un rubro canónico) |
 | `tagger.reglas` | CRUD reglas + sugerencias por usuario / cross-user |
 | `tagger.mcc` | CRUD del catálogo MCC ISO 18245 |
 | `tagger.marcas` | CRUD marcas conocidas |
@@ -76,19 +77,24 @@ const r2 = await tagger.movimientos.categorizar({
 | `tagger.testBatch` | Tests de pipeline en lote |
 | `tagger.stats` | Distribución por capa del pipeline |
 | `tagger.descripciones` | Autocomplete per-user de descripciones |
+| `tagger.presupuestos` | Topes mensuales por categoría (versionados) |
+| `tagger.chat` | Chat IA contextual sobre movimientos del usuario |
 | `tagger.health()` | Status servicio |
 
 ## Referencia: `movimientos`
 
 ```ts
 tagger.movimientos.categorizar(input): Promise<ResultadoCategorizacion>
+tagger.movimientos.listar({limit?, offset?, origen?}): Promise<MovimientoListado[]>
 tagger.movimientos.obtener(id): Promise<Movimiento>
-tagger.movimientos.corregir({movimientoId, categoriaIdNueva, usuario?, motivo?}): Promise<CorreccionResult>
+tagger.movimientos.corregir({movimientoId, categoriaIdNueva, usuario?, motivo?, aprender?, subcategoriaUsuarioId?}): Promise<CorreccionResult>
 tagger.movimientos.reprocesar(id): Promise<ResultadoCategorizacion>
 tagger.movimientos.importar({rows, batchId?}): Promise<ImportarMovimientosResult>
 tagger.movimientos.statusImport(): Promise<ImportStatus>
 tagger.movimientos.categoriasSugeridas(id, {q?, limit?, offset?, umbral?}): Promise<CategoriasSugeridasResult>
 ```
+
+`MovimientoListado` y `Movimiento` devuelven `subcategoria_usuario_id` + `subcategoria` poblada (`{id, nombre, slug, emoji, color, canonica_id}`) cuando aplica.
 
 ### Categorizar con categoría manual (`categoriaId` + `aprender`)
 
@@ -195,14 +201,108 @@ Si la categoría que devuelve la cascada y la primera de `categoriasSugeridas` d
 | Campo | Tipo | Nota |
 |---|---|---|
 | `monto` | number | Requerido |
-| `origen` | string | **Pasar siempre**: id del usuario |
+| `origen` | string | **Pasar siempre**: id del usuario (memoria por user) |
 | `nombreBancard` | string | Nombre desde el procesador |
 | `nombreComercio` | string | Alternativo |
-| `descripcion` | string | Texto libre |
-| `mcc` | string | Código ISO 18245 (4 dígitos) |
+| `descripcion` | string | Texto libre. **No decorativo** — concatena con nombres para reglas |
+| `mcc` | string | Código ISO 18245 (2-4 dígitos) |
 | `bancardId`, `codigoComercio` | string | Ids internos |
 | `batchId` | string | Marca de lote (testing) |
 | `bypassCatalogo` | boolean | Saltea capa 2 (sólo testing) |
+| `categoriaId` | string (UUID) | Si presente, salta cascada → `fuente='manual'`, `confianza=1` |
+| `aprender` | boolean | Sólo con `categoriaId` + `origen`. `true` persiste regla user-scope |
+| `subcategoriaUsuarioId` | string (UUID) | Subcategoría personal del user. Backend resuelve canon padre + override silencioso de `categoriaId` |
+
+## Referencia: `categoriasUsuario`
+
+Subcategorías personales ancladas a un rubro canónico. User crea con nombre/emoji custom (ej "Streaming"), internamente Mango ve el rubro padre (ej "Entretenimiento"). Reports siempre rolan a canon — cero fragmentación cross-user.
+
+```ts
+tagger.categoriasUsuario.listar(usuario): Promise<CategoriaUsuario[]>
+tagger.categoriasUsuario.crear({usuario, canonicaId, nombre, slug?, emoji?, color?}): Promise<CategoriaUsuario>
+tagger.categoriasUsuario.actualizar(id, {nombre?, emoji?, color?, activo?}): Promise<CategoriaUsuario>
+tagger.categoriasUsuario.eliminar(id): Promise<void>
+```
+
+```ts
+// 1. Crear subcat ancla a rubro canónico
+const streaming = await tagger.categoriasUsuario.crear({
+  usuario: 'demo',
+  canonicaId: idEntretenimiento,
+  nombre: 'Streaming',
+  emoji: '🎬',
+});
+
+// 2. Categorizar mov con subcat. Backend resuelve canon padre automáticamente.
+await tagger.movimientos.categorizar({
+  nombreComercio: 'NETFLIX',
+  monto: 50000,
+  origen: 'demo',
+  subcategoriaUsuarioId: streaming.id,
+});
+// Mov queda con: categoria_id=Entretenimiento, subcategoria_usuario_id=streaming
+
+// 3. Corregir mov existente a subcat
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idEntretenimiento,  // backend override si difiere
+  usuario: 'demo',
+  subcategoriaUsuarioId: streaming.id,
+});
+```
+
+**Validaciones backend** (errores):
+- 400 `canonica_inactiva` — canon inactiva o reemplazada
+- 400 `nombre_igual_canonica` — nombre coincide con padre
+- 409 `slug_duplicado` — ya existe subcat con ese slug para el user
+- 429 `cap_alcanzado` — > 200 subcats activas
+
+**Borrar**: hard delete con FK `ON DELETE SET NULL` en movs. Movs preservan canónica padre, no pierden historial. Alternativa: `actualizar(id, {activo: false})` para hide sin borrar.
+
+## Referencia: `presupuestos`
+
+Topes mensuales por categoría canónica. Versionados: editar = INSERT nueva versión `vigente_desde=hoy`. Baja = monto 0 (preserva histórico).
+
+```ts
+tagger.presupuestos.listar({usuario}): Promise<Presupuesto[]>
+tagger.presupuestos.crear({usuario, categoria_id, monto_mensual}): Promise<Presupuesto>
+tagger.presupuestos.actualizar(id, monto_mensual): Promise<void>
+tagger.presupuestos.eliminar(id): Promise<void>
+tagger.presupuestos.estado({usuario, mes?}): Promise<PresupuestoEstado>
+```
+
+```ts
+await tagger.presupuestos.crear({
+  usuario: 'demo',
+  categoria_id: idAlimentacion,
+  monto_mensual: 1_500_000,
+});
+
+const estado = await tagger.presupuestos.estado({ usuario: 'demo', mes: '2026-05' });
+// → { items: [{categoria_id, presupuesto, gastado, restante, pct, movs}, ...] }
+```
+
+V1: presupuestos sólo a nivel canónica. Subcats personales no se presupuestan individualmente (V2).
+
+## Referencia: `chat`
+
+Chat IA contextual. Proxy a OpenRouter (modelos free, fallback chain).
+
+```ts
+tagger.chat.preguntar({messages, movs, usuario}): Promise<{text: string}>
+```
+
+```ts
+const r = await tagger.chat.preguntar({
+  messages: [{ role: 'user', content: '¿En qué categorías gasto más este mes?' }],
+  movs: ultimosMovs.map((m) => ({
+    id: String(m.id), nombre: m.t, monto: m.amt, fecha: m.date, categoria: m.cat,
+  })),
+  usuario: 'demo',
+});
+```
+
+503 si server no tiene `OPENROUTER_API_KEY`.
 
 ## Referencia: `categorias`
 
