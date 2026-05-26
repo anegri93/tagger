@@ -7,9 +7,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
-  OLLAMA_URL: z.string().url().default('http://localhost:11434'),
-  OLLAMA_MODEL: z.string().default('gemma2:2b'),
-  OLLAMA_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
+  // IA fallback (capa 4 del pipeline) y chat — ambos vía OpenRouter.
+  OPENROUTER_API_KEY: z.string().optional(),
+  /** Modelo preferido. Si vacío, usa el primero del fallback chain hardcoded. */
+  OPENROUTER_IA_MODEL: z.string().optional(),
+  IA_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
   DB_POOL_MAX: z.coerce.number().int().positive().default(30),
   REGLAS_CACHE_MAX: z.coerce.number().int().positive().default(5000),
   REGLAS_CACHE_TTL_MS: z.coerce.number().int().positive().default(60_000),

@@ -559,8 +559,9 @@ export interface SugerenciasDescripcionResult {
 
 export interface HealthStatus {
   status: 'ok' | 'degraded';
-  db: 'ok' | 'down';
-  ollama: 'ok' | 'down' | 'disabled';
+  db: 'ok' | 'fail';
+  /** Probe LLM (OpenRouter). `skip` cuando IA_ENABLED=false o sin API key. */
+  llm: 'ok' | 'fail' | 'skip';
 }
 
 export interface Presupuesto {

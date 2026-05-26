@@ -49,6 +49,7 @@ describe('POST /movimientos/:id/correccion', () => {
       motivo: 'fix',
       usuario: undefined,
       aprender: undefined,
+      subcategoriaUsuarioId: null,
     });
   });
 

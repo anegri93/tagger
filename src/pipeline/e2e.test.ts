@@ -8,7 +8,7 @@ import { crearCapaReglas } from '../layers/reglas.js';
 import type { ReglaCargada } from '../db/repos/reglas.js';
 import { crearCapaMcc } from '../layers/mcc.js';
 import { crearCapaIa } from '../layers/ia.js';
-import type { OllamaClient } from '../lib/ollama.js';
+import type { LlmClient } from '../lib/llm.js';
 
 const noopLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 
@@ -186,11 +186,11 @@ describe('pipeline e2e (in-memory)', () => {
     expect(out.requiereRevision).toBe(true);
     expect(out.categoriaId).toBeNull();
 
-    const ollama: OllamaClient = {
+    const llm: LlmClient = {
       generate: vi.fn().mockResolvedValue('{"categoria_slug":"otros","confianza":0.6}'),
       ping: vi.fn(),
     };
-    const capaIa = crearCapaIa(ollama, {
+    const capaIa = crearCapaIa(llm, {
       activas: async () => [{ id: 'cat-otros', slug: 'otros', nombre: 'Otros' }],
     });
     const fb = crearIaFallback({ capa: capaIa, updater: repo, logger: noopLogger });

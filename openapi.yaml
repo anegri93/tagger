@@ -38,7 +38,7 @@ paths:
   /health/ready:
     get:
       tags: [Health]
-      summary: Readiness probe (DB + Ollama)
+      summary: Readiness probe (DB + LLM)
       security: []
       responses:
         '200':
@@ -50,7 +50,10 @@ paths:
                 properties:
                   status: { type: string, enum: [ok, degraded] }
                   db: { type: boolean }
-                  ollama: { type: boolean }
+                  llm:
+                    type: string
+                    enum: [ok, fail, skip]
+                    description: 'Probe LLM (OpenRouter). `skip` cuando IA_ENABLED=false o no hay API key.'
 
   /categorizar-movimiento:
     post:
@@ -59,7 +62,7 @@ paths:
       description: |
         Cascada: catálogo (bancard_id+codigo) → patrones → MCC → IA fallback async.
         Si todas las capas sync devuelven null, response inmediato es `categoria_id: null`
-        y se dispara Ollama en background. Cliente debe poll `/movimientos/:id`.
+        y se dispara IA fallback (OpenRouter) en background. Cliente debe poll `/movimientos/:id`.
       requestBody:
         required: true
         content:
@@ -1242,7 +1245,7 @@ components:
         - literal # regla tipo literal (0.95)
         - contiene # regla tipo contiene (0.80)
         - mcc # MCC mapeado (0.75) o MCC inferido por nombre vía mcc_por_nombre
-        - ia # Ollama fallback (cap 0.50)
+        - ia # OpenRouter fallback (cap 0.50)
         - manual # corrección usuario o memoria personal (1.0)
         - bancard # legacy
         - nombre # legacy

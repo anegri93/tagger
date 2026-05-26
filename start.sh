@@ -2,7 +2,7 @@
 # start.sh — boot completo: postgres + deps + migración + seed + API foreground.
 # Uso:
 #   bash start.sh           # postgres + tagger
-#   OLLAMA=1 bash start.sh  # + ollama (IA fallback)
+# IA fallback + chat van vía OpenRouter (set OPENROUTER_API_KEY en .env).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -88,12 +88,6 @@ for i in {1..30}; do
   fi
   sleep 2
 done
-
-# ollama opcional
-if [[ "${OLLAMA:-0}" == "1" ]]; then
-  log "levantando ollama (profile ai)"
-  docker compose --profile ai up -d ollama
-fi
 
 # deps
 log "instalando deps"

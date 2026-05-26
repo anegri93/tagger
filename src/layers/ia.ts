@@ -1,6 +1,6 @@
 import type { ResultadoCapa, MovimientoInput } from '../domain/types.js';
 import { CONFIANZA } from '../domain/confianza.js';
-import type { OllamaClient } from '../lib/ollama.js';
+import type { LlmClient } from '../lib/llm.js';
 
 export interface CategoriaActiva {
   id: string;
@@ -113,7 +113,7 @@ function parseJson(raw: string): IaResponse | null {
 }
 
 export function crearCapaIa(
-  client: OllamaClient,
+  client: LlmClient,
   loader: CategoriasLoader,
   marcasReader?: MarcasReaderPort,
 ): CapaIa {

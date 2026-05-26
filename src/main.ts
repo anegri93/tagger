@@ -22,7 +22,7 @@ import { requestLog } from './api/plugins/request-log.js';
 import { apiKeyAuth } from './api/plugins/auth.js';
 import { db, pool } from './db/client.js';
 import { env } from './config/env.js';
-import { crearOllamaClient } from './lib/ollama.js';
+import { crearOpenRouterLlmClient } from './lib/llm.js';
 import { logger } from './lib/logger.js';
 import { crearCapaMcc } from './layers/mcc.js';
 import { crearCapaIa } from './layers/ia.js';
@@ -76,7 +76,17 @@ async function pingDb(): Promise<boolean> {
 }
 
 async function main() {
-  const ollama = crearOllamaClient({ url: env.OLLAMA_URL, model: env.OLLAMA_MODEL });
+  // IA fallback (capa 4) y chat — ambos vía OpenRouter. Ollama removido.
+  // Si no hay OPENROUTER_API_KEY y IA_ENABLED=true, IA fallback queda no-op
+  // (movs no resueltos por cascada quedan sin categoría).
+  const llmClient = env.OPENROUTER_API_KEY
+    ? crearOpenRouterLlmClient({
+        apiKey: env.OPENROUTER_API_KEY,
+        preferredModel: env.OPENROUTER_IA_MODEL,
+        publicUrl: process.env.PUBLIC_URL,
+      })
+    : null;
+  const llmPing = () => (llmClient ? llmClient.ping() : Promise.resolve(false));
 
   const reglasLoader = crearReglasLoader(db);
   const mccPorNombreLookup = crearMccPorNombreLookup(db);
@@ -110,24 +120,29 @@ async function main() {
     capaReglas.invalidar(scope),
   );
 
-  const capaIa = crearCapaIa(ollama, categoriasLoader, marcasReader);
-  const iaFallback = env.IA_ENABLED
-    ? crearIaFallback({
-        capa: capaIa,
-        updater: movUpdater,
-        logger,
-        maxConcurrent: env.OLLAMA_MAX_CONCURRENT,
-      })
-    : { schedule: () => undefined };
+  const capaIa = llmClient ? crearCapaIa(llmClient, categoriasLoader, marcasReader) : null;
+  const iaFallback =
+    env.IA_ENABLED && capaIa
+      ? crearIaFallback({
+          capa: capaIa,
+          updater: movUpdater,
+          logger,
+          maxConcurrent: env.IA_MAX_CONCURRENT,
+        })
+      : { schedule: () => undefined };
   if (!env.IA_ENABLED) {
-    logger.info(
-      'IA_ENABLED=false — fallback IA deshabilitado, movimientos no resueltos quedan sin categoría',
+    logger.info('IA_ENABLED=false — fallback IA deshabilitado');
+  } else if (!llmClient) {
+    logger.warn(
+      'OPENROUTER_API_KEY no seteada — IA fallback no-op, movs no resueltos quedan sin categoría',
     );
+  } else {
+    logger.info('IA fallback inicializado vía OpenRouter');
   }
 
   const app = await build({ trustProxy: true });
   await app.register(requestLog);
-  const healthDeps = env.IA_ENABLED ? { pingDb, pingOllama: () => ollama.ping() } : { pingDb };
+  const healthDeps = env.IA_ENABLED && llmClient ? { pingDb, pingLlm: llmPing } : { pingDb };
   await app.register(healthRoute(healthDeps));
   await app.register(apiKeyAuth, { apiKey: env.API_KEY });
   const categoriaUsuarioRepo = crearCategoriaUsuarioRepo(db);

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stop.sh — detiene API + servicios docker (postgres, ollama). Volúmenes preservados.
+# stop.sh — detiene API + servicios docker (postgres). Volúmenes preservados.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,10 +45,10 @@ if command -v lsof >/dev/null 2>&1; then
   fi
 fi
 
-# 4. docker compose (incluye profile ai por si ollama corre)
+# 4. docker compose
 if command -v docker >/dev/null 2>&1; then
-  log "deteniendo docker compose (postgres, ollama si activo)"
-  docker compose --profile ai down --remove-orphans 2>/dev/null || true
+  log "deteniendo docker compose (postgres)"
+  docker compose down --remove-orphans 2>/dev/null || true
 fi
 
 log "stop completo"

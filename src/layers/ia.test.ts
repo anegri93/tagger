@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { crearCapaIa, type CategoriaActiva } from './ia.js';
-import type { OllamaClient } from '../lib/ollama.js';
+import type { LlmClient } from '../lib/llm.js';
 
 const CATS: CategoriaActiva[] = [
   { id: 'c-super', slug: 'supermercado', nombre: 'Supermercado' },
@@ -11,7 +11,7 @@ function loaderFijo(c: CategoriaActiva[]) {
   return { activas: vi.fn().mockResolvedValue(c) };
 }
 
-function clientFijo(response: string): OllamaClient {
+function clientFijo(response: string): LlmClient {
   return {
     generate: vi.fn().mockResolvedValue(response),
     ping: vi.fn().mockResolvedValue(true),

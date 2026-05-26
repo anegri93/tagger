@@ -2,7 +2,7 @@
 
 **Servicio de categorización automática de movimientos bancarios.**
 
-Pipeline en cascada (4 capas): reglas por usuario → reglas globales → MCC inteligente (directo o inferido por nombre) → fallback IA (Gemma vía Ollama).
+Pipeline en cascada (4 capas): reglas por usuario → reglas globales → MCC inteligente (directo o inferido por nombre) → fallback IA (OpenRouter, modelos free).
 
 ---
 
@@ -39,7 +39,7 @@ estación lo reconoce. La primera que lo reconoce gana, las siguientes no se eje
 | 0 | **Reglas tuyas** | Reglas y memoria que aplican **solo a este usuario**. Tipo `literal` (memoria de un nombre exacto), `contiene` o `regex`. Se crean automático al corregir o vía sugerencias | `reglas WHERE scope='usuario:<X>'` (+ `categorias`) | "usuario_42 ya marcó MANGO-PEREZ JUAN como Alquiler" o "Para usuario_42, todo lo que contenga STRIPE es Software" |
 | 1 | **Reglas globales** | Reglas compartidas entre todos (~300 reglas curadas) | `reglas WHERE scope='global'` (+ `categorias`) | "Cualquier texto que contenga FARMA o BOTICA es Farmacia" |
 | 2 | **MCC inteligente** | Categoría a partir del código MCC. Primero busca el MCC del input, si no viene busca por nombre en `mcc_por_nombre` (~65k nombres mapeados a MCC) | `mcc_catalogo` + `mcc_por_nombre` (+ `categorias`) | "MCC 5411 = Supermercado", o "nombre SHELL LDM no trae MCC, pero otros movs con ese nombre usan 5541 → Gasolinera" |
-| 3 | **IA (Gemma)** | Si nadie reconoció el movimiento, le pregunta al modelo de lenguaje | `categorias` (lista de opciones) + opcional `marcas_conocidas` (hints) — no consulta tablas de matching | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
+| 3 | **IA (OpenRouter)** | Si nadie reconoció el movimiento, le pregunta a un modelo de lenguaje remoto (free tier, fallback chain de 4 modelos) | `categorias` (lista de opciones) + opcional `marcas_conocidas` (hints) — no consulta tablas de matching | "COMERCIAL XYZ S.A. con monto 50.000 → modelo dice Alimentación" |
 
 > Toda categoría resuelta termina escrita en la tabla `movimientos` (campos `categoria_predicha_id`, `fuente_categoria`, `confianza`, `evidencia`, `requiere_revision`). Las correcciones manuales se persisten en `correcciones_usuario` y retroalimentan la tabla `reglas` (capa 0) o aparecen como sugerencias para promover a regla global.
 
@@ -81,7 +81,7 @@ flowchart LR
     C1 -->|hit| OK
     C1 -->|no| C2[2 · MCC inteligente]
     C2 -->|hit| OK
-    C2 -->|no| C3[3 · IA Gemma async]
+    C2 -->|no| C3[3 · IA OpenRouter async]
     C3 --> OK
 ```
 
@@ -186,7 +186,7 @@ flowchart LR
        │                  nombre → mcc_por_nombre →     │
        │                  mcc_catalogo                  │
        │ 3. RESPUESTA     inmediata (puede ser null)    │
-       │ 4. IA            Gemma async (fire-and-forget) │
+       │ 4. IA            OpenRouter async (fire-and-forget) │
        └─────────────────────┬─────────────────────────┘
                              ▼
        ┌─────────────────────────────────────────────┐
@@ -225,7 +225,7 @@ Postgres 16 (Drizzle ORM) ─── tablas:
 | Tests       | Vitest                                                          |
 | Validación  | Zod                                                             |
 | Logger      | Pino + pino-pretty                                              |
-| LLM         | Ollama (Gemma)                                                  |
+| LLM         | OpenRouter (modelos free + fallback chain). Sin infra local      |
 | XLSX        | xlsx (SheetJS)                                                  |
 | Build/Dev   | tsx + tsc                                                       |
 | Lint        | ESLint + Prettier                                               |
@@ -243,10 +243,11 @@ bash start.sh                       # genera .env con API_KEY aleatoria,
                                     # levanta postgres + deps + migrate + seed + API
 ```
 
-Con IA fallback (Ollama, requiere ~5 GB modelo):
+Con IA fallback (OpenRouter):
 
 ```bash
-OLLAMA=1 bash start.sh
+# .env: OPENROUTER_API_KEY=sk-or-... + IA_ENABLED=true
+bash start.sh
 ```
 
 Verificar:
@@ -276,14 +277,13 @@ open http://localhost:3000/ui/      # UIs
 | `PORT`                  | `3000`                                           | Puerto HTTP                                                                                               |
 | `DATABASE_URL`          | `postgres://tagger:tagger@localhost:5432/tagger` | Connection string Postgres                                                                                |
 | `API_KEY`               | _(requerido, mín 16 chars)_                      | Header `x-api-key` para todas las rutas excepto `/health*`, `/ui/*`, `/`                                  |
-| `OLLAMA_URL`            | `http://localhost:11434`                         | URL del servidor Ollama                                                                                   |
-| `OLLAMA_MODEL`          | `gemma2:2b`                                      | Modelo a usar para IA fallback                                                                            |
-| `OLLAMA_MAX_CONCURRENT` | `4`                                              | Máximo de llamadas IA en paralelo (queue interna evita saturar Ollama)                                    |
-| `IA_ENABLED`            | `true`                                           | Si `false` → no schedula IA fallback. Movimientos sin match quedan `requiere_revision=true` sin categoría |
+| `IA_ENABLED`            | `true`                                           | Si `false` → no schedula IA fallback. Movs sin match quedan `requiere_revision=true` sin categoría        |
+| `OPENROUTER_API_KEY`    | _(requerida si IA_ENABLED)_                      | Habilita IA fallback (capa 4 del pipeline) + `POST /chat`. Sin esto, IA es no-op + `/chat` devuelve 503    |
+| `OPENROUTER_IA_MODEL`   | _(opcional)_                                     | Modelo preferido para IA fallback. Default: `openai/gpt-oss-120b:free`. Fallback chain hardcoded automático |
+| `OPENROUTER_MODEL`      | _(opcional)_                                     | Modelo preferido para `/chat`. Mismo default + fallback chain                                              |
+| `IA_MAX_CONCURRENT`     | `4`                                              | Llamadas IA fallback simultáneas (queue interna)                                                          |
 | `CONFIDENCE_THRESHOLD`  | `0.7`                                            | Umbral para marcar `requiere_revision=true`                                                               |
 | `LOG_LEVEL`             | `info`                                           | `fatal` \| `error` \| `warn` \| `info` \| `debug` \| `trace`                                              |
-| `OPENROUTER_API_KEY`    | _(opcional)_                                     | Habilita `POST /chat` (proxy a OpenRouter) usado por el demo UI                                           |
-| `OPENROUTER_MODEL`      | `openai/gpt-oss-120b:free`                       | Modelo preferido. Fallback automático a otros gratuitos si rate-limited                                   |
 | `PUBLIC_URL`            | `http://localhost:3000`                          | URL pública del deploy. Usado en `HTTP-Referer` a OpenRouter                                              |
 
 ---
@@ -296,10 +296,11 @@ open http://localhost:3000/ui/      # UIs
 | -------------------- | ----------- | ------------------------------------------------------------------ |
 | `DATABASE_URL`       | sí          | Postgres reachable desde el container                              |
 | `API_KEY`            | sí          | mínimo 16 chars. Se sirve también vía `GET /demo/config` al demo UI |
-| `OPENROUTER_API_KEY` | opcional    | Sin esto, `POST /chat` devuelve 503 `openrouter_no_configurado`    |
-| `OPENROUTER_MODEL`   | opcional    | Sobrescribe el modelo default                                      |
-| `PUBLIC_URL`         | recomendada | `https://tu-dominio.example.com`                                    |
-| `IA_ENABLED`         | opcional    | `false` para deshabilitar Ollama fallback en deploys sin Ollama    |
+| `OPENROUTER_API_KEY` | sí (si IA)  | Requerida si `IA_ENABLED=true`. Habilita IA fallback (capa 4) + `/chat` |
+| `OPENROUTER_IA_MODEL`| opcional    | Sobrescribe modelo de IA fallback                                       |
+| `OPENROUTER_MODEL`   | opcional    | Sobrescribe modelo de `/chat`                                           |
+| `PUBLIC_URL`         | recomendada | `https://tu-dominio.example.com`                                        |
+| `IA_ENABLED`         | opcional    | `false` para deshabilitar IA fallback. Default `true`                   |
 
 ### Build
 
@@ -390,7 +391,7 @@ Topes mensuales por categoría canónica. Modelo versionado: editar = INSERT nue
 | Método | Path            | Devuelve                                                                              |
 | ------ | --------------- | ------------------------------------------------------------------------------------- |
 | GET    | `/health`       | `{status:'ok'}` (no requiere auth)                                                    |
-| GET    | `/health/ready` | `{status, db, ollama}` (no requiere auth)                                             |
+| GET    | `/health/ready` | `{status, db, llm}` (no requiere auth). `llm` = `'ok' \| 'fail' \| 'skip'` (probe OpenRouter) |
 | GET    | `/demo/config`  | `{apiKey, hasOpenRouter}` para demo UI. No requiere auth. `apiKey` = env `API_KEY`    |
 
 **Auth**: header `x-api-key: <API_KEY>` excepto `/health*`, `/ui/*`, `/demo/config`, `/favicon.ico`, `/`.
@@ -409,7 +410,7 @@ Confianzas asignadas por fuente (constantes en `src/domain/confianza.ts`):
 | 1. reglas global  | `contiene`                 | 0.80       | Patrón tipo contiene matchea                                                                                                                  |
 | 3. patrones      | `prefijo`                  | 0.90       | Patrón tipo prefijo matchea                                                                                                                   |
 | 4. MCC           | `mcc`                      | 0.75       | MCC del input mapeado a categoría no-ambigua                                                                                                  |
-| 5. IA fallback   | `ia`                       | 0.50 (cap) | Gemma async (concurrency `OLLAMA_MAX_CONCURRENT`) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false`                 |
+| 5. IA fallback   | `ia`                       | 0.50 (cap) | OpenRouter async (concurrency `IA_MAX_CONCURRENT`, fallback chain de modelos free) — `requiere_revision` siempre `true`. Deshabilitable con `IA_ENABLED=false` |
 | Corrección     | `manual`                   | 1.00       | POST `/movimientos/:id/correccion`. Body `{categoria_id_nueva, usuario?, aprender?}`. Si `aprender=true` (default) y hay usuario, auto-upsert en `reglas` con `scope='usuario:X' tipo='literal' origen='correccion' prioridad=1`. Si `aprender=false`, sólo modifica este mov (excepción puntual, no contamina memoria). Audit en `correcciones_usuario` se inserta siempre — `GET /reglas/sugerencias-globales` capta consensos aunque varios usuarios marquen `aprender=false` |
 
 Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `bancard` (0.90), `nombre` (0.80), `patrones` (0.90).
@@ -669,7 +670,7 @@ tagger/
 │   ├── domain/             (types, normalize, confianza)
 │   ├── layers/             (reglas, mcc, ia)
 │   ├── pipeline/           (categorizar, persistir, ia-fallback)
-│   ├── lib/                (ollama client, logger)
+│   ├── lib/                (LLM client OpenRouter, logger)
 │   ├── test-batch/         (worker masivo)
 │   └── main.ts             (wire-up + listen)
 ├── ui/
@@ -695,14 +696,13 @@ tagger/
 ## Despliegue Docker
 
 ```bash
-docker compose up -d                       # Solo Postgres
-docker compose --profile ai up -d          # + Ollama
+docker compose up -d                       # Postgres + tagger
 ```
 
 `docker-compose.yml`:
 
 - `postgres` con healthcheck + volumen
-- `ollama` con profile `ai` (opcional)
+- `tagger` (API). IA fallback + chat van vía OpenRouter (sin container LLM local)
 
 ---
 

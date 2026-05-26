@@ -28,9 +28,6 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
       DATABASE_URL: postgres://tagger:tagger@postgres:5432/tagger
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma2:2b}
-      OLLAMA_MAX_CONCURRENT: ${OLLAMA_MAX_CONCURRENT:-4}
       IA_ENABLED: ${IA_ENABLED:-true}
       API_KEY: ${API_KEY:?API_KEY required}
       CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
@@ -41,22 +38,14 @@ services:
       # SEED_STRATEGY: auto (default) corre seed solo si hash cambió o DB vacía.
       # Alternativas: 'always' (cada arranque), 'never' (skip), 'skip-poblado' (legacy).
       SEED_STRATEGY: ${SEED_STRATEGY:-auto}
-      # Chat IA proxy a OpenRouter (demo UI).
+      # IA fallback (capa 4) + /chat — ambos vía OpenRouter.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_IA_MODEL: ${OPENROUTER_IA_MODEL:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      IA_MAX_CONCURRENT: ${IA_MAX_CONCURRENT:-4}
       PUBLIC_URL: ${PUBLIC_URL:-}
     expose:
       - '3000'
 
-  ollama:
-    image: ollama/ollama:latest
-    profiles: ['ai']
-    restart: unless-stopped
-    expose:
-      - '11434'
-    volumes:
-      - ollama_models:/root/.ollama
-
 volumes:
   pgdata:
-  ollama_models:

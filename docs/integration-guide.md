@@ -92,7 +92,7 @@ curl -X POST http://api.tagger.internal/categorizar-movimiento \
 
 ## Polling para IA fallback
 
-Cuando response inmediato es `categoria_id: null` + `requiere_revision: true`, el servicio está procesando con Ollama en background. Cliente debe:
+Cuando response inmediato es `categoria_id: null` + `requiere_revision: true`, el servicio está procesando con OpenRouter en background. Cliente debe:
 
 1. Mostrar UI "categorizando..." con `movimiento_id`
 2. Poll `GET /movimientos/:id` cada 2-3s, max 15s
@@ -383,7 +383,7 @@ Render recomendado: si `subcategoria != null`, mostrar chip con `subcategoria.em
 | `404`  | Movimiento no existe                         | NO                      |
 | `409`  | Estado en conflicto (ej. import en progreso) | Esperar + reintentar    |
 | `500`  | Error interno                                | Sí, exponential backoff |
-| `503`  | DB/Ollama down                               | Sí, exponential backoff |
+| `503`  | DB/OpenRouter no disponible                  | Sí, exponential backoff |
 
 ### Retry strategy sugerida
 
@@ -567,7 +567,7 @@ Max 200.000 rows por request. Procesamiento async.
 
 ```
 GET /health           → {"status":"ok"}                 (sin auth)
-GET /health/ready     → {"status,db,ollama}            (sin auth)
+GET /health/ready     → {"status,db,llm"}              (sin auth)
 ```
 
 Usar `/health/ready` para readiness probe en k8s/orquestador.

@@ -10,8 +10,7 @@ Operación y mantenimiento del servicio.
 
 ```bash
 docker compose up -d postgres                       # solo DB
-docker compose --profile ai up -d ollama            # + Ollama opcional
-docker compose up -d --build api                    # build + run tagger
+docker compose up -d --build tagger                 # build + run API (IA via OpenRouter)
 ```
 
 ### 2. Aplicar migrations
@@ -49,7 +48,7 @@ curl http://localhost:3000/health
 # → {"status":"ok"}
 
 curl http://localhost:3000/health/ready
-# → {"status":"ok","db":true,"ollama":true|false}
+# → {"status":"ok","db":"ok","llm":"ok"|"fail"|"skip"}
 ```
 
 ---
@@ -333,18 +332,17 @@ Solo 1 import simultáneo. Esperar a que termine (`GET /catalogo/importar/status
 
 ### `503` o IA timeout
 
-Ollama no responde. Verificar:
+OpenRouter no responde o key inválida. Verificar:
 
 ```bash
-docker compose ps ollama
-curl http://localhost:11434/api/tags
+curl http://localhost:3000/health/ready
+# → "llm":"fail" si la key está mal o red no llega
+
+curl -sI -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  https://openrouter.ai/api/v1/models
 ```
 
-Si OLLAMA_MODEL no descargado:
-
-```bash
-docker exec tagger-ollama-1 ollama pull gemma2:2b
-```
+Si free models están rate-limited, el fallback chain hardcoded prueba 4 modelos en orden. Si todos fallan, IA fallback queda no-op para ese mov.
 
 ### Movimientos quedan sin categoría
 
@@ -365,4 +363,4 @@ Hardware dev (M1 Pro):
 - Throughput con catálogo hit: ~7.000 req/s
 - p99 latencia: < 50ms (sin IA), < 3s (con IA fallback)
 
-Sin Ollama, IA fallback queda no-op → respuesta inmediata con `categoriaId=null` + `requiereRevision=true`.
+Sin `OPENROUTER_API_KEY`, IA fallback queda no-op → respuesta inmediata con `categoriaId=null` + `requiereRevision=true`.

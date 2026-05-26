@@ -15,11 +15,11 @@ async function build(deps: Parameters<typeof healthRoute>[0]) {
 }
 
 describe('health/ready', () => {
-  it('200 cuando DB ok y ollama skip', async () => {
+  it('200 cuando DB ok y llm skip', async () => {
     const app = await build({ pingDb: vi.fn().mockResolvedValue(true) });
     const r = await app.inject({ method: 'GET', url: '/health/ready' });
     expect(r.statusCode).toBe(200);
-    expect(r.json()).toEqual({ status: 'ok', db: 'ok', ollama: 'skip' });
+    expect(r.json()).toEqual({ status: 'ok', db: 'ok', llm: 'skip' });
   });
 
   it('503 cuando DB falla', async () => {
@@ -29,21 +29,31 @@ describe('health/ready', () => {
     expect(r.json()).toMatchObject({ status: 'degraded', db: 'fail' });
   });
 
-  it('reporta ollama ok/fail si pingOllama provisto', async () => {
+  it('reporta llm ok/fail si pingLlm provisto', async () => {
     const a = await build({
       pingDb: vi.fn().mockResolvedValue(true),
-      pingOllama: vi.fn().mockResolvedValue(true),
+      pingLlm: vi.fn().mockResolvedValue(true),
     });
     expect((await a.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({
-      ollama: 'ok',
+      llm: 'ok',
     });
 
     const b = await build({
       pingDb: vi.fn().mockResolvedValue(true),
-      pingOllama: vi.fn().mockResolvedValue(false),
+      pingLlm: vi.fn().mockResolvedValue(false),
     });
     expect((await b.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({
-      ollama: 'fail',
+      llm: 'fail',
+    });
+  });
+
+  it('alias pingOllama sigue funcionando (retrocompat)', async () => {
+    const app = await build({
+      pingDb: vi.fn().mockResolvedValue(true),
+      pingOllama: vi.fn().mockResolvedValue(true),
+    });
+    expect((await app.inject({ method: 'GET', url: '/health/ready' })).json()).toMatchObject({
+      llm: 'ok',
     });
   });
 
