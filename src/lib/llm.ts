@@ -7,7 +7,12 @@
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
-const DEFAULT_FALLBACK_MODELS = [
+/**
+ * Modelos OpenRouter free + fallback chain, en orden de preferencia.
+ * Compartido por IA fallback (capa 4 cascada) y /chat — una sola fuente de verdad.
+ * Editar acá actualiza ambos features.
+ */
+export const DEFAULT_OPENROUTER_FREE_MODELS = [
   'openai/gpt-oss-120b:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'nousresearch/hermes-3-llama-3.1-405b:free',
@@ -54,8 +59,8 @@ export function crearOpenRouterLlmClient(cfg: OpenRouterLlmConfig): LlmClient {
   const timeoutMs = cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const referer = cfg.publicUrl ?? 'http://localhost:3000';
   const modelChain = cfg.preferredModel
-    ? [cfg.preferredModel, ...(cfg.fallbackModels ?? DEFAULT_FALLBACK_MODELS)]
-    : (cfg.fallbackModels ?? DEFAULT_FALLBACK_MODELS);
+    ? [cfg.preferredModel, ...(cfg.fallbackModels ?? DEFAULT_OPENROUTER_FREE_MODELS)]
+    : (cfg.fallbackModels ?? DEFAULT_OPENROUTER_FREE_MODELS);
 
   async function callModel(model: string, opts: LlmGenerateOptions): Promise<string> {
     const controller = new AbortController();

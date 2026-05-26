@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { DEFAULT_OPENROUTER_FREE_MODELS } from '../../lib/llm.js';
 
 const messageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant']),
@@ -20,12 +21,6 @@ const bodySchema = z.object({
   usuario: z.string().max(80).optional(),
 });
 
-const FALLBACK_MODELS = [
-  'openai/gpt-oss-120b:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'nousresearch/hermes-3-llama-3.1-405b:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-];
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Anonimización desactivada — demo single-user, los datos son del propio usuario.
@@ -96,7 +91,9 @@ export const chatRoute: FastifyPluginAsync = async (app) => {
     }
 
     const requestedModel = process.env.OPENROUTER_MODEL;
-    const modelChain = requestedModel ? [requestedModel, ...FALLBACK_MODELS] : FALLBACK_MODELS;
+    const modelChain = requestedModel
+      ? [requestedModel, ...DEFAULT_OPENROUTER_FREE_MODELS]
+      : DEFAULT_OPENROUTER_FREE_MODELS;
     const { messages, movs, usuario } = parsed.data;
     const systemPrompt = buildSystemPrompt(movs, usuario);
 
