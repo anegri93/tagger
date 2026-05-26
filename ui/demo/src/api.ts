@@ -1,4 +1,4 @@
-import { TaggerClient, type MovimientoListado, type Categoria } from '@mango/tagger-sdk';
+import { TaggerClient, type MovimientoListado, type Categoria, type CategoriaUsuario, type SubcategoriaUsuarioRef } from '@mango/tagger-sdk';
 
 declare global {
   interface Window {
@@ -55,6 +55,8 @@ export interface UiMov {
   ic: 'qr' | 'bn' | 'shell';
   cat: string;
   catId: string | null;
+  /** Subcategoría user-scope si el mov fue categorizado a una. */
+  subcat: SubcategoriaUsuarioRef | null;
   recurring: boolean;
   forecast?: boolean;
   confidence?: 'alta' | 'media' | 'baja';
@@ -76,6 +78,7 @@ export function mapMov(m: MovimientoListado): UiMov {
     ic: iconFor(name, m.descripcion ?? null),
     cat: m.categoria?.slug ?? 'sin-categoria',
     catId: m.categoria?.id ?? null,
+    subcat: m.subcategoria ?? null,
     recurring: false,
   };
 }
@@ -83,11 +86,13 @@ export function mapMov(m: MovimientoListado): UiMov {
 export async function fetchAll(client: TaggerClient): Promise<{
   movs: UiMov[];
   categorias: Categoria[];
+  subcats: CategoriaUsuario[];
 }> {
-  const [items, categorias] = await Promise.all([
+  const [items, categorias, subcats] = await Promise.all([
     client.movimientos.listar({ limit: 200, origen: DEMO_ORIGEN }),
     client.categorias.listar(),
+    client.categoriasUsuario.listar(DEMO_USER),
   ]);
   const movs = items.map(mapMov);
-  return { movs, categorias };
+  return { movs, categorias, subcats };
 }

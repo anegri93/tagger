@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { categorias } from './categorias.js';
+import { categoriasUsuario } from './categorias_usuario.js';
 
 export type Evidencia = {
   regla_id?: string;
@@ -56,6 +57,9 @@ export const movimientos = pgTable(
       onDelete: 'set null',
     }),
     categoriaConfirmadaId: uuid('categoria_confirmada_id').references(() => categorias.id, {
+      onDelete: 'set null',
+    }),
+    subcategoriaUsuarioId: uuid('subcategoria_usuario_id').references(() => categoriasUsuario.id, {
       onDelete: 'set null',
     }),
     fuenteCategoria: fuenteCategoriaEnum('fuente_categoria'),

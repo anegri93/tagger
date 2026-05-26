@@ -1,4 +1,5 @@
 export * from './categorias.js';
+export * from './categorias_usuario.js';
 export * from './mcc_por_nombre.js';
 export * from './mcc_catalogo.js';
 export * from './movimientos.js';

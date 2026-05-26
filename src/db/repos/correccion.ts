@@ -1,6 +1,12 @@
 import { eq, and } from 'drizzle-orm';
 import type { Db } from '../client.js';
-import { movimientos, correccionesUsuario, categorias, reglas } from '../schema/index.js';
+import {
+  movimientos,
+  correccionesUsuario,
+  categorias,
+  categoriasUsuario,
+  reglas,
+} from '../schema/index.js';
 import type { CorreccionService } from '../../api/routes/correccion.js';
 import { normalize } from '../../domain/normalize.js';
 
@@ -106,13 +112,38 @@ export function crearCorreccionService(
         .limit(1);
       if (catRows.length === 0) return { ok: false, error: 'categoria_invalida' };
 
+      // Si vino subcat user, resolver + validar pertenencia y canon padre.
+      let categoriaEfectiva = input.categoriaIdNueva;
+      let subcategoriaUsuarioId: string | null = null;
+      if (input.subcategoriaUsuarioId) {
+        const subRows = await db
+          .select({
+            id: categoriasUsuario.id,
+            usuarioId: categoriasUsuario.usuarioId,
+            canonicaId: categoriasUsuario.canonicaId,
+            activo: categoriasUsuario.activo,
+          })
+          .from(categoriasUsuario)
+          .where(eq(categoriasUsuario.id, input.subcategoriaUsuarioId))
+          .limit(1);
+        const sub = subRows[0];
+        if (!sub || !sub.activo) return { ok: false, error: 'subcategoria_invalida' };
+        const usuarioRef = input.usuario ?? mov.origen;
+        if (usuarioRef && sub.usuarioId !== usuarioRef) {
+          return { ok: false, error: 'subcategoria_invalida' };
+        }
+        subcategoriaUsuarioId = sub.id;
+        categoriaEfectiva = sub.canonicaId;
+      }
+
       const anterior = mov.categoriaConfirmadaId ?? mov.categoriaPredichaId;
 
       const result = await db.transaction(async (tx) => {
         await tx
           .update(movimientos)
           .set({
-            categoriaConfirmadaId: input.categoriaIdNueva,
+            categoriaConfirmadaId: categoriaEfectiva,
+            subcategoriaUsuarioId,
             fuenteCategoria: 'manual',
             requiereRevision: false,
             updatedAt: new Date(),
@@ -124,7 +155,8 @@ export function crearCorreccionService(
           .values({
             movimientoId: input.movimientoId,
             categoriaAnteriorId: anterior,
-            categoriaNuevaId: input.categoriaIdNueva,
+            categoriaNuevaId: categoriaEfectiva,
+            subcategoriaUsuarioId,
             usuario: input.usuario ?? null,
             motivo: input.motivo ?? null,
           })
@@ -151,7 +183,7 @@ export function crearCorreccionService(
               scope,
               valor: clave.raw,
               valorNormalizado: clave.normalizado,
-              categoriaId: input.categoriaIdNueva,
+              categoriaId: categoriaEfectiva,
             });
             invalidarReglas?.(scope);
           } catch {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Categoria, ChatMessage, TaggerClient, Movimiento } from '@mango/tagger-sdk';
+import type { Categoria, CategoriaUsuario, ChatMessage, TaggerClient, Movimiento } from '@mango/tagger-sdk';
 import type { UiMov } from './api';
 import { catStyle } from './cat-style';
 import { friendlyRule } from './rule-friendly';
@@ -239,17 +239,30 @@ function ScopeOption({ active, emoji, title, desc, onClick }: {
 }
 
 export function CategoryEditSheet({
-  current, categorias, nombreComercio, onClose, onSave,
+  current, categorias, subcats, nombreComercio, client, usuario, onClose, onSave, onSubcatCreated,
 }: {
   current: string | null;
   categorias: Categoria[];
+  subcats: CategoriaUsuario[];
   nombreComercio: string;
+  client: TaggerClient | null;
+  usuario: string;
   onClose: () => void;
-  onSave: (newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void>;
+  onSave: (
+    pick:
+      | { kind: 'canon'; categoriaId: string }
+      | { kind: 'subcat'; subcategoriaUsuarioId: string; categoriaId: string },
+    scope: 'solo' | 'exacto' | 'prefijo',
+  ) => Promise<void>;
+  onSubcatCreated: (s: CategoriaUsuario) => void;
 }) {
-  const [pickedId, setPickedId] = useState<string | null>(current);
+  type Pick =
+    | { kind: 'canon'; categoriaId: string }
+    | { kind: 'subcat'; subcategoriaUsuarioId: string; categoriaId: string };
+  const [picked, setPicked] = useState<Pick | null>(current ? { kind: 'canon', categoriaId: current } : null);
   const [scope, setScope] = useState<'solo' | 'exacto' | 'prefijo'>('exacto');
   const [step, setStep] = useState<'cat' | 'scope'>('cat');
+  const [createOpen, setCreateOpen] = useState(false);
   const firstWord = useMemo(() => {
     const w = nombreComercio.trim().split(/\s+/)[0] ?? '';
     return w.toUpperCase();
@@ -257,24 +270,44 @@ export function CategoryEditSheet({
   const hasPrefijo = firstWord.length >= 3;
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
-  const filtered = useMemo(() => {
+  const filteredCanon = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return categorias;
     return categorias.filter((c) => c.nombre.toLowerCase().includes(t) || c.slug.includes(t));
   }, [categorias, q]);
+  const filteredSubcats = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return subcats;
+    return subcats.filter(
+      (s) =>
+        s.nombre.toLowerCase().includes(t) ||
+        s.slug.includes(t) ||
+        s.canonica_nombre.toLowerCase().includes(t),
+    );
+  }, [subcats, q]);
 
   const submit = async () => {
-    if (!pickedId || pickedId === current) { onClose(); return; }
+    if (!picked) { onClose(); return; }
     setSaving(true);
     try {
-      await onSave(pickedId, scope);
+      await onSave(picked, scope);
       onClose();
     } finally {
       setSaving(false);
     }
   };
 
-  const pickedCat = pickedId ? categorias.find((c) => c.id === pickedId) : null;
+  // Label de la pick para el step 2.
+  const pickedLabel = (() => {
+    if (!picked) return null;
+    if (picked.kind === 'canon') {
+      const c = categorias.find((x) => x.id === picked.categoriaId);
+      return c ? { emoji: catStyle(c.slug).emoji, nombre: c.nombre, sub: null as string | null } : null;
+    }
+    const s = subcats.find((x) => x.id === picked.subcategoriaUsuarioId);
+    if (!s) return null;
+    return { emoji: s.emoji ?? '✨', nombre: s.nombre, sub: s.canonica_nombre };
+  })();
 
   return (
     <div className="sheet-bg" onClick={onClose}>
@@ -293,12 +326,44 @@ export function CategoryEditSheet({
               style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 12, fontSize: 14, outline: 0, marginBottom: 12 }}
             />
             <div style={{ maxHeight: 460, overflowY: 'auto' }}>
-              {filtered.map((c) => {
+              {filteredSubcats.length > 0 && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '4px 4px 6px' }}>
+                    Tus categorías
+                  </div>
+                  {filteredSubcats.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        setPicked({ kind: 'subcat', subcategoriaUsuarioId: s.id, categoriaId: s.canonica_id });
+                        setStep('scope');
+                      }}
+                      style={{
+                        width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '12px 12px', marginBottom: 6, borderRadius: 12,
+                        background: '#fff', border: '1px solid var(--line)',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      <span style={{ fontSize: 22, width: 32, textAlign: 'center' }}>{s.emoji ?? '✨'}</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{s.nombre}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{s.canonica_nombre}</div>
+                      </span>
+                      <span style={{ color: '#cfd6e0', fontSize: 18 }}>›</span>
+                    </button>
+                  ))}
+                </>
+              )}
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', padding: filteredSubcats.length > 0 ? '10px 4px 6px' : '4px 4px 6px' }}>
+                Globales
+              </div>
+              {filteredCanon.map((c) => {
                 const st = catStyle(c.slug);
                 return (
                   <button
                     key={c.id}
-                    onClick={() => { setPickedId(c.id); setStep('scope'); }}
+                    onClick={() => { setPicked({ kind: 'canon', categoriaId: c.id }); setStep('scope'); }}
                     style={{
                       width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
                       padding: '12px 12px', marginBottom: 6, borderRadius: 12,
@@ -313,9 +378,20 @@ export function CategoryEditSheet({
                   </button>
                 );
               })}
-              {filtered.length === 0 && (
+              {filteredCanon.length === 0 && filteredSubcats.length === 0 && (
                 <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 13, padding: 14 }}>Sin resultados</p>
               )}
+              <button
+                onClick={() => setCreateOpen(true)}
+                style={{
+                  width: '100%', marginTop: 10, padding: '12px 12px',
+                  borderRadius: 12, background: '#f6f8fb',
+                  border: '1px dashed var(--blue3)', color: 'var(--blue3)',
+                  fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                + Crear categoría personal
+              </button>
             </div>
           </>
         ) : (
@@ -326,7 +402,16 @@ export function CategoryEditSheet({
             >‹ Volver</button>
             <h3 style={{ marginBottom: 4 }}>¿Cómo aplico la regla?</h3>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
-              <b style={{ color: 'var(--ink)' }}>{nombreComercio}</b> → {pickedCat ? <><span>{catStyle(pickedCat.slug).emoji}</span> <b style={{ color: 'var(--ink)' }}>{pickedCat.nombre}</b></> : '—'}
+              <b style={{ color: 'var(--ink)' }}>{nombreComercio}</b> →{' '}
+              {pickedLabel ? (
+                <>
+                  <span>{pickedLabel.emoji}</span>{' '}
+                  <b style={{ color: 'var(--ink)' }}>{pickedLabel.nombre}</b>
+                  {pickedLabel.sub && (
+                    <span style={{ fontSize: 11, color: 'var(--muted)' }}> · {pickedLabel.sub}</span>
+                  )}
+                </>
+              ) : '—'}
             </div>
             <div className="scope-picker">
               <ScopeOption
@@ -354,12 +439,12 @@ export function CategoryEditSheet({
               )}
             </div>
             <button
-              disabled={saving || !pickedId}
+              disabled={saving || !picked}
               onClick={submit}
               style={{
                 width: '100%', background: 'var(--blue3)', color: '#fff', border: 0,
                 borderRadius: 22, padding: 13, fontWeight: 700, fontSize: 15, cursor: 'pointer',
-                opacity: saving || !pickedId ? 0.5 : 1, marginTop: 12,
+                opacity: saving || !picked ? 0.5 : 1, marginTop: 12,
               }}
             >
               {saving ? 'Guardando…' : 'Confirmar'}
@@ -367,18 +452,42 @@ export function CategoryEditSheet({
           </>
         )}
       </div>
+      {createOpen && (
+        <CreateSubcatSheet
+          client={client}
+          usuario={usuario}
+          categorias={categorias}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(s) => {
+            onSubcatCreated(s);
+            // Auto-pick subcat recién creada y avanzar al step scope.
+            setPicked({ kind: 'subcat', subcategoriaUsuarioId: s.id, categoriaId: s.canonica_id });
+            setStep('scope');
+            setCreateOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 export function DetailSheet({
-  m, movs, categorias, client, onChangeCat, onClose, onDismissPhantom, onAskChat, onAfterRuleMutate,
+  m, movs, categorias, subcats, client, usuario, onChangeCat, onClose, onDismissPhantom, onAskChat, onAfterRuleMutate, onSubcatCreated,
 }: {
   m: UiMov;
   movs: UiMov[];
   categorias: Categoria[];
+  subcats: CategoriaUsuario[];
   client: TaggerClient | null;
-  onChangeCat: (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void> | void;
+  usuario: string;
+  onChangeCat: (
+    movId: string | number,
+    pick:
+      | { kind: 'canon'; categoriaId: string }
+      | { kind: 'subcat'; subcategoriaUsuarioId: string; categoriaId: string },
+    scope: 'solo' | 'exacto' | 'prefijo',
+  ) => Promise<void> | void;
+  onSubcatCreated: (s: CategoriaUsuario) => void;
   onClose: () => void;
   onDismissPhantom: (key: string) => void;
   onAskChat: (q: string) => void;
@@ -457,7 +566,20 @@ export function DetailSheet({
         <div className="row" style={{ alignItems: 'center' }}>
           <span>Categoría</span>
           <span>
-            <span className={'cat ' + curStyle.cls} style={{ marginRight: 8 }}>{curStyle.label}</span>
+            {m.subcat ? (
+              <span
+                className={'cat ' + curStyle.cls}
+                style={{ marginRight: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                title={'Rubro: ' + curStyle.label}
+              >
+                <span>{m.subcat.emoji ?? '✨'}</span>
+                {m.subcat.nombre}
+              </span>
+            ) : (
+              <span className={'cat ' + curStyle.cls} style={{ marginRight: 8 }}>
+                {curStyle.label}
+              </span>
+            )}
             {!m.forecast && (
               <button
                 onClick={() => setEditOpen(true)}
@@ -468,6 +590,12 @@ export function DetailSheet({
             )}
           </span>
         </div>
+        {m.subcat && (
+          <div className="row">
+            <span>Rubro</span>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{curStyle.label}</span>
+          </div>
+        )}
         <div className="row"><span>Recurrente</span><span>{m.recurring ? 'Sí 🔁' : 'No'}</span></div>
         {m.forecast && (
           <div className="ai" style={{ flexDirection: 'column', gap: 10 }}>
@@ -544,10 +672,14 @@ export function DetailSheet({
         <CategoryEditSheet
           current={m.catId}
           categorias={categorias}
+          subcats={subcats}
           nombreComercio={m.t}
+          client={client}
+          usuario={usuario}
           onClose={() => setEditOpen(false)}
-          onSave={async (newId, scope) => {
-            await onChangeCat(m.id, newId, scope);
+          onSubcatCreated={onSubcatCreated}
+          onSave={async (pick, scope) => {
+            await onChangeCat(m.id, pick, scope);
           }}
         />
       )}
@@ -676,6 +808,179 @@ export function NewMovementSheet({
         )}
         <button className="nm-submit" disabled={submitting} onClick={submit}>
           {submitting ? 'Procesando…' : 'Confirmar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const SUBCAT_EMOJIS = ['🛒', '🍔', '☕', '🎬', '🎮', '🏃', '✈️', '🎓', '💼', '🐶', '💊', '👕', '🔧', '🎁', '📚', '💡'];
+
+export function CreateSubcatSheet({
+  client, usuario, categorias, onClose, onCreated,
+}: {
+  client: TaggerClient | null;
+  usuario: string;
+  categorias: Categoria[];
+  onClose: () => void;
+  onCreated: (created: CategoriaUsuario) => void;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [emoji, setEmoji] = useState<string>(SUBCAT_EMOJIS[0]!);
+  const [rubroId, setRubroId] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Autosugerencia rubro: matchea nombre vs categorias canónicas.
+  const sugeridos = useMemo(() => {
+    const q = nombre.trim().toLowerCase();
+    if (!q || q.length < 3) return [];
+    const out: Categoria[] = [];
+    for (const c of categorias) {
+      const hay = (c.nombre + ' ' + c.slug + ' ' + (c.descripcion ?? '')).toLowerCase();
+      if (hay.includes(q)) out.push(c);
+    }
+    return out.slice(0, 3);
+  }, [nombre, categorias]);
+
+  // Auto-seleccionar primera sugerencia si no hay rubro elegido aún.
+  useEffect(() => {
+    if (!rubroId && sugeridos.length > 0) setRubroId(sugeridos[0]!.id);
+  }, [sugeridos, rubroId]);
+
+  const rubroSel = categorias.find((c) => c.id === rubroId) ?? null;
+  const nombreIgualRubro =
+    rubroSel != null && nombre.trim().toLowerCase() === rubroSel.nombre.trim().toLowerCase();
+
+  const submit = async () => {
+    setError(null);
+    if (!client) { setError('Sin cliente'); return; }
+    const n = nombre.trim();
+    if (!n) { setError('Ingresá un nombre'); return; }
+    if (!rubroId) { setError('Elegí un rubro'); return; }
+    if (nombreIgualRubro) { setError('El nombre no puede ser igual al rubro'); return; }
+    setSaving(true);
+    try {
+      const created = await client.categoriasUsuario.crear({
+        usuario,
+        canonicaId: rubroId,
+        nombre: n,
+        emoji,
+      });
+      onCreated(created);
+      onClose();
+    } catch (e) {
+      const msg = (e as { message?: string }).message || 'Error al crear';
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="sheet-bg" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '85%' }}>
+        <div className="grab" />
+        <h3>Crear categoría</h3>
+        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+          Personal — internamente la agrupamos bajo un rubro.
+        </div>
+
+        <div className="nm-field">
+          <label>Nombre</label>
+          <input
+            placeholder="Ej: Streaming, Verdulería barrio..."
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        <div className="nm-field">
+          <label>Emoji</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {SUBCAT_EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => setEmoji(e)}
+                style={{
+                  width: 36, height: 36, fontSize: 18, lineHeight: 1,
+                  borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                  background: emoji === e ? '#eaf3ff' : '#f6f8fb',
+                  border: emoji === e ? '2px solid var(--blue3)' : '1px solid var(--line)',
+                }}
+              >{e}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="nm-field">
+          <label>Rubro</label>
+          {sugeridos.length > 0 && (
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
+              Sugerencias automáticas según el nombre:
+            </div>
+          )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+            {sugeridos.map((c) => {
+              const st = catStyle(c.slug);
+              const on = rubroId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setRubroId(c.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                    background: on ? '#eaf3ff' : '#f6f8fb',
+                    border: on ? '2px solid var(--blue3)' : '1px solid var(--line)',
+                    fontSize: 12, fontWeight: 700, color: 'var(--ink)',
+                  }}
+                >
+                  <span>{st.emoji}</span>{c.nombre}
+                </button>
+              );
+            })}
+          </div>
+          <select
+            value={rubroId}
+            onChange={(e) => setRubroId(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 12px', border: '1px solid var(--line)',
+              borderRadius: 12, fontSize: 14, fontFamily: 'inherit', outline: 0,
+            }}
+          >
+            <option value="">Elegí un rubro...</option>
+            {categorias
+              .filter((c) => c.slug !== 'sin-categoria')
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        {nombreIgualRubro && (
+          <div style={{ fontSize: 12, color: '#c2410c', marginBottom: 10 }}>
+            ⚠ El nombre coincide con el rubro padre. Usá un nombre más específico.
+          </div>
+        )}
+        {error && <div style={{ fontSize: 12, color: '#c2410c', marginBottom: 10 }}>{error}</div>}
+
+        <button
+          disabled={saving || !nombre.trim() || !rubroId || nombreIgualRubro}
+          onClick={submit}
+          style={{
+            width: '100%', background: 'var(--blue3)', color: '#fff', border: 0,
+            borderRadius: 22, padding: 13, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+            opacity: saving || !nombre.trim() || !rubroId || nombreIgualRubro ? 0.5 : 1,
+            marginTop: 4,
+          }}
+        >
+          {saving ? 'Guardando…' : 'Crear categoría'}
         </button>
       </div>
     </div>

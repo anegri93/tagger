@@ -8,6 +8,7 @@ import type { MovimientoInput } from '../../domain/types.js';
 import { normalize } from '../../domain/normalize.js';
 import type { CorreccionMemoriaWriter } from '../../db/repos/correccion.js';
 import type { DescripcionUsoRepo } from '../../db/repos/descripcion-uso.js';
+import type { CategoriaUsuarioRepo } from '../../db/repos/categorias-usuario.js';
 import { CONFIANZA } from '../../domain/confianza.js';
 
 export interface CategoriaResolverPort {
@@ -27,6 +28,8 @@ export interface CategorizarDeps {
   invalidarReglas?: (scope: string) => void;
   /** Opcional. Si se provee + body.descripcion + body.origen, registra uso para autocomplete. */
   descripcionUso?: DescripcionUsoRepo;
+  /** Opcional. Si se provee + body.subcategoria_usuario_id, resuelve canónica padre + valida pertenencia al usuario. */
+  categoriasUsuario?: CategoriaUsuarioRepo;
 }
 
 export const categorizarRoute =
@@ -54,6 +57,25 @@ export const categorizarRoute =
 
         let pipeline: ResultadoPipeline;
         let saltearCascada = false;
+
+        // Si vino subcategoria_usuario_id, resolvemos canon padre y la usamos como
+        // categoria efectiva. Si vino ADEMÁS categoria_id, debe coincidir con la canon padre.
+        let subcategoriaUsuarioId: string | null = null;
+        if (body.subcategoria_usuario_id) {
+          if (!deps.categoriasUsuario) {
+            return reply.code(400).send({ error: 'subcategoria_no_soportada' });
+          }
+          const sub = await deps.categoriasUsuario.porId(body.subcategoria_usuario_id);
+          if (!sub || !sub.activo) {
+            return reply.code(400).send({ error: 'subcategoria_invalida' });
+          }
+          if (body.origen && sub.usuario_id !== body.origen) {
+            return reply.code(403).send({ error: 'subcategoria_no_pertenece_al_usuario' });
+          }
+          subcategoriaUsuarioId = sub.id;
+          // Forzar categoria_id = canon padre (override silencioso si caller mandó otra).
+          body.categoria_id = sub.canonica_id;
+        }
 
         // Modo manual: el caller mandó una categoría predefinida. Skip cascada.
         if (body.categoria_id) {
@@ -90,6 +112,7 @@ export const categorizarRoute =
           origen: body.origen ?? 'api',
           batchId: body.batch_id ?? null,
           latencyMs,
+          subcategoriaUsuarioId,
         });
         if (pipeline.requiereIa) {
           deps.iaFallback.schedule(out.movimientoId, input);

@@ -36,6 +36,11 @@ export const categorizarRequestSchema = z
      * Si false (default cuando hay categoria_id), sólo se aplica a este mov.
      */
     aprender: z.boolean().optional(),
+    /**
+     * Subcategoría user-scope opcional. Si presente, el mov se guarda con
+     * subcategoria_usuario_id + categoria_id = canónica padre (resuelta backend).
+     */
+    subcategoria_usuario_id: z.string().uuid().optional(),
   })
   .refine((v) => Boolean(v.descripcion ?? v.nombre_comercio ?? v.nombre_bancard ?? v.mcc), {
     message: 'al menos uno de descripcion, nombre_comercio, nombre_bancard o mcc es requerido',

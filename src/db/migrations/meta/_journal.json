@@ -183,6 +183,13 @@
       "when": 1780000000000,
       "tag": "0025_presupuestos_versionados",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1780100000000,
+      "tag": "0026_categorias_usuario",
+      "breakpoints": true
     }
   ]
 }

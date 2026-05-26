@@ -31,6 +31,8 @@ import { crearReglasLoader, crearReglasWriter } from './db/repos/reglas.js';
 import { crearCapaReglas } from './layers/reglas.js';
 import { reglasRoute } from './api/routes/reglas.js';
 import { presupuestosRoute } from './api/routes/presupuestos.js';
+import { categoriasUsuarioRoute } from './api/routes/categorias-usuario.js';
+import { crearCategoriaUsuarioRepo, crearSubcategoriaResolver } from './db/repos/categorias-usuario.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearMccPorNombreLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
@@ -128,6 +130,7 @@ async function main() {
   const healthDeps = env.IA_ENABLED ? { pingDb, pingOllama: () => ollama.ping() } : { pingDb };
   await app.register(healthRoute(healthDeps));
   await app.register(apiKeyAuth, { apiKey: env.API_KEY });
+  const categoriaUsuarioRepo = crearCategoriaUsuarioRepo(db);
   await app.register(
     categorizarRoute({
       capas,
@@ -137,11 +140,15 @@ async function main() {
       memoria: correccionMemoria,
       invalidarReglas: (scope) => capaReglas.invalidar(scope),
       descripcionUso: descripcionUsoRepo,
+      categoriasUsuario: categoriaUsuarioRepo,
     }),
   );
   await app.register(descripcionesRoute(descripcionUsoRepo));
-  await app.register(movimientoListRoute(crearMovimientoLister(db), categoriaResolver));
-  await app.register(movimientoGetRoute(movReader, categoriaResolver));
+  const subcategoriaResolver = crearSubcategoriaResolver(db);
+  await app.register(
+    movimientoListRoute(crearMovimientoLister(db), categoriaResolver, subcategoriaResolver),
+  );
+  await app.register(movimientoGetRoute(movReader, categoriaResolver, subcategoriaResolver));
   await app.register(
     movimientoReprocesarRoute({
       capas,
@@ -155,6 +162,7 @@ async function main() {
   const reglasWriter = crearReglasWriter(db, (scope) => capaReglas.invalidar(scope));
   await app.register(reglasRoute(reglasWriter));
   await app.register(presupuestosRoute(db));
+  await app.register(categoriasUsuarioRoute({ repo: categoriaUsuarioRepo }));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
   const categoriasSimilaresReader = crearCategoriasSimilaresReader(db);

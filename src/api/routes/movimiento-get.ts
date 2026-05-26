@@ -18,6 +18,7 @@ export interface MovimientoListItem {
   monto: string | null;
   categoriaPredichaId: string | null;
   categoriaConfirmadaId: string | null;
+  subcategoriaUsuarioId: string | null;
   fuenteCategoria: string | null;
   confianza: string | null;
   requiereRevision: boolean;
@@ -42,12 +43,26 @@ export interface MovimientoGetData {
   monto: string | null;
   categoriaPredichaId: string | null;
   categoriaConfirmadaId: string | null;
+  subcategoriaUsuarioId: string | null;
   fuenteCategoria: string | null;
   confianza: string | null;
   requiereRevision: boolean;
   evidencia: unknown;
   createdAt: Date | string;
   updatedAt: Date | string;
+}
+
+export interface SubcategoriaPublica {
+  id: string;
+  nombre: string;
+  slug: string;
+  emoji: string | null;
+  color: string | null;
+  canonica_id: string;
+}
+
+export interface SubcategoriaResolverPort {
+  porIds(ids: ReadonlyArray<string | null | undefined>): Promise<Map<string, SubcategoriaPublica>>;
 }
 
 export interface MovimientoReader {
@@ -61,7 +76,11 @@ export interface CategoriaResolverPort {
 }
 
 export const movimientoListRoute =
-  (lister: MovimientoLister, categorias: CategoriaResolverPort): FastifyPluginAsync =>
+  (
+    lister: MovimientoLister,
+    categorias: CategoriaResolverPort,
+    subcats?: SubcategoriaResolverPort,
+  ): FastifyPluginAsync =>
   async (app) => {
     app.get('/movimientos', async (req, reply) => {
       const parsed = listQuerySchema.safeParse(req.query);
@@ -76,17 +95,21 @@ export const movimientoListRoute =
       if (q.origen !== undefined) filter.origen = q.origen;
       const { items, total } = await lister.listar(filter);
       const ids: Array<string | null> = [];
+      const subIds: Array<string | null> = [];
       for (const m of items) {
         ids.push(m.categoriaPredichaId);
         ids.push(m.categoriaConfirmadaId);
+        subIds.push(m.subcategoriaUsuarioId);
       }
       const map = await categorias.porIds(ids);
+      const subMap = subcats ? await subcats.porIds(subIds) : new Map();
       const out = items.map((m) => {
         const predicha = m.categoriaPredichaId ? (map.get(m.categoriaPredichaId) ?? null) : null;
         const confirmada = m.categoriaConfirmadaId
           ? (map.get(m.categoriaConfirmadaId) ?? null)
           : null;
         const categoria = confirmada ?? predicha;
+        const subcat = m.subcategoriaUsuarioId ? (subMap.get(m.subcategoriaUsuarioId) ?? null) : null;
         return {
           id: m.id,
           descripcion: m.descripcion,
@@ -95,6 +118,8 @@ export const movimientoListRoute =
           categoria_predicha_id: m.categoriaPredichaId,
           categoria_confirmada_id: m.categoriaConfirmadaId,
           categoria,
+          subcategoria_usuario_id: m.subcategoriaUsuarioId,
+          subcategoria: subcat,
           fuente_categoria: m.fuenteCategoria,
           confianza: m.confianza,
           requiere_revision: m.requiereRevision,
@@ -107,7 +132,11 @@ export const movimientoListRoute =
   };
 
 export const movimientoGetRoute =
-  (reader: MovimientoReader, categorias: CategoriaResolverPort): FastifyPluginAsync =>
+  (
+    reader: MovimientoReader,
+    categorias: CategoriaResolverPort,
+    subcats?: SubcategoriaResolverPort,
+  ): FastifyPluginAsync =>
   async (app) => {
     app.get('/movimientos/:id', async (req, reply) => {
       const parsed = paramsSchema.safeParse(req.params);
@@ -121,6 +150,8 @@ export const movimientoGetRoute =
       const confirmada = m.categoriaConfirmadaId
         ? (map.get(m.categoriaConfirmadaId) ?? null)
         : null;
+      const subMap = subcats ? await subcats.porIds([m.subcategoriaUsuarioId]) : new Map();
+      const subcat = m.subcategoriaUsuarioId ? (subMap.get(m.subcategoriaUsuarioId) ?? null) : null;
       return reply.send({
         id: m.id,
         descripcion: m.descripcion,
@@ -132,6 +163,8 @@ export const movimientoGetRoute =
         categoria_predicha: predicha,
         categoria_confirmada_id: m.categoriaConfirmadaId,
         categoria_confirmada: confirmada,
+        subcategoria_usuario_id: m.subcategoriaUsuarioId,
+        subcategoria: subcat,
         fuente_categoria: m.fuenteCategoria,
         confianza: m.confianza,
         requiere_revision: m.requiereRevision,

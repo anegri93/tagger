@@ -14,6 +14,12 @@ const bodySchema = z.object({
    * Default: true (comportamiento histórico).
    */
   aprender: z.boolean().optional(),
+  /**
+   * Subcategoría user-scope opcional. Si presente, backend valida pertenencia
+   * al usuario, override categoria_id_nueva con la canónica padre, y guarda
+   * subcategoria_usuario_id en mov + correccion.
+   */
+  subcategoria_usuario_id: z.string().regex(UUID_RE).optional(),
 });
 
 export interface CorreccionService {
@@ -23,9 +29,10 @@ export interface CorreccionService {
     motivo?: string | undefined;
     usuario?: string | undefined;
     aprender?: boolean | undefined;
+    subcategoriaUsuarioId?: string | null | undefined;
   }): Promise<
     | { ok: true; correccionId: string; categoriaAnteriorId: string | null }
-    | { ok: false; error: 'movimiento_no_encontrado' | 'categoria_invalida' }
+    | { ok: false; error: 'movimiento_no_encontrado' | 'categoria_invalida' | 'subcategoria_invalida' }
   >;
 }
 
@@ -51,6 +58,7 @@ export const correccionRoute =
         motivo: body.data.motivo,
         usuario: body.data.usuario,
         aprender: body.data.aprender,
+        subcategoriaUsuarioId: body.data.subcategoria_usuario_id ?? null,
       });
       if (!r.ok) {
         const code = r.error === 'movimiento_no_encontrado' ? 404 : 400;

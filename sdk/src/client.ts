@@ -33,6 +33,9 @@ import type {
   NuevoMcc,
   Presupuesto,
   PresupuestoEstado,
+  CategoriaUsuario,
+  NuevaCategoriaUsuario,
+  ActualizarCategoriaUsuario,
   Regla,
   ResultadoCategorizacion,
   StatsPipeline,
@@ -85,6 +88,8 @@ export class TaggerClient {
   readonly reglas: ReturnType<typeof reglasModule>;
   /** Presupuestos mensuales por categoría. */
   readonly presupuestos: ReturnType<typeof presupuestosModule>;
+  /** Subcategorías personales del usuario (rubro canónico padre). */
+  readonly categoriasUsuario: ReturnType<typeof categoriasUsuarioModule>;
   /** CRUD de MCCs. */
   readonly mcc: ReturnType<typeof mccModule>;
   /** CRUD de marcas conocidas. */
@@ -115,6 +120,7 @@ export class TaggerClient {
     this.categorias = categoriasModule(this);
     this.reglas = reglasModule(this);
     this.presupuestos = presupuestosModule(this);
+    this.categoriasUsuario = categoriasUsuarioModule(this);
     this.mcc = mccModule(this);
     this.marcas = marcasModule(this);
     this.comercios = comerciosModule(this);
@@ -225,6 +231,8 @@ function movimientosModule(c: TaggerClient) {
       if (input.bypassCatalogo !== undefined) body.bypass_catalogo = input.bypassCatalogo;
       if (input.categoriaId !== undefined) body.categoria_id = input.categoriaId;
       if (input.aprender !== undefined) body.aprender = input.aprender;
+      if (input.subcategoriaUsuarioId !== undefined)
+        body.subcategoria_usuario_id = input.subcategoriaUsuarioId;
 
       const r = await c.request<{
         movimiento_id: string;
@@ -276,6 +284,8 @@ function movimientosModule(c: TaggerClient) {
       if (input.usuario !== undefined) body.usuario = input.usuario;
       if (input.motivo !== undefined) body.motivo = input.motivo;
       if (input.aprender !== undefined) body.aprender = input.aprender;
+      if (input.subcategoriaUsuarioId !== undefined && input.subcategoriaUsuarioId !== null)
+        body.subcategoria_usuario_id = input.subcategoriaUsuarioId;
       const r = await c.request<{
         correccion_id: string;
         categoria_anterior: Categoria | null;
@@ -699,6 +709,39 @@ function chatModule(c: TaggerClient) {
       if (input.movs) body.movs = input.movs;
       if (input.usuario) body.usuario = input.usuario;
       return c.request<ChatResult>('/chat', { method: 'POST', body });
+    },
+  };
+}
+
+function categoriasUsuarioModule(c: TaggerClient) {
+  return {
+    /** Lista subcategorías activas del usuario. */
+    async listar(usuario: string): Promise<CategoriaUsuario[]> {
+      const r = await c.request<{ items: CategoriaUsuario[] }>('/categorias-usuario', {
+        query: { usuario },
+      });
+      return r.items;
+    },
+    /** Crea subcategoría con rubro canónico. */
+    async crear(input: NuevaCategoriaUsuario): Promise<CategoriaUsuario> {
+      const body: Record<string, unknown> = {
+        usuario: input.usuario,
+        canonica_id: input.canonicaId,
+        nombre: input.nombre,
+      };
+      if (input.slug !== undefined) body.slug = input.slug;
+      if (input.emoji !== undefined) body.emoji = input.emoji;
+      if (input.color !== undefined) body.color = input.color;
+      return c.request<CategoriaUsuario>('/categorias-usuario', { method: 'POST', body });
+    },
+    async actualizar(id: string, input: ActualizarCategoriaUsuario): Promise<CategoriaUsuario> {
+      return c.request<CategoriaUsuario>(`/categorias-usuario/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: input,
+      });
+    },
+    async eliminar(id: string): Promise<void> {
+      await c.request(`/categorias-usuario/${encodeURIComponent(id)}`, { method: 'DELETE' });
     },
   };
 }

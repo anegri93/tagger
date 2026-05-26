@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { TaggerClient, type Categoria } from '@mango/tagger-sdk';
+import { TaggerClient, type Categoria, type CategoriaUsuario } from '@mango/tagger-sdk';
 import { DEMO_ORIGEN, DEMO_USER, fetchAll, fetchDemoConfig, makeClient, type UiMov } from './api';
 import { catStyle } from './cat-style';
 import type { ChatMessage } from '@mango/tagger-sdk';
@@ -244,7 +244,7 @@ function Home({ onOpenMov, onReset, onOpenNewMov }: { onOpenMov: () => void; onR
 }
 
 function Movimientos({
-  allMovs, forecast, profile, categorias, client, onChangeCat,
+  allMovs, forecast, profile, categorias, subcats, onSubcatCreated, client, onChangeCat,
   feedback, onFeedback, onDismissPhantom, chatHistory, setChatHistory,
   chatOpen, setChatOpen, seedChat, onOpenNewMov, onBack, onRefresh,
   nudge, mood, onNudgeCTA, onNudgeDismiss, onSilence, onUnsilence, silencedUntil,
@@ -255,9 +255,17 @@ function Movimientos({
   forecast: Forecast;
   profile: Profile;
   categorias: Categoria[];
+  subcats: CategoriaUsuario[];
+  onSubcatCreated: (s: CategoriaUsuario) => void;
   client: TaggerClient | null;
   onRefresh: () => void;
-  onChangeCat: (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void>;
+  onChangeCat: (
+    movId: string | number,
+    pick:
+      | { kind: 'canon'; categoriaId: string }
+      | { kind: 'subcat'; subcategoriaUsuarioId: string; categoriaId: string },
+    scope: 'solo' | 'exacto' | 'prefijo',
+  ) => Promise<void>;
   feedback: Record<string, string>;
   onFeedback: (id: string, v: 'up' | 'down') => void;
   onDismissPhantom: (key: string) => void;
@@ -346,13 +354,26 @@ function Movimientos({
 
   const renderMov = (m: UiMov) => {
     const c = catStyle(m.cat);
+    // Display: si tiene subcat, mostrar subcat con su emoji propio + tooltip al rubro.
+    const showSubcat = m.subcat != null;
     return (
       <div className="mov" key={m.id} onClick={() => setSel(m.id)}>
         <MovIcon type={m.ic} />
         <div className="mid">
           <b>{m.t}</b>
           <div className="meta">
-            <span className={'cat ' + c.cls}>{c.label}</span>
+            {showSubcat ? (
+              <span
+                className={'cat ' + c.cls}
+                title={'Rubro: ' + c.label}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                <span>{m.subcat!.emoji ?? '✨'}</span>
+                {m.subcat!.nombre}
+              </span>
+            ) : (
+              <span className={'cat ' + c.cls}>{c.label}</span>
+            )}
             {m.recurring && <span className="rec">🔁 Recurrente</span>}
           </div>
         </div>
@@ -499,6 +520,9 @@ function Movimientos({
           m={selected}
           movs={allMovs}
           categorias={categorias}
+          subcats={subcats}
+          usuario={DEMO_USER}
+          onSubcatCreated={onSubcatCreated}
           client={client}
           onChangeCat={onChangeCat}
           onAfterRuleMutate={onRefresh}
@@ -586,6 +610,7 @@ export default function App() {
   const [screen, setScreen] = useState<'home' | 'mov'>('home');
   const [movs, setMovs] = useState<UiMov[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcats, setSubcats] = useState<CategoriaUsuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasBooted, setHasBooted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -618,6 +643,7 @@ export default function App() {
       const data = await fetchAll(client);
       setMovs(data.movs);
       setCategorias(data.categorias);
+      setSubcats(data.subcats);
       // Budget estado depende de movs — refrescar en paralelo (best-effort).
       try {
         const e = await client.presupuestos.estado({ usuario: DEMO_USER });
@@ -730,8 +756,13 @@ export default function App() {
     saveLS(LS_MANGUITO_POS, p);
   }, []);
 
-  const onChangeCat = useCallback(async (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => {
+  type ChangeCatPick =
+    | { kind: 'canon'; categoriaId: string }
+    | { kind: 'subcat'; subcategoriaUsuarioId: string; categoriaId: string };
+  const onChangeCat = useCallback(async (movId: string | number, pick: ChangeCatPick, scope: 'solo' | 'exacto' | 'prefijo') => {
     if (!client) return;
+    const newCategoriaId = pick.categoriaId; // canon (siempre)
+    const subcatId = pick.kind === 'subcat' ? pick.subcategoriaUsuarioId : null;
     // 'solo': solo este. 'exacto': aprende literal. 'prefijo': crea regla regex + reprocesa sin-cat coincidentes.
     if (scope === 'prefijo') {
       // 1) Aplicar corrección al mov actual sin aprender (la regla la creamos a mano).
@@ -740,8 +771,9 @@ export default function App() {
         categoriaIdNueva: newCategoriaId,
         usuario: DEMO_USER,
         aprender: false,
+        subcategoriaUsuarioId: subcatId,
       });
-      // 2) Crear regla regex 'comienza con primera palabra'.
+      // 2) Crear regla regex 'comienza con primera palabra'. Apunta a canónica (V1).
       const target = movs.find((m) => String(m.id) === String(movId));
       const firstWord = (target?.t ?? '').trim().split(/\s+/)[0]?.toUpperCase() ?? '';
       const cat = categorias.find((c) => c.id === newCategoriaId);
@@ -756,8 +788,6 @@ export default function App() {
           });
         } catch (e) { console.warn('crear regla prefijo falló', e); }
         // 3) Aplicar corrección directa a movs sin-cat cuyo nombre empiece por la misma palabra.
-        //    (Reprocesar no pasa `usuario` al pipeline, así que la regla user-scope no se aplicaría
-        //     al re-categorizar — corregir directo es más rápido y confiable.)
         const coinciden = movs.filter((m) =>
           m.catId == null
           && !m.forecast
@@ -770,6 +800,7 @@ export default function App() {
             categoriaIdNueva: newCategoriaId,
             usuario: DEMO_USER,
             aprender: false,
+            subcategoriaUsuarioId: subcatId,
           }),
         ));
       }
@@ -779,6 +810,7 @@ export default function App() {
         categoriaIdNueva: newCategoriaId,
         usuario: DEMO_USER,
         aprender: scope === 'exacto',
+        subcategoriaUsuarioId: subcatId,
       });
     }
     await refresh();
@@ -939,6 +971,8 @@ export default function App() {
             forecast={forecast}
             profile={profile}
             categorias={categorias}
+            subcats={subcats}
+            onSubcatCreated={(s) => setSubcats((prev) => [...prev.filter((x) => x.id !== s.id), s])}
             client={client}
             onRefresh={() => void refresh()}
             onChangeCat={onChangeCat}

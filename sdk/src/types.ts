@@ -122,6 +122,8 @@ export interface MovimientoInput {
    * Si false (default), sólo se aplica a este mov.
    */
   aprender?: boolean;
+  /** Opcional: subcategoría user-scope. Backend resuelve canónica padre. */
+  subcategoriaUsuarioId?: string;
 }
 
 export interface ResultadoCategorizacion {
@@ -146,6 +148,8 @@ export interface Movimiento {
   categoria_predicha: Categoria | null;
   categoria_confirmada_id: string | null;
   categoria_confirmada: Categoria | null;
+  subcategoria_usuario_id: string | null;
+  subcategoria: SubcategoriaUsuarioRef | null;
   fuente_categoria: FuenteCategoria | null;
   confianza: number | null;
   requiere_revision: boolean;
@@ -157,10 +161,50 @@ export interface Movimiento {
   updated_at: string;
 }
 
+export interface CategoriaUsuario {
+  id: string;
+  usuario_id: string;
+  canonica_id: string;
+  canonica_slug: string;
+  canonica_nombre: string;
+  nombre: string;
+  slug: string;
+  emoji: string | null;
+  color: string | null;
+  activo: boolean;
+  origen: string;
+  created_at: string;
+}
+
+export interface NuevaCategoriaUsuario {
+  usuario: string;
+  canonicaId: string;
+  nombre: string;
+  slug?: string;
+  emoji?: string | null;
+  color?: string | null;
+}
+
+export interface ActualizarCategoriaUsuario {
+  nombre?: string;
+  emoji?: string | null;
+  color?: string | null;
+  activo?: boolean;
+}
+
 /**
  * Item ligero devuelto por GET /movimientos (lista paginada). Incluye una
  * `categoria` embebida que es la confirmada si existe, sino la predicha.
  */
+export interface SubcategoriaUsuarioRef {
+  id: string;
+  nombre: string;
+  slug: string;
+  emoji: string | null;
+  color: string | null;
+  canonica_id: string;
+}
+
 export interface MovimientoListado {
   id: string;
   descripcion: string | null;
@@ -169,6 +213,8 @@ export interface MovimientoListado {
   categoria_predicha_id: string | null;
   categoria_confirmada_id: string | null;
   categoria: { id: string; slug: string; nombre: string } | null;
+  subcategoria_usuario_id: string | null;
+  subcategoria: SubcategoriaUsuarioRef | null;
   fuente_categoria: FuenteCategoria | null;
   confianza: string | null;
   requiere_revision: boolean;
@@ -195,6 +241,8 @@ export interface CorreccionInput {
    * Default: true (corrección normal, aprende para próximas veces).
    */
   aprender?: boolean;
+  /** Opcional: id de subcategoría user-scope. Backend resuelve canónica padre. */
+  subcategoriaUsuarioId?: string | null;
 }
 
 export interface CorreccionResult {

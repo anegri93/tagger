@@ -13,6 +13,8 @@ export interface MovimientoNuevo {
   mcc: string | null;
   monto: string | null;
   categoriaPredichaId: string | null;
+  /** Si el caller marca categoría manual, también puede traer subcat user. */
+  subcategoriaUsuarioId?: string | null;
   fuenteCategoria: ResultadoCapa['fuente'] | null;
   confianza: string | null;
   requiereRevision: boolean;
@@ -29,7 +31,12 @@ export async function persistirMovimiento(
   input: MovimientoInput,
   pipeline: ResultadoPipeline,
   repo: MovimientoRepository,
-  meta?: { origen?: string; batchId?: string | null; latencyMs?: number | null },
+  meta?: {
+    origen?: string;
+    batchId?: string | null;
+    latencyMs?: number | null;
+    subcategoriaUsuarioId?: string | null;
+  },
 ): Promise<MovimientoCategorizado> {
   const r = pipeline.resultado;
   const requiereRevision =
@@ -44,6 +51,7 @@ export async function persistirMovimiento(
     mcc: input.mcc ?? null,
     monto: input.monto !== undefined ? input.monto.toFixed(2) : null,
     categoriaPredichaId: r?.categoriaId ?? null,
+    subcategoriaUsuarioId: meta?.subcategoriaUsuarioId ?? null,
     fuenteCategoria: r?.fuente ?? null,
     confianza: r ? r.confianza.toFixed(2) : null,
     requiereRevision,
