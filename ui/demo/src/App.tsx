@@ -488,6 +488,7 @@ function Movimientos({
         budgetEstado={budgetEstado}
         seenInsights={insightsSeen}
         onMarkSeen={onMarkInsightsSeen}
+        context={view === 'budget' ? 'budget' : view === 'reglas' ? 'reglas' : view === 'cats' ? 'cats' : 'movs'}
         position={position}
         onPositionChange={onPositionChange}
         movs={allMovs}
@@ -792,7 +793,22 @@ export default function App() {
       origen: DEMO_ORIGEN,
       ...(input.categoriaId ? { categoriaId: input.categoriaId, aprender: true } : {}),
     });
-    await refresh();
+    // Optimistic prepend: insertamos el mov en estado local de inmediato así no
+    // dependemos del refresh para que aparezca. Después refresh reconcilia.
+    const optimistic: UiMov = {
+      id: r.movimientoId ?? `tmp-${Date.now()}`,
+      t: input.nombreComercio,
+      s: 'Movimiento',
+      amt: input.monto,
+      date: new Date().toISOString().slice(0, 10),
+      ic: 'qr',
+      cat: r.categoria?.slug ?? 'sin-categoria',
+      catId: r.categoria?.id ?? null,
+      recurring: false,
+    };
+    setMovs((prev) => [optimistic, ...prev.filter((m) => m.id !== optimistic.id)]);
+    // Refresh en background — reconcilia con datos reales y refresca budget.
+    void refresh();
     return {
       categoria: r.categoria?.nombre ?? null,
       fuente: r.fuente,

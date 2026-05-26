@@ -100,7 +100,233 @@ function shortAmount(n: number): string {
   return String(n);
 }
 
-function computeInsights(
+export type ManguitoContext = 'movs' | 'cats' | 'budget' | 'reglas';
+
+function computeInsightsByContext(
+  context: ManguitoContext,
+  movs: UiMov[],
+  forecast: Forecast | null,
+  userRules: Regla[],
+  budgetEstado: PresupuestoEstado | null,
+): InsightItem[] {
+  switch (context) {
+    case 'budget': return computeBudgetInsights(movs, budgetEstado);
+    case 'cats': return computeCatsInsights(movs);
+    case 'reglas': return computeReglasInsights(movs, userRules);
+    case 'movs':
+    default:
+      return computeMovsInsights(movs, forecast, userRules, budgetEstado);
+  }
+}
+
+// === Insights contextuales: PRESUPUESTOS ===
+function computeBudgetInsights(movs: UiMov[], budgetEstado: PresupuestoEstado | null): InsightItem[] {
+  const out: InsightItem[] = [];
+  if (!budgetEstado || budgetEstado.items.length === 0) {
+    out.push({
+      id: 'budget-empty',
+      icon: '🎯', label: 'Sin presupuestos',
+      value: 'Asigná uno a una categoría',
+      hint: 'Te ayudo a controlar gastos por cat',
+      tone: 'info',
+      action: { kind: 'chat', prompt: '¿Cómo funcionan los presupuestos? Dame ejemplos.' },
+      dismissible: true,
+    });
+    return out;
+  }
+  const items = budgetEstado.items;
+  const totalPresupuesto = items.reduce((s, b) => s + b.presupuesto, 0);
+  const totalGastado = items.reduce((s, b) => s + b.gastado, 0);
+  const pctGlobal = totalPresupuesto > 0 ? Math.round((totalGastado / totalPresupuesto) * 100) : 0;
+
+  // Cat más cerca del límite (incluye excedidos).
+  const peor = [...items].sort((a, b) => b.pct - a.pct)[0];
+  if (peor && peor.pct >= 50) {
+    out.push({
+      id: `budget-ctx-peor-${peor.categoria_id}-${Math.floor(peor.pct / 5) * 5}`,
+      icon: peor.pct > 100 ? '🚨' : '⚠️',
+      label: peor.pct > 100 ? 'Excedido' : 'Más cerca del límite',
+      value: peor.categoria_nombre,
+      hint: `${peor.pct}% · ${peor.pct > 100 ? 'sobre' : 'restan'} ${fmt(Math.abs(peor.restante))}`,
+      tone: 'warn',
+      action: { kind: 'open-budget', categoriaId: peor.categoria_id },
+      dismissible: false,
+    });
+  }
+
+  // % global usado.
+  if (totalPresupuesto > 0) {
+    out.push({
+      id: `budget-ctx-global-${Math.floor(pctGlobal / 5) * 5}`,
+      icon: '📊', label: 'Global del mes',
+      value: `${pctGlobal}% usado`,
+      hint: `${fmt(totalGastado)} de ${fmt(totalPresupuesto)}`,
+      tone: pctGlobal > 100 ? 'warn' : pctGlobal > 80 ? 'warn' : 'info',
+      action: { kind: 'chat', prompt: '¿Cómo voy con mis presupuestos este mes? Dame un resumen.' },
+      dismissible: true,
+    });
+  }
+
+  // Días restantes del mes con plata disponible.
+  const hoy = new Date();
+  const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+  const diasRestantes = finMes - hoy.getDate();
+  const restanteGlobal = totalPresupuesto - totalGastado;
+  if (diasRestantes > 0 && totalPresupuesto > 0) {
+    out.push({
+      id: `budget-ctx-dias-${diasRestantes}`,
+      icon: '📅', label: `Quedan ${diasRestantes} días`,
+      value: restanteGlobal > 0 ? fmt(restanteGlobal) + ' libres' : 'Sin presupuesto',
+      hint: restanteGlobal > 0 ? `~ ${fmt(Math.round(restanteGlobal / diasRestantes))} por día` : 'Ajustá los topes',
+      tone: restanteGlobal < 0 ? 'warn' : 'info',
+      action: { kind: 'chat', prompt: '¿Cuánta plata me queda en presupuestos para terminar el mes?' },
+      dismissible: true,
+    });
+  }
+  return out;
+}
+
+// === Insights contextuales: CATEGORÍAS ===
+function computeCatsInsights(movs: UiMov[]): InsightItem[] {
+  const out: InsightItem[] = [];
+  const real = movs.filter((m) => !m.forecast);
+  const cur = real.filter((m) => monthOf(m.date) === CUR_M);
+  const prev = real.filter((m) => monthOf(m.date) === PREV_M);
+
+  const porCatCur: Record<string, number> = {};
+  cur.forEach((m) => {
+    if (m.amt >= 0 || m.catId == null) return;
+    const k = m.cat ?? 'sin-categoria';
+    porCatCur[k] = (porCatCur[k] ?? 0) + -m.amt;
+  });
+  const porCatPrev: Record<string, number> = {};
+  prev.forEach((m) => {
+    if (m.amt >= 0 || m.catId == null) return;
+    const k = m.cat ?? 'sin-categoria';
+    porCatPrev[k] = (porCatPrev[k] ?? 0) + -m.amt;
+  });
+  const total = Object.values(porCatCur).reduce((s, v) => s + v, 0);
+
+  // Top categoría.
+  const top = Object.entries(porCatCur).sort((a, b) => b[1] - a[1])[0];
+  if (top && total > 0) {
+    const [slug, amt] = top;
+    const st = catStyle(slug);
+    out.push({
+      id: `cats-ctx-top-${CUR_M}-${slug}`,
+      icon: st.emoji, label: 'Top categoría',
+      value: st.label,
+      hint: `${fmt(amt)} · ${Math.round((amt / total) * 100)}% del gasto`,
+      tone: 'info',
+      action: { kind: 'chat', prompt: `¿Por qué gasto tanto en ${st.label} este mes?` },
+      dismissible: true,
+    });
+  }
+
+  // Cat que más creció.
+  let crecio: { slug: string; pct: number; cur: number } | null = null;
+  for (const [slug, curAmt] of Object.entries(porCatCur)) {
+    const prevAmt = porCatPrev[slug] ?? 0;
+    if (prevAmt < 50_000 || curAmt < prevAmt * 1.3) continue;
+    const pct = Math.round((curAmt / prevAmt - 1) * 100);
+    if (!crecio || pct > crecio.pct) crecio = { slug, pct, cur: curAmt };
+  }
+  if (crecio && (!top || crecio.slug !== top[0])) {
+    const st = catStyle(crecio.slug);
+    out.push({
+      id: `cats-ctx-spike-${CUR_M}-${crecio.slug}`,
+      icon: '📈', label: 'La que más creció',
+      value: st.label,
+      hint: `+${crecio.pct}% vs mes anterior`,
+      tone: 'warn',
+      action: { kind: 'chat', prompt: `¿Por qué subió tanto ${st.label} este mes?` },
+      dismissible: true,
+    });
+  }
+
+  // Concentración del gasto.
+  const sorted = Object.entries(porCatCur).sort((a, b) => b[1] - a[1]);
+  if (sorted.length >= 3 && total > 0) {
+    const top3 = sorted.slice(0, 3).reduce((s, [, v]) => s + v, 0);
+    const top3Pct = Math.round((top3 / total) * 100);
+    out.push({
+      id: `cats-ctx-conc-${CUR_M}-${top3Pct}`,
+      icon: '🎯', label: 'Concentración top 3',
+      value: `${top3Pct}% del gasto`,
+      hint: `${sorted.length} cats activas este mes`,
+      tone: top3Pct > 70 ? 'warn' : 'info',
+      action: { kind: 'chat', prompt: '¿Mi gasto está muy concentrado en pocas categorías?' },
+      dismissible: true,
+    });
+  }
+  return out;
+}
+
+// === Insights contextuales: REGLAS ===
+function computeReglasInsights(movs: UiMov[], userRules: Regla[]): InsightItem[] {
+  const out: InsightItem[] = [];
+
+  // Reglas con 0 hits (dead rules).
+  const muertas = userRules.filter((r) => r.activo && (r.hits ?? 0) === 0);
+  if (muertas.length > 0) {
+    out.push({
+      id: `reglas-ctx-muertas-${muertas.length}`,
+      icon: '💀', label: 'Reglas sin uso',
+      value: muertas.length === 1 ? '1 regla sin hits' : `${muertas.length} reglas sin hits`,
+      hint: 'Quizá conviene borrarlas',
+      tone: 'warn',
+      action: { kind: 'open-rules' },
+      dismissible: false,
+    });
+  }
+
+  // Total reglas user vs global (info).
+  const activasUser = userRules.filter((r) => r.activo).length;
+  out.push({
+    id: `reglas-ctx-total-${activasUser}`,
+    icon: '⚙️', label: 'Tus reglas activas',
+    value: activasUser === 1 ? '1 regla' : `${activasUser} reglas`,
+    hint: activasUser === 0 ? 'Aún no creaste ninguna' : 'Categorizan automáticamente',
+    tone: 'info',
+    action: { kind: 'chat', prompt: '¿Cuántas reglas tengo y qué tan bien funcionan?' },
+    dismissible: true,
+  });
+
+  // Comercios recurrentes sin regla (detector tradicional).
+  const real = movs.filter((m) => !m.forecast);
+  const yaConRegla = new Set(userRules.map((r) => r.valor_normalizado));
+  const groups: Record<string, UiMov[]> = {};
+  real.forEach((m) => {
+    if (m.amt >= 0) return;
+    const k = normalizeName(m.t);
+    if (!k) return;
+    (groups[k] = groups[k] ?? []).push(m);
+  });
+  const sugeridos: Array<{ key: string; sample: UiMov; count: number }> = [];
+  for (const [key, arr] of Object.entries(groups)) {
+    if (arr.length < 3) continue;
+    if (yaConRegla.has(key)) continue;
+    if (!arr.some((m) => m.catId != null && m.cat && m.cat !== 'sin-categoria')) continue;
+    sugeridos.push({ key, sample: arr[0], count: arr.length });
+  }
+  sugeridos.sort((a, b) => b.count - a.count);
+  if (sugeridos.length > 0) {
+    const r = sugeridos[0];
+    out.push({
+      id: `reglas-ctx-sug-${r.key}-${r.count}`,
+      icon: '✨', label: 'Sugerencia de regla',
+      value: r.sample.t,
+      hint: `${r.count} compras sin regla`,
+      tone: 'info',
+      action: { kind: 'open-rules' },
+      dismissible: false,
+    });
+  }
+  return out;
+}
+
+// === Insights contextuales: MOVIMIENTOS (lo existente) ===
+function computeMovsInsights(
   movs: UiMov[],
   forecast: Forecast | null,
   userRules: Regla[],
@@ -378,6 +604,7 @@ export function Manguito({
   mood, nudge, onCTA, onDismiss, onSilence, onUnsilence,
   silencedUntil, onOpenChat, onAskChat, onFilterPending, onOpenRules, onOpenBudget, userRules, budgetEstado,
   seenInsights, onMarkSeen,
+  context,
   position, onPositionChange,
   movs, forecast,
 }: {
@@ -399,6 +626,8 @@ export function Manguito({
   seenInsights: Record<string, number>;
   /** Marca un set de ids como vistos ahora. */
   onMarkSeen: (ids: string[]) => void;
+  /** Pestaña actual: define qué insights mostrar. */
+  context: ManguitoContext;
   position: ManguitoPosition;
   onPositionChange: (p: ManguitoPosition) => void;
   movs: UiMov[];
@@ -415,7 +644,10 @@ export function Manguito({
   const longPressFiredRef = useRef(false);
 
   const emoji = MOOD_EMOJI[mood] ?? '🤔';
-  const insights = useMemo(() => computeInsights(movs, forecast, userRules, budgetEstado), [movs, forecast, userRules, budgetEstado]);
+  const insights = useMemo(
+    () => computeInsightsByContext(context, movs, forecast, userRules, budgetEstado),
+    [context, movs, forecast, userRules, budgetEstado],
+  );
 
   useEffect(() => {
     if (!panel) return;
