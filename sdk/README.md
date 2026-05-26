@@ -64,12 +64,32 @@ const r2 = await tagger.movimientos.categorizar({
 | Método | Endpoint |
 |---|---|
 | `categorizar(input)` | POST `/categorizar-movimiento` |
+| `listar({limit?, offset?, origen?})` | GET `/movimientos` |
 | `obtener(id)` | GET `/movimientos/:id` |
-| `corregir({movimientoId, categoriaIdNueva, usuario?, motivo?, aprender?})` | POST `/movimientos/:id/correccion` |
+| `corregir({movimientoId, categoriaIdNueva, usuario?, motivo?, aprender?, subcategoriaUsuarioId?})` | POST `/movimientos/:id/correccion` |
 | `reprocesar(id)` | POST `/movimientos/:id/reprocesar` |
 | `importar({rows, batchId?})` | POST `/movimientos/importar` |
 | `statusImport()` | GET `/movimientos/importar/status` |
 | `categoriasSugeridas(id, {q?, limit?, offset?, umbral?})` | GET `/movimientos/:id/categorias-sugeridas` |
+
+`MovimientoInput` (`categorizar`):
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `monto` | `number` | Requerido |
+| `origen` | `string` | **Requerido para memoria por usuario.** Sin esto la capa 0 (user-rules) no se evalúa. |
+| `nombreBancard` | `string` | Texto del procesador |
+| `nombreComercio` | `string` | Alternativo |
+| `descripcion` | `string` | Texto libre. **No es decorativo**: el pipeline lo concatena con los nombres antes de evaluar reglas (ver sección descripción). |
+| `mcc` | `string` | Código ISO 18245 (2-4 dígitos) |
+| `bancardId`, `codigoComercio` | `string` | Ids internos del procesador |
+| `batchId` | `string` | Marca de lote (testing) |
+| `bypassCatalogo` | `boolean` | Saltea capa 2 (sólo testing) |
+| `categoriaId` | `string` (UUID) | Si presente, salta cascada → guarda como `fuente='manual'` `confianza=1`. |
+| `aprender` | `boolean` | Sólo válido con `categoriaId` + `origen`. `true` = persistir regla user-scope. Default `false`. |
+| `subcategoriaUsuarioId` | `string` (UUID) | Subcategoría personal del user. Backend resuelve canónica padre y la usa como `categoriaId` efectiva (override silencioso). Mov queda con ambas columnas. |
+
+`MovimientoListado` y `Movimiento` también devuelven `subcategoria_usuario_id` + `subcategoria` poblada (`{id, nombre, slug, emoji, color, canonica_id}`) cuando aplica.
 
 #### Gasto manual con `categoriaId`
 
@@ -186,6 +206,62 @@ const sim = await tagger.categorias.similares('hogar', { limit: 3 });
 //   ]
 ```
 
+### `tagger.categoriasUsuario.*`
+
+Subcategorías personales del usuario, ancladas siempre a un rubro canónico.
+
+| Método | Endpoint |
+|---|---|
+| `listar(usuario)` | GET `/categorias-usuario?usuario=X` |
+| `crear({usuario, canonicaId, nombre, slug?, emoji?, color?})` | POST `/categorias-usuario` |
+| `actualizar(id, {nombre?, emoji?, color?, activo?})` | PATCH `/categorias-usuario/:id` |
+| `eliminar(id)` | DELETE `/categorias-usuario/:id` |
+
+**Modelo en una línea**: el user crea cats personales con su propio nombre/emoji (ej "Streaming") pero internamente quedan ancladas a una canónica curada por Mango (rubro: "Entretenimiento"). Reports internos siguen agrupando por canónica — cero fragmentación.
+
+```ts
+// 1. Crear subcat.
+const streaming = await tagger.categoriasUsuario.crear({
+  usuario: 'demo',
+  canonicaId: idEntretenimiento, // tagger.categorias.listar() → rubro padre
+  nombre: 'Streaming',
+  emoji: '🎬',
+});
+
+// 2. Categorizar mov con subcat. Backend resuelve canon padre.
+await tagger.movimientos.categorizar({
+  nombreComercio: 'NETFLIX',
+  monto: 50000,
+  origen: 'demo',
+  subcategoriaUsuarioId: streaming.id,
+});
+// Mov queda con:
+//   categoria_id = canonica (Entretenimiento)
+//   subcategoria_usuario_id = streaming
+```
+
+**Corregir un mov a subcat**:
+
+```ts
+await tagger.movimientos.corregir({
+  movimientoId,
+  categoriaIdNueva: idEntretenimiento, // canon (backend override si difiere)
+  usuario: 'demo',
+  subcategoriaUsuarioId: streaming.id,
+  aprender: true, // regla apuntará a canon, V1
+});
+```
+
+**Validaciones backend** (errores 400/409/429):
+- `canonica_inactiva` — canónica padre inactiva o reemplazada.
+- `nombre_igual_canonica` — nombre coincide con la canónica padre.
+- `slug_duplicado` (409) — ya existe subcat con ese slug para el user.
+- `cap_alcanzado` (429) — > 200 subcats activas.
+
+**Borrar**: hard delete. FK `ON DELETE SET NULL` en movs — preservan canónica padre, no pierden historial. Alternativa: `actualizar(id, { activo: false })` para hide sin borrar.
+
+**Listado de movs**: cada item incluye `subcategoria` poblada (`{id, nombre, emoji, color, canonica_id}`) cuando aplica. Render: si hay subcat, mostrar su nombre + emoji con tooltip al rubro canónico.
+
 ### `tagger.reglas.*`
 
 | Método | Endpoint |
@@ -292,6 +368,64 @@ endpoint de write separado — el sistema aprende del corpus real.
 | Método | Endpoint |
 |---|---|
 | `pipeline({ventana?})` | GET `/stats/pipeline` |
+
+`ventana` acepta `'1h' | '24h' | '7d' | '30d' | 'all'` (default `'24h'`). Devuelve distribución por capa pipeline + agreement IA + latencias p50/p95/p99.
+
+### `tagger.presupuestos.*`
+
+Topes mensuales por categoría (canónica). Versionados: editar = INSERT nueva versión `vigente_desde`. Baja = monto 0 (preserva histórico para reportes pasados).
+
+| Método | Endpoint |
+|---|---|
+| `listar({usuario})` | GET `/presupuestos` |
+| `crear({usuario, categoria_id, monto_mensual})` | POST `/presupuestos` |
+| `actualizar(id, monto_mensual)` | PATCH `/presupuestos/:id` |
+| `eliminar(id)` | DELETE `/presupuestos/:id` |
+| `estado({usuario, mes?})` | GET `/presupuestos/estado` |
+
+```ts
+// Crear presupuesto Alimentación 1.500.000/mes
+await tagger.presupuestos.crear({
+  usuario: 'demo',
+  categoria_id: idAlimentacion,
+  monto_mensual: 1_500_000,
+});
+
+// Estado del mes actual (default) o un mes específico
+const e = await tagger.presupuestos.estado({ usuario: 'demo', mes: '2026-05' });
+// → { items: [{ categoria_id, categoria_slug, categoria_nombre, presupuesto, gastado, restante, pct, movs }, ...] }
+```
+
+`actualizar` mantiene la cat + usuario originales, sólo cambia el tope. `eliminar` no borra fila — inserta versión con monto=0 para preservar historial pasado.
+
+V1: presupuestos sólo a nivel canónico. Subcats personales no se pueden presupuestar individualmente (V2).
+
+### `tagger.chat.*`
+
+Chat IA contextual con movimientos del usuario. Proxy a OpenRouter (modelos free, fallback chain). Backend monta prompt con resumen de movs + historial conversacional.
+
+| Método | Endpoint |
+|---|---|
+| `preguntar({messages, movs, usuario})` | POST `/chat` |
+
+```ts
+const r = await tagger.chat.preguntar({
+  messages: [{ role: 'user', content: '¿En qué gasté este mes?' }],
+  movs: ultimosMovs.map((m) => ({
+    id: String(m.id),
+    nombre: m.t,
+    monto: m.amt,
+    fecha: m.date,
+    categoria: m.cat ?? null,
+  })),
+  usuario: 'demo',
+});
+// → { text: '...' }
+```
+
+Backend desabilita anonimización por default. Si `OPENROUTER_API_KEY` no está seteado en server, devuelve 503.
+
+### `tagger.categoriasUsuario.*` ya documentada arriba
 
 ### Top-level
 

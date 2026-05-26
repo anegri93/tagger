@@ -296,21 +296,43 @@ La API_KEY NO se inyecta en build — el demo la fetcha en runtime via `GET /dem
 
 | Método | Path                          | Descripción                                                                                                                        |
 | ------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion?, nombre_bancard?, nombre_comercio?, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?, categoria_id?, aprender?}`. Si `categoria_id` viene → saltea cascada, guarda como manual (`fuente='manual'` `confianza=1`). `aprender=true` (con `categoria_id` + `origen`) además guarda regla user-scope |
-| GET    | `/movimientos/:id`            | Detalle movimiento (incluye evidencia IA)                                                                                          |
-| POST   | `/movimientos/:id/correccion` | Corrección manual. Body: `{categoria_id_nueva, usuario?, motivo?, aprender?}`. `aprender=true` (default) crea regla user-scope (capa 0). `aprender=false` aplica sólo a este mov (excepción puntual, no contamina memoria) |
+| POST   | `/categorizar-movimiento`     | Categoriza un movimiento. Body: `{descripcion?, nombre_bancard?, nombre_comercio?, mcc?, monto?, bancard_id?, codigo_comercio?, bypass_catalogo?, origen?, batch_id?, categoria_id?, aprender?, subcategoria_usuario_id?}`. Si `categoria_id` viene → saltea cascada (manual). Si `subcategoria_usuario_id` viene → backend valida pertenencia al `origen`, resuelve canónica padre y la usa como `categoria_id` efectiva |
+| GET    | `/movimientos`                | Lista paginada. Query: `limit` (default 50, max 200), `offset`, `origen`. Cada item incluye `categoria` (confirmada\|predicha) + `subcategoria` poblada cuando aplica |
+| GET    | `/movimientos/:id`            | Detalle movimiento. Incluye `subcategoria` poblada (`{id, nombre, slug, emoji, color, canonica_id}`) cuando aplica.                |
+| GET    | `/movimientos/:id/categorias-sugeridas` | Top-K cats candidatas por similitud trigram. Query: `q?, limit?, offset?, umbral?`. Útil para UI "¿quisiste decir X?"   |
+| POST   | `/movimientos/:id/correccion` | Corrección manual. Body: `{categoria_id_nueva, usuario?, motivo?, aprender?, subcategoria_usuario_id?}`. `aprender=true` (default) crea regla user-scope. Si `subcategoria_usuario_id` viene, override silencioso de `categoria_id_nueva` con la canónica padre y persiste subcat en mov + audit  |
 | POST   | `/movimientos/:id/reprocesar` | Re-ejecuta cascada + IA sobre movimiento existente. Body: `{bypass_catalogo?}` (opcional). Response incluye `ia_disparada: bool`.  |
 
 ### CRUD recursos
 
 | Método                | Path                      | Función                                                                                                                    |
 | --------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías                                                                                                            |
+| GET/POST/PATCH/DELETE | `/categorias`             | CRUD categorías canónicas (Mango admin)                                                                                    |
+| GET/POST/PATCH/DELETE | `/categorias-usuario`     | CRUD subcategorías personales del usuario. Cada subcat ancla a un rubro canónico vía `canonica_id` (FK RESTRICT). `GET ?usuario=X` lista activas, `POST` crea (valida canon activa+no-reemplazada, nombre≠canon, slug único per user, cap 200), `PATCH /:id` edita nombre/emoji/color/activo, `DELETE /:id` hard delete con FK SET NULL en movs |
 | GET                   | `/categorias/:slug/usage` | Counts refs (movimientos/mcc_por_nombre/mcc_catalogo)                                                                      |
+| GET                   | `/categorias/:slug/similares` | Top-K cats similares (trigram). Query: `q?, limit?, offset?, umbral?`. Si pasás `q`, busca contra ese texto              |
 | GET/POST/PATCH/DELETE | `/reglas`                 | CRUD reglas. `GET /reglas?scope=global` o `scope=usuario:<X>`. `GET /reglas/sugerencias?usuario=X&umbral=N` agrupa correcciones del usuario. `GET /reglas/sugerencias-globales?min_usuarios=3&min_total=5` lista patrones que **varios usuarios distintos** corrigieron a la misma categoría (candidatos a regla global). `POST` crea regla, `PATCH /:id` activa/desactiva o cambia prioridad, `DELETE /:id` o `DELETE /reglas?scope=&valor=`. Tipos: `literal` / `contiene` / `regex` |
 | GET/POST/PATCH/DELETE | `/mcc`                    | CRUD MCC mapping                                                                                                           |
 | GET/POST/PATCH/DELETE | `/marcas`                 | CRUD marcas conocidas IA                                                                                                   |
 | GET/PATCH             | `/comercios`              | Listar paginado + cambio categoría individual (sobre `mcc_por_nombre`)                                                     |
+
+### Presupuestos
+
+Topes mensuales por categoría canónica. Modelo versionado: editar = INSERT nueva versión `vigente_desde=hoy`. Baja = INSERT monto 0 (preserva histórico).
+
+| Método | Path                              | Función                                                                                                                                  |
+| ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/presupuestos?usuario=X`         | Lista presupuestos vigentes del usuario (excluye dados de baja)                                                                          |
+| POST   | `/presupuestos`                   | Crear. Body: `{usuario, categoria_id, monto_mensual}`. Errores: 404 `categoria_no_encontrada`, 409 `presupuesto_ya_existe`               |
+| PATCH  | `/presupuestos/:id`               | Editar monto = INSERT nueva versión. Body: `{monto_mensual}`                                                                             |
+| DELETE | `/presupuestos/:id`               | Baja = INSERT versión con `monto_mensual=0`. No borra histórico                                                                          |
+| GET    | `/presupuestos/estado?usuario=X&mes=YYYY-MM` | Combina tope vigente + gastos reales del mes. Devuelve `items` con `{categoria_id, presupuesto, gastado, restante, pct, movs}`  |
+
+### Chat IA contextual
+
+| Método | Path     | Función                                                                                                                                          |
+| ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/chat`  | Proxy a OpenRouter. Body: `{messages, movs, usuario}`. Backend monta prompt con resumen de movs + historial. 503 si no hay `OPENROUTER_API_KEY` |
 
 ### Stats / Dashboard
 
@@ -340,14 +362,15 @@ La API_KEY NO se inyecta en build — el demo la fetcha en runtime via `GET /dem
 | GET    | `/test-batch/:batch_id/agreement-mcc?reference=mcc\|combined_mcc&include_ambiguo=&include_generic=` | Agreement pipeline vs MCC catalog (proxy ground truth)                                                                                               |
 | GET    | `/test-batch/:batch_id/analisis`                                                                    | Análisis profundo: distribución por fuente/categoría, patrones más usados, top sin-predicción por volumen, latencia p50/p95/p99, cobertura por decil |
 
-### Salud
+### Salud / Demo
 
-| Método | Path            | Devuelve                                  |
-| ------ | --------------- | ----------------------------------------- |
-| GET    | `/health`       | `{status:'ok'}` (no requiere auth)        |
-| GET    | `/health/ready` | `{status, db, ollama}` (no requiere auth) |
+| Método | Path            | Devuelve                                                                              |
+| ------ | --------------- | ------------------------------------------------------------------------------------- |
+| GET    | `/health`       | `{status:'ok'}` (no requiere auth)                                                    |
+| GET    | `/health/ready` | `{status, db, ollama}` (no requiere auth)                                             |
+| GET    | `/demo/config`  | `{apiKey, hasOpenRouter}` para demo UI. No requiere auth. `apiKey` = env `API_KEY`    |
 
-**Auth**: header `x-api-key: <API_KEY>` excepto `/health*`, `/ui/*`, `/favicon.ico`, `/`.
+**Auth**: header `x-api-key: <API_KEY>` excepto `/health*`, `/ui/*`, `/demo/config`, `/favicon.ico`, `/`.
 
 ---
 
@@ -379,27 +402,48 @@ Valores legacy en DB enum (movimientos viejos, no usados por pipeline actual): `
 ## Modelo de datos
 
 ```sql
-categorias       (id uuid PK, slug unique, nombre, descripcion, activo)
-reglas           (id, scope text, tipo text [literal|contiene|regex], valor,
-                  valor_normalizado, categoria_id FK, prioridad, activo, hits,
-                  origen, descripcion,
-                  UNIQUE (scope, tipo, valor_normalizado))
-mcc_catalogo     (cod_mcc PK, descripcion, categoria_id FK, ambiguo)
-mcc_por_nombre   (id, nombre, nombre_normalizado UNIQUE, mcc, categoria_id FK,
-                  requiere_revision)
-marcas_conocidas (id, marca unique, categoria_id FK, descripcion)
-movimientos      (id, descripcion, nombre_comercio, nombre_bancard, mcc, monto,
-                  categoria_predicha_id, categoria_confirmada_id,
-                  fuente_categoria enum, confianza, requiere_revision,
-                  raw_input jsonb, evidencia jsonb,
-                  origen, batch_id, bancard_id, codigo_comercio, latency_ms,
-                  created_at, updated_at)
-correcciones_usuario (id, movimiento_id FK, categoria_anterior_id, categoria_nueva_id,
-                      usuario, motivo)
-test_ground_truth (id, batch_id, nombre, nombre_normalizado, bancard_id,
-                   codigo_comercio, mcc, combined_mcc, categoria_xlsx,
-                   sector_xlsx, cantidad, fuente_origen)
+categorias              (id uuid PK, slug unique, nombre, descripcion, activo,
+                         reemplazada_por_id)  -- canónicas, curadas por Mango
+categorias_usuario      (id PK, usuario_id, canonica_id FK→categorias RESTRICT,
+                         nombre, slug, emoji, color, activo, origen,
+                         UNIQUE(usuario_id, slug))  -- subcats personales del user
+reglas                  (id, scope text, tipo text [literal|contiene|regex], valor,
+                         valor_normalizado, categoria_id FK, prioridad, activo, hits,
+                         origen, descripcion,
+                         UNIQUE (scope, tipo, valor_normalizado))
+mcc_catalogo            (cod_mcc PK, descripcion, categoria_id FK, ambiguo)
+mcc_por_nombre          (id, nombre, nombre_normalizado UNIQUE, mcc, categoria_id FK,
+                         requiere_revision)
+marcas_conocidas        (id, marca unique, categoria_id FK, descripcion)
+movimientos             (id, descripcion, nombre_comercio, nombre_bancard, mcc, monto,
+                         categoria_predicha_id, categoria_confirmada_id,
+                         subcategoria_usuario_id FK→categorias_usuario SET NULL,
+                         fuente_categoria enum, confianza, requiere_revision,
+                         raw_input jsonb, evidencia jsonb,
+                         origen, batch_id, bancard_id, codigo_comercio, latency_ms,
+                         created_at, updated_at)
+correcciones_usuario    (id, movimiento_id FK, categoria_anterior_id, categoria_nueva_id,
+                         subcategoria_usuario_id FK→categorias_usuario SET NULL,
+                         usuario, motivo)
+test_ground_truth       (id, batch_id, nombre, nombre_normalizado, bancard_id,
+                         codigo_comercio, mcc, combined_mcc, categoria_xlsx,
+                         sector_xlsx, cantidad, fuente_origen)
 ```
+
+### Modelo de categorías (canónicas + personales)
+
+Dos tablas separadas con responsabilidades distintas:
+
+- **`categorias`** = rubros canónicos curados por Mango. Estables, ~30-100 entries, IA/MCC/global rules sólo conocen estas. Reports internos agrupan acá.
+- **`categorias_usuario`** = subcategorías del usuario final. Cada una `FK → categorias.id` obligatorio (rubro padre). User las crea desde la app con nombre/emoji custom (ej "Streaming" anclada a "Entretenimiento"). Cap 200 por user.
+
+Movimientos guardan ambas:
+- `movimientos.categoria_id` = canónica (siempre cuando categorizado). Reports / IA / pipeline operan sobre esta.
+- `movimientos.subcategoria_usuario_id` = opcional. Si presente, la UI muestra la subcat con su emoji custom; el tooltip/detalle revela el rubro padre.
+
+Borrar una subcat (`DELETE /categorias-usuario/:id`) hace `SET NULL` en movs — preserva historial, los movs caen al chip de la canónica. Alternativa: `PATCH activo=false` (soft hide).
+
+Reports Mango siempre rolan por `categoria_id` (canónica). Cero queries `COALESCE`, cero fragmentación entre users — "Streaming" de Juan, "Cine" de María y "Netflix" de Pedro suman al mismo bucket "Entretenimiento".
 
 Índices clave:
 - `reglas (scope, tipo, valor_normalizado)` único — evita duplicados por scope

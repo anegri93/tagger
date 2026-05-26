@@ -41,6 +41,14 @@
     {
       "key": "categoriaId",
       "value": ""
+    },
+    {
+      "key": "usuario",
+      "value": "demo"
+    },
+    {
+      "key": "subcategoriaUsuarioId",
+      "value": ""
     }
   ],
   "item": [
@@ -113,6 +121,40 @@
             },
             "description": "Lista todas las categorías activas.\n\n**Response 200:**\n```json\n{\"items\":[{\"id\":\"uuid\",\"slug\":\"transporte\",\"nombre\":\"Transporte\",\"descripcion\":\"...\",\"activo\":true}, ...]}\n```\n\nTest script: setea `categoriaId` con primer item (uso en correccion)."
           }
+        },
+        {
+          "name": "GET /categorias/:identificador/usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/:identificador/usage",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias", ":identificador", "usage"],
+              "variable": [{ "key": "identificador", "value": "transporte", "description": "slug actual, alias antiguo o UUID" }]
+            },
+            "description": "Counts de refs en otras tablas (movimientos / mcc_por_nombre / mcc_catalogo). Útil antes de borrar cat."
+          }
+        },
+        {
+          "name": "GET /categorias/:identificador/similares",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/:identificador/similares?limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias", ":identificador", "similares"],
+              "variable": [{ "key": "identificador", "value": "hogar" }],
+              "query": [
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "limit", "value": "5" },
+                { "key": "offset", "value": "0", "disabled": true },
+                { "key": "umbral", "value": "0", "disabled": true }
+              ]
+            },
+            "description": "Categorías similares por similitud trigram (sin la origen). Si pasás `q`, busca contra ese texto."
+          }
         }
       ]
     },
@@ -160,6 +202,23 @@
                 { "key": "umbral", "value": "2" }
               ]
             }
+          }
+        },
+        {
+          "name": "GET /reglas/sugerencias-globales",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{API_KEY}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/reglas/sugerencias-globales?min_usuarios=3&min_total=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["reglas", "sugerencias-globales"],
+              "query": [
+                { "key": "min_usuarios", "value": "3" },
+                { "key": "min_total", "value": "5" }
+              ]
+            },
+            "description": "Nombres normalizados que ≥`min_usuarios` users distintos corrigieron a la misma cat. Excluye los que ya tienen regla global activa. Candidatos a promover a regla global."
           }
         },
         {
@@ -333,6 +392,23 @@
           }
         },
         {
+          "name": "POST /categorizar-movimiento (con subcategoria personal)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre_comercio\": \"NETFLIX MAYO\",\n  \"monto\": 50000,\n  \"origen\": \"{{usuario}}\",\n  \"subcategoria_usuario_id\": \"{{subcategoriaUsuarioId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorizar-movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorizar-movimiento"]
+            },
+            "description": "**Caso:** mov con subcategoría personal del usuario (ej user creó \"Streaming\" anclada al rubro \"Entretenimiento\").\n\n**Body:**\n- `subcategoria_usuario_id` (opt, UUID): backend valida pertenencia al `origen` y resuelve la canónica padre. Override silencioso de `categoria_id` si se pasaran ambos.\n\n**Resultado en DB:**\n- `movimientos.categoria_id` = canónica padre (Entretenimiento)\n- `movimientos.subcategoria_usuario_id` = subcat user (Streaming)\n\nReports Mango siguen rolando al rubro canónico."
+          }
+        },
+        {
           "name": "POST /categorizar-movimiento (desconocido → IA async)",
           "request": {
             "method": "POST",
@@ -383,6 +459,24 @@
       "description": "Detalle, corrección y reprocesamiento de movimientos previamente categorizados.\n\n- **GET /movimientos/:id** — polling de IA fallback. Devuelve evidencia completa (prompt IA, response).\n- **POST /movimientos/:id/correccion** — usuario corrige categoría desde mobile. Audit trail en `correcciones_usuario`.\n- **POST /movimientos/:id/reprocesar** — re-ejecuta cascada + IA sobre movimiento existente. Útil para movimientos viejos sin categoría o cuando cambian patrones/MCCs.",
       "item": [
         {
+          "name": "GET /movimientos (lista paginada)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movimientos?limit=50&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["movimientos"],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" },
+                { "key": "origen", "value": "demo", "disabled": true, "description": "Filtro por origen (ej demo, mobile, api)." }
+              ]
+            },
+            "description": "Lista paginada de movs. Cada item incluye `categoria` embebida y `subcategoria` (si aplica)."
+          }
+        },
+        {
           "name": "GET /movimientos/:id",
           "request": {
             "method": "GET",
@@ -392,7 +486,47 @@
               "host": ["{{baseUrl}}"],
               "path": ["movimientos", "{{movimientoId}}"]
             },
-            "description": "Detalle del movimiento.\n\nUsar para:\n- Polling tras IA fallback (categoria_id pasa de null → uuid cuando Ollama termina)\n- Inspeccionar `evidencia` (prompt IA, candidatos, scores)\n\n`movimientoId` se setea automáticamente al ejecutar el primer POST /categorizar-movimiento."
+            "description": "Detalle del movimiento.\n\nUsar para:\n- Polling tras IA fallback (categoria_id pasa de null → uuid cuando Ollama termina)\n- Inspeccionar `evidencia` (prompt IA, candidatos, scores)\n- Ver `subcategoria` poblada (si el user asignó subcat personal)\n\n`movimientoId` se setea automáticamente al ejecutar el primer POST /categorizar-movimiento."
+          }
+        },
+        {
+          "name": "GET /movimientos/:id/categorias-sugeridas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/categorias-sugeridas?limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["movimientos", "{{movimientoId}}", "categorias-sugeridas"],
+              "query": [
+                { "key": "q", "value": "", "disabled": true, "description": "Texto libre; si presente, usa este en vez del enriquecido de la cat origen." },
+                { "key": "limit", "value": "5" },
+                { "key": "offset", "value": "0", "disabled": true },
+                { "key": "umbral", "value": "0", "disabled": true }
+              ]
+            },
+            "description": "Top-K categorías similares (trigram). Útil para UI \"¿quisiste decir X?\" antes de aplicar corrección."
+          }
+        },
+        {
+          "name": "POST /movimientos/importar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rows\": [\n    { \"nombre\": \"PETROBRAS CENTRO\", \"mcc\": \"5541\", \"monto\": \"50000\" }\n  ],\n  \"batchId\": \"import-001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/movimientos/importar", "host": ["{{baseUrl}}"], "path": ["movimientos", "importar"] },
+            "description": "Import async (chunked). Devuelve `importId` inmediato; worker corre cascada por row. Status via `/movimientos/importar/status`."
+          }
+        },
+        {
+          "name": "GET /movimientos/importar/status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/movimientos/importar/status", "host": ["{{baseUrl}}"], "path": ["movimientos", "importar", "status"] }
           }
         },
         {
@@ -407,7 +541,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\",\n  \"usuario\": \"user123\",\n  \"aprender\": true\n}"
+              "raw": "{\n  \"categoria_id_nueva\": \"{{categoriaId}}\",\n  \"motivo\": \"corrección manual de prueba\",\n  \"usuario\": \"{{usuario}}\",\n  \"aprender\": true,\n  \"subcategoria_usuario_id\": null\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/movimientos/{{movimientoId}}/correccion",
@@ -442,6 +576,100 @@
       ]
     },
     {
+      "name": "categorias-usuario",
+      "description": "Subcategorías personales del usuario. Cada subcat ancla a un rubro canónico (categoría global Mango) y agrupa movimientos del usuario bajo un nombre custom. Reports internos siguen agrupando por canónica.\n\nModelo:\n- `categorias` (canónicas): curadas por Mango, ~30-100 entries, inmutables para users.\n- `categorias_usuario`: cada user crea las suyas (cap 200), siempre con `canonica_id` no-null.\n\n**FK semantics:**\n- `movimientos.categoria_id` → canónica (rubro). Siempre presente cuando el mov está categorizado.\n- `movimientos.subcategoria_usuario_id` → subcat user (opcional). ON DELETE SET NULL.\n- `correcciones_usuario.subcategoria_usuario_id` → preserva elección de subcat en historial.",
+      "item": [
+        {
+          "name": "GET /categorias-usuario?usuario=demo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.items && res.items.length > 0) {",
+                  "  pm.collectionVariables.set('subcategoriaUsuarioId', res.items[0].id);",
+                  "  console.log('subcategoriaUsuarioId =', res.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias-usuario?usuario={{usuario}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias-usuario"],
+              "query": [{ "key": "usuario", "value": "{{usuario}}" }]
+            },
+            "description": "Lista subcategorías activas del usuario. Cada item incluye datos de la canónica padre (rubro):\n\n**Response 200:**\n```json\n{\"items\":[{\n  \"id\":\"uuid\",\n  \"usuario_id\":\"demo\",\n  \"canonica_id\":\"uuid\",\n  \"canonica_slug\":\"entretenimiento\",\n  \"canonica_nombre\":\"Entretenimiento\",\n  \"nombre\":\"Streaming\",\n  \"slug\":\"streaming\",\n  \"emoji\":\"🎬\",\n  \"color\":null,\n  \"activo\":true,\n  \"origen\":\"manual\",\n  \"created_at\":\"...\"\n}]}\n```"
+          }
+        },
+        {
+          "name": "POST /categorias-usuario (crear subcat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('subcategoriaUsuarioId', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"canonica_id\": \"{{categoriaId}}\",\n  \"nombre\": \"Streaming\",\n  \"emoji\": \"🎬\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias-usuario",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias-usuario"]
+            },
+            "description": "Crea subcategoría personal anclada a una canónica.\n\n**Body:**\n- `usuario` (req): id del user.\n- `canonica_id` (req, UUID): rubro padre. Debe ser activa y no reemplazada.\n- `nombre` (req, 1-80): no puede ser igual al de la canónica.\n- `slug` (opt): auto-generado del nombre si no se provee.\n- `emoji` (opt): icono mostrado en UI.\n- `color` (opt): color hex/css.\n\n**Errores:**\n- 400 `canonica_inactiva` — canónica inactiva o reemplazada.\n- 400 `nombre_igual_canonica` — nombre coincide con la canónica padre.\n- 409 `slug_duplicado` — ya existe subcat con ese slug para el user.\n- 429 `cap_alcanzado` — el user llegó al máx (200) de subcats activas."
+          }
+        },
+        {
+          "name": "PATCH /categorias-usuario/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Streaming \\u00b7 video\",\n  \"emoji\": \"📺\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias-usuario/{{subcategoriaUsuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias-usuario", "{{subcategoriaUsuarioId}}"]
+            },
+            "description": "Edita campos mutables: `nombre`, `emoji`, `color`, `activo`. No permite cambiar `usuario_id` ni `canonica_id` (para mover de rubro, borrar y recrear).\n\n`activo=false` = soft hide. Movs que la usan no se pierden — quedan asignados pero la subcat no aparece en listados."
+          }
+        },
+        {
+          "name": "DELETE /categorias-usuario/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias-usuario/{{subcategoriaUsuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias-usuario", "{{subcategoriaUsuarioId}}"]
+            },
+            "description": "Hard delete. FK `movimientos.subcategoria_usuario_id ON DELETE SET NULL`: movs que la usaban quedan sólo con la canónica padre, sin perder historial. El display en la UI cae al chip de la canónica.\n\nAlternativa: PATCH `activo=false` para hide sin borrar (preserva subcat para reuso si después cambian de opinión)."
+          }
+        }
+      ]
+    },
+    {
       "name": "descripciones",
       "description": "Autocomplete per-user de descripciones. Lookup btree prefix, scope estricto user. Latencia objetivo p99 < 50ms.",
       "item": [
@@ -462,6 +690,337 @@
               ]
             },
             "description": "Autocomplete: devuelve top-K descripciones que el usuario tipeó antes y empiezan con `q`.\n\n**Params:**\n- `usuario` (req) — id del usuario final\n- `q` (req) — prefix mín 2 chars, máx 200\n- `limit` (opt, 1-20, default 10)\n- `categoria_id` (opt UUID) — boost descripciones con cat top igual\n\n**Response 200:**\n```json\n{\n  \"usuario\": \"user_123\",\n  \"q\": \"alq\",\n  \"limit\": 10,\n  \"items\": [\n    { \"descripcion\": \"alquiler\", \"freq\": 8, \"categoria_slug\": \"hogar\" },\n    { \"descripcion\": \"alquiler departamento\", \"freq\": 5, \"categoria_slug\": \"hogar\" }\n  ]\n}\n```\n\nScope estricto per-user: otro usuario nunca ve estas descripciones. Items se generan automáticamente cada vez que el user llama a `/categorizar-movimiento` con `descripcion`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "presupuestos",
+      "description": "Topes mensuales por categoría (canónica). Modelo versionado: editar = INSERT nueva versión `vigente_desde`. Baja = INSERT monto 0 (preserva histórico).",
+      "item": [
+        {
+          "name": "GET /presupuestos?usuario=demo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/presupuestos?usuario={{usuario}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["presupuestos"],
+              "query": [{ "key": "usuario", "value": "{{usuario}}" }]
+            },
+            "description": "Lista presupuestos vigentes del usuario. Excluye los dados de baja (monto=0)."
+          }
+        },
+        {
+          "name": "POST /presupuestos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"categoria_id\": \"{{categoriaId}}\",\n  \"monto_mensual\": 1500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/presupuestos",
+              "host": ["{{baseUrl}}"],
+              "path": ["presupuestos"]
+            },
+            "description": "Crea presupuesto mensual.\n\n**Errores:**\n- 400 `sin_categoria_no_admite_presupuesto`\n- 404 `categoria_no_encontrada`\n- 409 `presupuesto_ya_existe` — para cambiar el monto, usar PATCH."
+          }
+        },
+        {
+          "name": "PATCH /presupuestos/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"monto_mensual\": 2000000\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/presupuestos/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["presupuestos", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "description": "Editar monto = INSERT nueva versión `vigente_desde=hoy`. Versiones previas se preservan para reports pasados."
+          }
+        },
+        {
+          "name": "DELETE /presupuestos/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/presupuestos/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["presupuestos", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "description": "Baja = INSERT versión con `monto_mensual=0`. No borra histórico — meses pasados siguen mostrando tope real."
+          }
+        },
+        {
+          "name": "GET /presupuestos/estado?mes=YYYY-MM",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/presupuestos/estado?usuario={{usuario}}&mes=2026-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["presupuestos", "estado"],
+              "query": [
+                { "key": "usuario", "value": "{{usuario}}" },
+                { "key": "mes", "value": "2026-05", "description": "default = mes actual (YYYY-MM)" }
+              ]
+            },
+            "description": "Combina tope vigente del mes con gastos reales. Devuelve `items` con `{categoria_id, categoria_slug, presupuesto, gastado, restante, pct, movs}`. Útil para UI tipo \"X% usado · restan Y\"."
+          }
+        }
+      ]
+    },
+    {
+      "name": "chat",
+      "description": "Chat IA contextual. Proxy a OpenRouter (modelos free, fallback chain). Backend monta prompt con resumen de movs + historial. Si server no tiene `OPENROUTER_API_KEY`, devuelve 503.",
+      "item": [
+        {
+          "name": "POST /chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"¿En qué categorías gasto más este mes?\" }\n  ],\n  \"movs\": [\n    { \"id\": \"m1\", \"nombre\": \"NETFLIX\", \"monto\": -50000, \"fecha\": \"2026-05-01\", \"categoria\": \"entretenimiento\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat"]
+            },
+            "description": "Body:\n- `messages`: array de `{role, content}` (user/assistant/system). Last 10 turns recommended.\n- `movs`: contexto de movs (top ~60). Cada uno `{id, nombre, monto, fecha, categoria}`.\n- `usuario`: id user.\n\nResponse: `{text: string}`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "stats",
+      "description": "Estadísticas agregadas del pipeline.",
+      "item": [
+        {
+          "name": "GET /stats/pipeline?ventana=24h",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats/pipeline?ventana=24h",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats", "pipeline"],
+              "query": [{ "key": "ventana", "value": "24h", "description": "1h | 24h | 7d | 30d | all" }]
+            },
+            "description": "Distribución por capa pipeline, agreement IA, latencias p50/p95/p99, revisiones pendientes, correcciones aplicadas."
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcc",
+      "description": "CRUD del catálogo MCC (ISO 18245).",
+      "item": [
+        {
+          "name": "GET /mcc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mcc?categoria=&sin_categoria=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcc"],
+              "query": [
+                { "key": "categoria", "value": "", "description": "Filtro opcional por slug.", "disabled": true },
+                { "key": "sin_categoria", "value": "false", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /mcc",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cod_mcc\": \"5812\",\n  \"descripcion\": \"Restaurantes\",\n  \"categoria_slug\": \"restaurante\"\n}" },
+            "url": { "raw": "{{baseUrl}}/mcc", "host": ["{{baseUrl}}"], "path": ["mcc"] }
+          }
+        },
+        {
+          "name": "PATCH /mcc/:cod_mcc",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"categoria_slug\": \"alimentacion\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/mcc/:cod_mcc",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcc", ":cod_mcc"],
+              "variable": [{ "key": "cod_mcc", "value": "5812" }]
+            }
+          }
+        },
+        {
+          "name": "DELETE /mcc/:cod_mcc",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mcc/:cod_mcc",
+              "host": ["{{baseUrl}}"],
+              "path": ["mcc", ":cod_mcc"],
+              "variable": [{ "key": "cod_mcc", "value": "5812" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "marcas",
+      "description": "Marcas conocidas (texto exacto → cat). Curado Mango.",
+      "item": [
+        {
+          "name": "GET /marcas",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/marcas", "host": ["{{baseUrl}}"], "path": ["marcas"] } }
+        },
+        {
+          "name": "POST /marcas",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"marca\": \"NETFLIX\",\n  \"categoria_slug\": \"entretenimiento\"\n}" },
+            "url": { "raw": "{{baseUrl}}/marcas", "host": ["{{baseUrl}}"], "path": ["marcas"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "comercios",
+      "description": "Listado paginado + reasignación de `mcc_por_nombre` (capa 2 del pipeline).",
+      "item": [
+        {
+          "name": "GET /comercios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comercios?limit=50&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["comercios"],
+              "query": [
+                { "key": "categoria", "value": "", "disabled": true },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "rev_only", "value": "true", "disabled": true },
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /comercios/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"categoria_slug\": \"alimentacion\",\n  \"requiere_revision\": false\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/comercios/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["comercios", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "catalogo (import)",
+      "description": "Import bulk a `mcc_por_nombre` (capa 2). Chunked async.",
+      "item": [
+        {
+          "name": "POST /catalogo/importar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rows\": [\n    { \"nombre\": \"PETROBRAS CENTRO\", \"mcc\": \"5541\", \"categoria_slug\": \"combustible\" }\n  ],\n  \"correr_cascada\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/catalogo/importar", "host": ["{{baseUrl}}"], "path": ["catalogo", "importar"] }
+          }
+        },
+        {
+          "name": "GET /catalogo/importar/status",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/catalogo/importar/status", "host": ["{{baseUrl}}"], "path": ["catalogo", "importar", "status"] } }
+        }
+      ]
+    },
+    {
+      "name": "test-batch",
+      "description": "Tests masivos del pipeline (in-process worker). Agreement contra ground truth.",
+      "item": [
+        {
+          "name": "POST /test-batch/start",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"batchId\": \"smoke-001\",\n  \"limit\": 100,\n  \"concurrency\": 4\n}" },
+            "url": { "raw": "{{baseUrl}}/test-batch/start", "host": ["{{baseUrl}}"], "path": ["test-batch", "start"] }
+          }
+        },
+        {
+          "name": "GET /test-batch/list",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/test-batch/list", "host": ["{{baseUrl}}"], "path": ["test-batch", "list"] } }
+        },
+        {
+          "name": "GET /test-batch/:batch_id/stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test-batch/:batch_id/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["test-batch", ":batch_id", "stats"],
+              "variable": [{ "key": "batch_id", "value": "smoke-001" }]
+            }
+          }
+        },
+        {
+          "name": "GET /test-batch/:batch_id/agreement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test-batch/:batch_id/agreement?ground_truth=",
+              "host": ["{{baseUrl}}"],
+              "path": ["test-batch", ":batch_id", "agreement"],
+              "variable": [{ "key": "batch_id", "value": "smoke-001" }],
+              "query": [{ "key": "ground_truth", "value": "" }]
+            },
+            "description": "Agreement pipeline vs `categoria_xlsx` de `test_ground_truth`."
+          }
+        },
+        {
+          "name": "GET /test-batch/:batch_id/analisis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test-batch/:batch_id/analisis",
+              "host": ["{{baseUrl}}"],
+              "path": ["test-batch", ":batch_id", "analisis"],
+              "variable": [{ "key": "batch_id", "value": "smoke-001" }]
+            },
+            "description": "Distribución por fuente/cat, patrones más usados, top sin-predicción, latencia p50/p95/p99."
+          }
+        },
+        {
+          "name": "POST /test-batch/stop",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"batch_id\": \"smoke-001\"\n}" },
+            "url": { "raw": "{{baseUrl}}/test-batch/stop", "host": ["{{baseUrl}}"], "path": ["test-batch", "stop"] }
           }
         }
       ]

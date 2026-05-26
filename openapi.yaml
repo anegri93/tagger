@@ -199,6 +199,17 @@ paths:
                     altera. Útil para excepciones puntuales (ej estación de servicio donde
                     sólo compraste algo del shop). El registro en `correcciones_usuario` (audit)
                     se inserta siempre, así que las sugerencias cross-user siguen funcionando.
+                subcategoria_usuario_id:
+                  type: string
+                  format: uuid
+                  description: |
+                    Opcional. Id de subcategoría personal del usuario. Si se provee:
+                    - Backend valida que pertenezca al `usuario` indicado.
+                    - Resuelve canónica padre y la usa como `categoria_id_nueva` efectiva
+                      (override silencioso).
+                    - Persiste `subcategoria_usuario_id` en el mov y en la corrección.
+                    Regla aprendida (cuando `aprender=true`) sigue apuntando a la canónica
+                    (V1: rule engine no maneja subcats; V2 abrirá esta puerta).
       responses:
         '200':
           description: Corrección aplicada
@@ -400,6 +411,790 @@ paths:
                         freq: { type: integer }
                         categoria_slug: { type: string }
 
+  /categorias-usuario:
+    get:
+      tags: [Categorías personales]
+      summary: Lista subcategorías personales activas del usuario
+      description: |
+        Devuelve subcategorías user-scope del usuario indicado, con datos de la
+        canónica padre (rubro). Modelo: el user crea cats personales (ej "Streaming",
+        "Verdulería del barrio") y la app las ancla a un rubro global ("Entretenimiento",
+        "Alimentación"). Reports internos siguen agrupando por canónica.
+      parameters:
+        - in: query
+          name: usuario
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 120 }
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CategoriaUsuario' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Categorías personales]
+      summary: Crear subcategoría personal anclada a un rubro canónico
+      description: |
+        Validaciones:
+        - `canonica_id` debe apuntar a categoría activa y no reemplazada.
+        - `nombre` no puede ser igual al de la canónica padre.
+        - Slug auto-generado del nombre si no se provee; único per usuario.
+        - Cap 200 subcats por usuario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, canonica_id, nombre]
+              properties:
+                usuario: { type: string, minLength: 1, maxLength: 120 }
+                canonica_id: { type: string, format: uuid }
+                nombre: { type: string, minLength: 1, maxLength: 80, example: Streaming }
+                slug:
+                  type: string
+                  pattern: '^[a-z0-9-]+$'
+                  maxLength: 60
+                  description: Opcional; default = slugify(nombre).
+                emoji: { type: string, maxLength: 8, nullable: true, example: '🎬' }
+                color: { type: string, maxLength: 20, nullable: true }
+      responses:
+        '201':
+          description: Creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoriaUsuario' }
+        '400':
+          description: Validación falló o canónica inactiva/reemplazada o nombre = canon
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: slug_duplicado per usuario
+        '429':
+          description: cap_alcanzado (>= 200 subcats activas)
+
+  /categorias-usuario/{id}:
+    patch:
+      tags: [Categorías personales]
+      summary: Editar nombre/emoji/color/activo
+      description: |
+        No se permite cambiar `usuario_id` ni `canonica_id`. Para mover una
+        subcat a otro rubro, hay que borrarla y recrear.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                nombre: { type: string, minLength: 1, maxLength: 80 }
+                emoji: { type: string, maxLength: 8, nullable: true }
+                color: { type: string, maxLength: 20, nullable: true }
+                activo:
+                  type: boolean
+                  description: false = soft hide (no se muestra en listados, mov no se pierde)
+      responses:
+        '200':
+          description: Actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoriaUsuario' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Categorías personales]
+      summary: Hard delete subcategoría
+      description: |
+        Borra fila. FK `movimientos.subcategoria_usuario_id ON DELETE SET NULL`:
+        movs que la usaban quedan sólo con la canónica padre, sin perder historial.
+        Alternativa: PATCH `activo=false` para hide sin borrar.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Eliminada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { ok: { type: boolean, example: true } }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /movimientos:
+    get:
+      tags: [Categorización]
+      summary: Lista movimientos paginados
+      description: |
+        Ordenados por `created_at desc`. Incluye `categoria` embebida (confirmada
+        si existe, sino predicha) + `subcategoria` poblada cuando aplica.
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: origen
+          schema: { type: string, minLength: 1, maxLength: 200 }
+          description: Filtro por origen (ej `demo`, `mobile`, `api`).
+      responses:
+        '200':
+          description: Items paginados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/MovimientoDetalle' }
+                  total: { type: integer }
+                  limit: { type: integer }
+                  offset: { type: integer }
+
+  /movimientos/importar:
+    post:
+      tags: [Importación]
+      summary: Importa rows a movimientos ejecutando cascada async
+      description: Devuelve `importId` inmediato. Worker async corre cascada por row. Status via `/movimientos/importar/status`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rows]
+              properties:
+                rows:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      nombre: { type: string }
+                      mcc: { type: string }
+                      monto: { type: string }
+                batchId: { type: string }
+                bypass_catalogo: { type: boolean }
+      responses:
+        '202':
+          description: Aceptado para procesamiento async
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  importId: { type: string }
+                  batchId: { type: string, nullable: true }
+
+  /movimientos/importar/status:
+    get:
+      tags: [Importación]
+      summary: Estado del import en curso
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /movimientos/{id}/categorias-sugeridas:
+    get:
+      tags: [Categorización]
+      summary: Top-K categorías candidatas (similitud trigram)
+      description: |
+        Devuelve ranking de categorías similares al texto enriquecido del mov
+        (o al `q` provisto). Útil para UI "¿quisiste decir X?" antes de
+        aplicar corrección.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 5 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: umbral
+          schema: { type: number, default: 0 }
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categoria_origen_id: { type: string, format: uuid, nullable: true }
+                  limit: { type: integer }
+                  offset: { type: integer }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        slug: { type: string }
+                        nombre: { type: string }
+                        descripcion: { type: string, nullable: true }
+                        similitud: { type: number }
+
+  /categorias/{identificador}/similares:
+    get:
+      tags: [Categorías]
+      summary: Categorías similares a la dada (trigram)
+      description: |
+        `identificador` acepta UUID, slug actual o alias antiguo.
+      parameters:
+        - in: path
+          name: identificador
+          required: true
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Si presente, busca contra este texto en vez del de la cat origen.
+        - in: query
+          name: limit
+          schema: { type: integer, default: 5 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: umbral
+          schema: { type: number, default: 0 }
+      responses:
+        '200':
+          description: Ranking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categoria_origen:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      slug: { type: string }
+                      nombre: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+
+  /categorias/{identificador}/usage:
+    get:
+      tags: [Categorías]
+      summary: Counts de referencias en otras tablas
+      parameters:
+        - in: path
+          name: identificador
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movimientos: { type: integer }
+                  mcc: { type: integer }
+                  comercios: { type: integer }
+
+  /reglas/sugerencias-globales:
+    get:
+      tags: [Reglas]
+      summary: Patrones que varios usuarios distintos corrigieron a la misma cat
+      description: |
+        Candidatos a regla global. Excluye los que ya tienen regla global activa.
+      parameters:
+        - in: query
+          name: min_usuarios
+          schema: { type: integer, default: 3 }
+        - in: query
+          name: min_total
+          schema: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+
+  /mcc:
+    get:
+      tags: [MCC]
+      summary: Lista catálogo MCC
+      parameters:
+        - in: query
+          name: categoria
+          schema: { type: string }
+        - in: query
+          name: sin_categoria
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: MCCs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { type: object, additionalProperties: true } }
+    post:
+      tags: [MCC]
+      summary: Alta MCC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cod_mcc, descripcion]
+              properties:
+                cod_mcc: { type: string, pattern: '^\d{2,4}$' }
+                descripcion: { type: string }
+                categoria_slug: { type: string }
+                ambiguo: { type: boolean }
+      responses:
+        '201': { description: Creado }
+
+  /mcc/{cod_mcc}:
+    patch:
+      tags: [MCC]
+      summary: Editar MCC
+      parameters:
+        - in: path
+          name: cod_mcc
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descripcion: { type: string }
+                categoria_slug: { type: string }
+                ambiguo: { type: boolean }
+      responses:
+        '200': { description: Actualizado }
+        '404': { description: no_existe }
+    delete:
+      tags: [MCC]
+      summary: Eliminar MCC
+      parameters:
+        - in: path
+          name: cod_mcc
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Eliminado }
+
+  /marcas:
+    get:
+      tags: [Marcas]
+      summary: Lista marcas conocidas
+      parameters:
+        - in: query
+          name: categoria
+          schema: { type: string }
+      responses:
+        '200': { description: Marcas, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+    post:
+      tags: [Marcas]
+      summary: Alta marca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [marca, categoria_slug]
+              properties:
+                marca: { type: string }
+                categoria_slug: { type: string }
+                descripcion: { type: string }
+      responses:
+        '201': { description: Creada }
+
+  /marcas/{id}:
+    patch:
+      tags: [Marcas]
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+      responses: { '200': { description: Actualizada } }
+    delete:
+      tags: [Marcas]
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '204': { description: Eliminada } }
+
+  /comercios:
+    get:
+      tags: [Comercios]
+      summary: Lista entradas de mcc_por_nombre
+      parameters:
+        - { in: query, name: categoria, schema: { type: string } }
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: rev_only, schema: { type: boolean } }
+        - { in: query, name: limit, schema: { type: integer, default: 50 } }
+        - { in: query, name: offset, schema: { type: integer, default: 0 } }
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { type: object, additionalProperties: true } }
+                  total: { type: integer }
+
+  /comercios/{id}:
+    patch:
+      tags: [Comercios]
+      summary: Reasignar categoría o cambiar requiere_revision
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoria_slug: { type: string }
+                requiere_revision: { type: boolean }
+      responses:
+        '200': { description: Actualizado }
+        '404': { description: no_existe }
+
+  /catalogo/importar:
+    post:
+      tags: [Importación]
+      summary: Importa rows a mcc_por_nombre (chunked, async)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rows]
+              properties:
+                rows:
+                  type: array
+                  items: { type: object, additionalProperties: true }
+                correr_cascada: { type: boolean }
+      responses:
+        '202': { description: Aceptado }
+
+  /catalogo/importar/status:
+    get:
+      tags: [Importación]
+      summary: Estado import catálogo
+      responses:
+        '200': { description: Status, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /test-batch/start:
+    post:
+      tags: [Test Batch]
+      summary: Dispara worker test masivo in-process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchId]
+              properties:
+                batchId: { type: string }
+                source: { type: string }
+                limit: { type: integer }
+                concurrency: { type: integer }
+                bypassCatalogo: { type: boolean }
+      responses:
+        '200': { description: OK }
+
+  /test-batch/stop:
+    post:
+      tags: [Test Batch]
+      summary: Cancela batch en curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { batch_id: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  /test-batch/list:
+    get:
+      tags: [Test Batch]
+      summary: Batches activos
+      responses:
+        '200': { description: List, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } }
+
+  /test-batch/{batch_id}/stats:
+    get:
+      tags: [Test Batch]
+      summary: Stats agregadas del batch
+      parameters: [{ in: path, name: batch_id, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Stats, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /test-batch/{batch_id}/agreement:
+    get:
+      tags: [Test Batch]
+      summary: Agreement pipeline vs categoria_xlsx ground truth
+      parameters:
+        - { in: path, name: batch_id, required: true, schema: { type: string } }
+        - { in: query, name: ground_truth, schema: { type: string } }
+      responses:
+        '200': { description: Agreement, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /test-batch/{batch_id}/agreement-mcc:
+    get:
+      tags: [Test Batch]
+      summary: Agreement vs MCC catalog
+      parameters:
+        - { in: path, name: batch_id, required: true, schema: { type: string } }
+        - { in: query, name: reference, schema: { type: string, enum: [mcc, combined_mcc] } }
+        - { in: query, name: include_ambiguo, schema: { type: boolean } }
+        - { in: query, name: include_generic, schema: { type: boolean } }
+      responses:
+        '200': { description: Agreement, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /test-batch/{batch_id}/analisis:
+    get:
+      tags: [Test Batch]
+      summary: Análisis profundo
+      description: Distribución por fuente/categoría, patrones más usados, top sin-predicción, latencia p50/p95/p99, cobertura por decil.
+      parameters:
+        - { in: path, name: batch_id, required: true, schema: { type: string } }
+        - { in: query, name: ground_truth, schema: { type: string } }
+      responses:
+        '200': { description: Análisis, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /presupuestos:
+    get:
+      tags: [Presupuestos]
+      summary: Lista presupuestos vigentes del usuario
+      parameters:
+        - { in: query, name: usuario, required: true, schema: { type: string, minLength: 1, maxLength: 120 } }
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Presupuesto' }
+    post:
+      tags: [Presupuestos]
+      summary: Crear presupuesto mensual para una categoría
+      description: |
+        Modelo versionado: si ya existe vigente con monto > 0 para (usuario, categoria),
+        devuelve 409. Para cambiar el monto, usar PATCH (no DELETE+POST).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, categoria_id, monto_mensual]
+              properties:
+                usuario: { type: string, minLength: 1, maxLength: 120 }
+                categoria_id: { type: string, format: uuid }
+                monto_mensual: { type: number, exclusiveMinimum: 0, maximum: 1000000000 }
+      responses:
+        '201':
+          description: Creado
+          content: { application/json: { schema: { $ref: '#/components/schemas/Presupuesto' } } }
+        '404': { description: categoria_no_encontrada }
+        '409': { description: presupuesto_ya_existe }
+
+  /presupuestos/{id}:
+    patch:
+      tags: [Presupuestos]
+      summary: Editar monto = INSERT nueva versión vigente hoy
+      description: Preserva histórico de topes para reports pasados.
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [monto_mensual]
+              properties:
+                monto_mensual: { type: number, exclusiveMinimum: 0 }
+      responses:
+        '200': { description: OK }
+        '404': { description: no_encontrado }
+    delete:
+      tags: [Presupuestos]
+      summary: Baja = INSERT versión con monto=0
+      description: No borra fila; preserva histórico. Para re-alta, POST de nuevo.
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: OK }
+        '404': { description: no_encontrado }
+
+  /presupuestos/estado:
+    get:
+      tags: [Presupuestos]
+      summary: Estado combinado (presupuesto + gastado del mes) por categoría
+      parameters:
+        - { in: query, name: usuario, required: true, schema: { type: string } }
+        - in: query
+          name: mes
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+          description: 'Default: mes actual.'
+      responses:
+        '200':
+          description: Estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mes: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+
+  /chat:
+    post:
+      tags: [Chat]
+      summary: Chat IA contextual con movimientos del usuario
+      description: |
+        Proxy a OpenRouter (modelos free, fallback chain). Backend monta prompt
+        con resumen de movs + historial conversacional. Si `OPENROUTER_API_KEY`
+        no está seteado en server, devuelve 503.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages, movs, usuario]
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    required: [role, content]
+                    properties:
+                      role: { type: string, enum: [user, assistant, system] }
+                      content: { type: string }
+                movs:
+                  type: array
+                  description: Contexto de movimientos (top ~60 últimos).
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      nombre: { type: string }
+                      monto: { type: number }
+                      fecha: { type: string }
+                      categoria: { type: string, nullable: true }
+                usuario: { type: string }
+      responses:
+        '200':
+          description: Respuesta IA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text: { type: string }
+        '503': { description: openrouter_no_configurado }
+
+  /stats/pipeline:
+    get:
+      tags: [Stats]
+      summary: Distribución por capa pipeline + latencias
+      parameters:
+        - in: query
+          name: ventana
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d, all]
+            default: 24h
+      responses:
+        '200':
+          description: Stats
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /demo/config:
+    get:
+      tags: [Demo]
+      summary: Runtime config del demo UI
+      security: []
+      description: |
+        Endpoint público (sin auth). Devuelve `apiKey` (env `API_KEY`) +
+        `hasOpenRouter` (boolean). El demo UI lo consume al bootear para
+        configurar el SDK.
+      responses:
+        '200':
+          description: Config
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey: { type: string }
+                  hasOpenRouter: { type: boolean }
+
   /reglas/{id}:
     patch:
       tags: [Reglas]
@@ -515,6 +1310,15 @@ components:
             Sólo aplica cuando se pasa `categoria_id` + `origen`. Si `true`,
             además del movimiento guarda regla user-scope con prio 1 para que
             próximos movs con el mismo nombre devuelvan esta categoría automático.
+        subcategoria_usuario_id:
+          type: string
+          format: uuid
+          description: |
+            Opcional. Id de subcategoría personal del usuario (tabla
+            `categorias_usuario`). Si se provee, backend resuelve la canónica
+            padre y la usa como `categoria_id` (override silencioso si caller
+            también mandó `categoria_id`). El mov queda con `categoria_id`=canon
+            y `subcategoria_usuario_id`=subcat. Reports rolan al rubro canónico.
 
     CategorizarResponse:
       type: object
@@ -552,6 +1356,15 @@ components:
         categoria_id: { type: string, format: uuid, nullable: true }
         categoria_slug: { type: string, nullable: true }
         categoria_confirmada_id: { type: string, format: uuid, nullable: true }
+        subcategoria_usuario_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Subcategoría personal del usuario (si fue asignada).
+        subcategoria:
+          allOf: [{ $ref: '#/components/schemas/SubcategoriaRef' }]
+          nullable: true
+          description: Subcategoría poblada (nombre, emoji, color, canonica_id).
         fuente_categoria:
           allOf: [{ $ref: '#/components/schemas/Fuente' }]
           nullable: true
@@ -565,6 +1378,44 @@ components:
         batch_id: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    SubcategoriaRef:
+      type: object
+      required: [id, nombre, slug, canonica_id]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        slug: { type: string }
+        emoji: { type: string, nullable: true }
+        color: { type: string, nullable: true }
+        canonica_id: { type: string, format: uuid }
+
+    CategoriaUsuario:
+      type: object
+      required:
+        - id
+        - usuario_id
+        - canonica_id
+        - canonica_slug
+        - canonica_nombre
+        - nombre
+        - slug
+        - activo
+        - origen
+        - created_at
+      properties:
+        id: { type: string, format: uuid }
+        usuario_id: { type: string, example: demo }
+        canonica_id: { type: string, format: uuid }
+        canonica_slug: { type: string, example: entretenimiento }
+        canonica_nombre: { type: string, example: Entretenimiento }
+        nombre: { type: string, example: Streaming }
+        slug: { type: string, example: streaming }
+        emoji: { type: string, nullable: true, example: '🎬' }
+        color: { type: string, nullable: true }
+        activo: { type: boolean }
+        origen: { type: string, example: manual, description: 'Default `manual`; reservado para sugerencias futuras.' }
+        created_at: { type: string, format: date-time }
 
     Regla:
       type: object
@@ -600,6 +1451,20 @@ components:
           nullable: true
         activo:
           type: boolean
+
+    Presupuesto:
+      type: object
+      required: [id, usuario, categoria_id, categoria_slug, categoria_nombre, monto_mensual, vigente_desde, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        usuario: { type: string }
+        categoria_id: { type: string, format: uuid }
+        categoria_slug: { type: string }
+        categoria_nombre: { type: string }
+        monto_mensual: { type: number }
+        vigente_desde: { type: string, format: date }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
 
     Error:
       type: object

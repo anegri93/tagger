@@ -9,8 +9,6 @@ interface RulesViewProps {
   onAfterMutate?: () => void;
 }
 
-type Tab = 'mine' | 'system';
-
 // Extrae nombre limpio: si "X ... X" detectado (típico en transferencias) devuelve "X".
 // Si no, limpia separadores sobrantes al final.
 function smartMerchantName(s: string): string {
@@ -41,10 +39,8 @@ function isSelfTransfer(s: string): boolean {
 
 export function RulesView({ client, usuario, onAfterMutate }: RulesViewProps) {
   const [userRules, setUserRules] = useState<Regla[]>([]);
-  const [globalRules, setGlobalRules] = useState<Regla[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('mine');
   const [q, setQ] = useState('');
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -54,12 +50,8 @@ export function RulesView({ client, usuario, onAfterMutate }: RulesViewProps) {
     setLoading(true);
     setError(null);
     try {
-      const [u, g] = await Promise.all([
-        client.reglas.listar({ scope: `usuario:${usuario}` }),
-        client.reglas.listar({ scope: 'global' }),
-      ]);
+      const u = await client.reglas.listar({ scope: `usuario:${usuario}` });
       setUserRules(u);
-      setGlobalRules(g);
     } catch (e) {
       setError((e as Error).message || 'Error');
     } finally {
@@ -101,78 +93,55 @@ export function RulesView({ client, usuario, onAfterMutate }: RulesViewProps) {
     } catch (e) { setError((e as Error).message); }
   };
 
-  const list = tab === 'mine' ? userRules : globalRules;
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    if (!ql) return list;
-    return list.filter((r) =>
+    if (!ql) return userRules;
+    return userRules.filter((r) =>
       r.valor.toLowerCase().includes(ql) ||
       catStyle(r.categoria_slug).label.toLowerCase().includes(ql),
     );
-  }, [list, q]);
+  }, [userRules, q]);
 
   return (
     <>
-      {/* Header línea única: contador a la izq, segmento a la der */}
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 12, margin: '2px 0 10px',
-        }}
-      >
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-          <b style={{ color: 'var(--ink)', fontSize: 14, marginRight: 6 }}>{userRules.length}</b>
-          tuyas · {globalRules.length} del sistema
+      {/* Header línea única: contador */}
+      <div style={{ margin: '2px 0 10px', fontSize: 12, color: 'var(--muted)' }}>
+        <b style={{ color: 'var(--ink)', fontSize: 14, marginRight: 6 }}>{userRules.length}</b>
+        {userRules.length === 1 ? 'regla aprendida' : 'reglas aprendidas'}
+      </div>
+
+      {/* Search */}
+      {userRules.length > 0 && (
+        <div className="search" style={{ marginBottom: 10 }}>
+          <span style={{ color: '#9aa6b7' }}>🔍</span>
+          <input
+            placeholder="Buscar en tus reglas..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
-      </div>
-
-      {/* Segmented control compacto */}
-      <div
-        style={{
-          display: 'flex', background: '#f1f4f9', borderRadius: 12,
-          padding: 3, gap: 2, marginBottom: 10,
-        }}
-      >
-        <SegBtn on={tab === 'mine'} onClick={() => { setTab('mine'); setQ(''); }}>
-          Tuyas <Count n={userRules.length} on={tab === 'mine'} />
-        </SegBtn>
-        <SegBtn on={tab === 'system'} onClick={() => { setTab('system'); setQ(''); }}>
-          Sistema <Count n={globalRules.length} on={tab === 'system'} />
-        </SegBtn>
-      </div>
-
-      {/* Search siempre visible, ahorra clicks */}
-      <div className="search" style={{ marginBottom: 10 }}>
-        <span style={{ color: '#9aa6b7' }}>🔍</span>
-        <input
-          placeholder={tab === 'mine' ? 'Buscar en tus reglas...' : 'Buscar en patrones del sistema...'}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
+      )}
 
       {error && <div className="demo-banner" style={{ marginBottom: 10 }}>⚠️ {error}</div>}
 
-      {loading && list.length === 0 && (
+      {loading && userRules.length === 0 && (
         <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 13, padding: 14 }}>Cargando…</p>
       )}
 
-      {!loading && tab === 'mine' && userRules.length === 0 && (
-        <EmptyMine />
-      )}
+      {!loading && userRules.length === 0 && <EmptyMine />}
 
-      {!loading && filtered.length === 0 && list.length > 0 && (
+      {!loading && filtered.length === 0 && userRules.length > 0 && (
         <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 13, padding: 14 }}>Sin resultados</p>
       )}
 
       {/* Lista densa — sin overflow:hidden para no clipear popovers */}
       <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
-        {filtered.slice(0, tab === 'mine' ? 999 : 80).map((r, i) => (
+        {filtered.map((r, i) => (
           <RuleRow
             key={r.id}
             regla={r}
             divider={i > 0}
-            editable={tab === 'mine'}
+            editable={true}
             menuOpen={menuFor === r.id}
             expanded={expandedId === r.id}
             onToggleMenu={() => { setMenuFor(menuFor === r.id ? null : r.id); }}
@@ -183,45 +152,7 @@ export function RulesView({ client, usuario, onAfterMutate }: RulesViewProps) {
         ))}
       </div>
 
-      {tab === 'system' && filtered.length > 80 && (
-        <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 11, marginTop: 8 }}>
-          + {filtered.length - 80} más · refiná tu búsqueda
-        </p>
-      )}
     </>
-  );
-}
-
-function SegBtn({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1, background: on ? '#fff' : 'transparent',
-        color: on ? 'var(--ink)' : 'var(--muted)',
-        border: 0, borderRadius: 9, padding: '8px 10px',
-        fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        boxShadow: on ? '0 2px 6px rgba(10,40,90,.08)' : 'none',
-        fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Count({ n, on }: { n: number; on: boolean }) {
-  return (
-    <span
-      style={{
-        fontSize: 11, fontWeight: 700,
-        background: on ? '#eaf3ff' : 'transparent',
-        color: on ? 'var(--blue3)' : 'var(--muted)',
-        padding: '1px 7px', borderRadius: 8, minWidth: 18, textAlign: 'center',
-      }}
-    >
-      {n}
-    </span>
   );
 }
 
