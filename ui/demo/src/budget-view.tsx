@@ -13,6 +13,20 @@ interface Props {
   onViewMovs: (categoriaSlug: string) => void;
 }
 
+const MES_ACTUAL = () => new Date().toISOString().slice(0, 7);
+
+function shiftMes(mes: string, delta: number): string {
+  const [y, m] = mes.split('-').map(Number) as [number, number];
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function labelMes(mes: string): string {
+  const [y, m] = mes.split('-').map(Number) as [number, number];
+  const d = new Date(y, m - 1, 1);
+  return d.toLocaleString('es-PY', { month: 'long', year: 'numeric' });
+}
+
 export function BudgetView({ client, usuario, categorias, focusCategoriaId, onClearFocus, onSinAsignar, onViewMovs }: Props) {
   const [estado, setEstado] = useState<PresupuestoEstado | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,22 +36,25 @@ export function BudgetView({ client, usuario, categorias, focusCategoriaId, onCl
   const [newMonto, setNewMonto] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
   const [editMonto, setEditMonto] = useState('');
+  const [mes, setMes] = useState<string>(MES_ACTUAL());
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [pulseCatId, setPulseCatId] = useState<string | null>(null);
+
+  const isPast = mes < MES_ACTUAL();
 
   const refresh = useCallback(async () => {
     if (!client) return;
     setLoading(true);
     setError(null);
     try {
-      const e = await client.presupuestos.estado({ usuario });
+      const e = await client.presupuestos.estado({ usuario, mes });
       setEstado(e);
     } catch (e) {
       setError((e as Error).message || 'Error');
     } finally {
       setLoading(false);
     }
-  }, [client, usuario]);
+  }, [client, usuario, mes]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -103,11 +120,57 @@ export function BudgetView({ client, usuario, categorias, focusCategoriaId, onCl
     <div className="budget-view">
       <div className="budget-header">
         <div>
-          <small>Presupuestos · {estado?.mes ?? ''}</small>
+          <small>Presupuestos {isPast ? '· histórico' : ''}</small>
           <h3>Tus límites mensuales</h3>
         </div>
-        {!showAdd && catsDisponibles.length > 0 && (
+        {!showAdd && !isPast && catsDisponibles.length > 0 && (
           <button className="budget-add-btn" onClick={() => setShowAdd(true)} aria-label="Agregar presupuesto">+</button>
+        )}
+      </div>
+
+      {/* Selector de mes: prev | label | next  + botón Hoy si estás en pasado */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: isPast ? '#fff8eb' : '#f1f4f9',
+          border: isPast ? '1px solid #ffd99c' : '1px solid var(--line)',
+          borderRadius: 12, padding: '6px 8px', marginBottom: 10,
+        }}
+      >
+        <button
+          onClick={() => setMes(shiftMes(mes, -1))}
+          aria-label="Mes anterior"
+          style={{
+            background: 'transparent', border: 0, color: 'var(--ink)',
+            width: 28, height: 28, borderRadius: 8, cursor: 'pointer',
+            fontSize: 16, lineHeight: 1, fontFamily: 'inherit',
+          }}
+        >‹</button>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
+          {labelMes(mes)}
+        </div>
+        <button
+          onClick={() => setMes(shiftMes(mes, +1))}
+          aria-label="Mes siguiente"
+          disabled={!isPast}
+          style={{
+            background: 'transparent', border: 0,
+            color: isPast ? 'var(--ink)' : '#c2cbd9',
+            width: 28, height: 28, borderRadius: 8,
+            cursor: isPast ? 'pointer' : 'not-allowed',
+            fontSize: 16, lineHeight: 1, fontFamily: 'inherit',
+          }}
+        >›</button>
+        {isPast && (
+          <button
+            onClick={() => setMes(MES_ACTUAL())}
+            style={{
+              background: 'var(--blue3)', color: '#fff', border: 0,
+              borderRadius: 10, padding: '5px 10px',
+              fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >Hoy</button>
         )}
       </div>
 
@@ -151,7 +214,7 @@ export function BudgetView({ client, usuario, categorias, focusCategoriaId, onCl
                   <span className="budget-emoji">{st.emoji}</span>
                   <span className="budget-cat-name">{st.label}</span>
                 </div>
-                {editing ? (
+                {editing && !isPast ? (
                   <div className="budget-edit">
                     <input
                       type="text" inputMode="numeric"
@@ -162,6 +225,8 @@ export function BudgetView({ client, usuario, categorias, focusCategoriaId, onCl
                     <button className="budget-link" onClick={() => onGuardarEdit(it.id)}>OK</button>
                     <button className="budget-link ghost" onClick={() => setEditId(null)}>✕</button>
                   </div>
+                ) : isPast ? (
+                  <span className="budget-monto" style={{ cursor: 'default' }}>{fmt(it.presupuesto)}</span>
                 ) : (
                   <button
                     className="budget-monto"
@@ -190,7 +255,12 @@ export function BudgetView({ client, usuario, categorias, focusCategoriaId, onCl
                 <button className="budget-link" onClick={() => onViewMovs(it.categoria_slug)}>
                   Ver {it.movs} {it.movs === 1 ? 'mov' : 'movs'} →
                 </button>
-                <button className="budget-link ghost" onClick={() => onEliminar(it.id)} title="Eliminar">🗑</button>
+                {!isPast && (
+                  <button className="budget-link ghost" onClick={() => onEliminar(it.id)} title="Eliminar">🗑</button>
+                )}
+                {it.categoria_borrada && (
+                  <span style={{ fontSize: 10, color: 'var(--muted)', fontStyle: 'italic' }}>cat. eliminada</span>
+                )}
               </div>
             </div>
           );

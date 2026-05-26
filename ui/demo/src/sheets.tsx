@@ -569,9 +569,10 @@ export function NewMovementSheet({
     for (const c of categorias) m[c.slug] = c.id;
     return m;
   }, [categorias]);
-  const [tab, setTab] = useState<'transferencia' | 'servicio'>('transferencia');
+  const [tab, setTab] = useState<'transferencia' | 'servicio' | 'ingreso'>('transferencia');
   const [beneficiario, setBeneficiario] = useState('');
   const [servicio, setServicio] = useState('ANDE');
+  const [origenIngreso, setOrigenIngreso] = useState('');
   const [monto, setMonto] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ categoria: string | null; fuente: string | null } | null>(null);
@@ -587,18 +588,26 @@ export function NewMovementSheet({
     let nombreComercio: string;
     let descripcion: string;
     let categoriaId: string | undefined;
+    let signedMonto = -m;
     if (tab === 'transferencia') {
       const ben = beneficiario.trim();
       if (!ben) { setError('Ingresá un beneficiario'); return; }
       nombreComercio = ben.toUpperCase();
       descripcion = `Transferencia a ${ben}`;
-    } else {
+    } else if (tab === 'servicio') {
       nombreComercio = servicio.toUpperCase();
       descripcion = `Pago de servicio ${servicio}`;
+    } else {
+      const orig = origenIngreso.trim();
+      if (!orig) { setError('Indicá el origen del ingreso'); return; }
+      nombreComercio = orig.toUpperCase();
+      descripcion = `Ingreso: ${orig}`;
+      categoriaId = slugToId['ingresos'];
+      signedMonto = m; // positivo
     }
     setSubmitting(true);
     try {
-      const r = await onCreate({ nombreComercio, monto: -m, descripcion, categoriaId });
+      const r = await onCreate({ nombreComercio, monto: signedMonto, descripcion, categoriaId });
       setResult(r);
       onClose();
     } catch (e) {
@@ -616,9 +625,10 @@ export function NewMovementSheet({
         <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>Categorizado automáticamente por el pipeline.</div>
         <div className="nm-tabs">
           <button className={tab === 'transferencia' ? 'on' : ''} onClick={() => setTab('transferencia')}>💸 Transferencia</button>
-          <button className={tab === 'servicio' ? 'on' : ''} onClick={() => setTab('servicio')}>🧾 Pago de servicio</button>
+          <button className={tab === 'servicio' ? 'on' : ''} onClick={() => setTab('servicio')}>🧾 Servicio</button>
+          <button className={tab === 'ingreso' ? 'on' : ''} onClick={() => setTab('ingreso')}>💰 Ingreso</button>
         </div>
-        {tab === 'transferencia' ? (
+        {tab === 'transferencia' && (
           <div className="nm-field">
             <label>Beneficiario</label>
             <input
@@ -627,7 +637,8 @@ export function NewMovementSheet({
               onChange={(e) => setBeneficiario(e.target.value)}
             />
           </div>
-        ) : (
+        )}
+        {tab === 'servicio' && (
           <div className="nm-field">
             <label>Servicio</label>
             <div className="nm-services">
@@ -635,6 +646,16 @@ export function NewMovementSheet({
                 <button key={s} className={servicio === s ? 'on' : ''} onClick={() => setServicio(s)}>{s}</button>
               ))}
             </div>
+          </div>
+        )}
+        {tab === 'ingreso' && (
+          <div className="nm-field">
+            <label>Origen del ingreso</label>
+            <input
+              placeholder="Ej: Sueldo, freelance, venta..."
+              value={origenIngreso}
+              onChange={(e) => setOrigenIngreso(e.target.value)}
+            />
           </div>
         )}
         <div className="nm-field">

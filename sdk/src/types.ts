@@ -518,24 +518,27 @@ export interface HealthStatus {
 export interface Presupuesto {
   id: string;
   usuario: string;
-  categoria_id: string;
+  categoria_id: string | null;
   categoria_slug?: string;
   categoria_nombre?: string;
   monto_mensual: number;
+  vigente_desde?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface PresupuestoEstadoItem {
   id: string;
-  categoria_id: string;
+  categoria_id: string | null;
   categoria_slug: string;
   categoria_nombre: string;
+  categoria_borrada?: boolean;
   presupuesto: number;
   gastado: number;
   restante: number;
   pct: number;
   movs: number;
+  vigente_desde?: string;
 }
 
 export interface PresupuestoEstado {
