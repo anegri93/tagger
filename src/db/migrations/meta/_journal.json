@@ -169,6 +169,13 @@
       "when": 1779800000000,
       "tag": "0023_descripcion_uso",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779900000000,
+      "tag": "0024_presupuestos",
+      "breakpoints": true
     }
   ]
 }

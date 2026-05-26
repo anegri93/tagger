@@ -31,6 +31,8 @@ import type {
   NuevaMarca,
   NuevaRegla,
   NuevoMcc,
+  Presupuesto,
+  PresupuestoEstado,
   Regla,
   ResultadoCategorizacion,
   StatsPipeline,
@@ -81,6 +83,8 @@ export class TaggerClient {
   readonly categorias: ReturnType<typeof categoriasModule>;
   /** CRUD de reglas + sugerencias. */
   readonly reglas: ReturnType<typeof reglasModule>;
+  /** Presupuestos mensuales por categoría. */
+  readonly presupuestos: ReturnType<typeof presupuestosModule>;
   /** CRUD de MCCs. */
   readonly mcc: ReturnType<typeof mccModule>;
   /** CRUD de marcas conocidas. */
@@ -110,6 +114,7 @@ export class TaggerClient {
     this.movimientos = movimientosModule(this);
     this.categorias = categoriasModule(this);
     this.reglas = reglasModule(this);
+    this.presupuestos = presupuestosModule(this);
     this.mcc = mccModule(this);
     this.marcas = marcasModule(this);
     this.comercios = comerciosModule(this);
@@ -694,6 +699,40 @@ function chatModule(c: TaggerClient) {
       if (input.movs) body.movs = input.movs;
       if (input.usuario) body.usuario = input.usuario;
       return c.request<ChatResult>('/chat', { method: 'POST', body });
+    },
+  };
+}
+
+function presupuestosModule(c: TaggerClient) {
+  return {
+    /** Lista presupuestos del usuario. */
+    async listar(opts: { usuario: string }): Promise<Presupuesto[]> {
+      const r = await c.request<{ items: Presupuesto[] }>('/presupuestos', {
+        query: { usuario: opts.usuario },
+      });
+      return r.items;
+    },
+    async crear(input: {
+      usuario: string;
+      categoria_id: string;
+      monto_mensual: number;
+    }): Promise<Presupuesto> {
+      return c.request<Presupuesto>('/presupuestos', { method: 'POST', body: input });
+    },
+    async actualizar(id: string, monto_mensual: number): Promise<void> {
+      await c.request(`/presupuestos/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: { monto_mensual },
+      });
+    },
+    async eliminar(id: string): Promise<void> {
+      await c.request(`/presupuestos/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
+    /** Estado combinado: presupuesto + gastado del mes. mes opcional, default mes actual. */
+    async estado(opts: { usuario: string; mes?: string }): Promise<PresupuestoEstado> {
+      const query: Record<string, string> = { usuario: opts.usuario };
+      if (opts.mes) query.mes = opts.mes;
+      return c.request<PresupuestoEstado>('/presupuestos/estado', { query });
     },
   };
 }

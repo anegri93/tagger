@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Categoria, ChatMessage, TaggerClient, Movimiento } from '@mango/tagger-sdk';
 import type { UiMov } from './api';
 import { catStyle } from './cat-style';
@@ -133,6 +133,14 @@ export function ChatDrawer({
 }) {
   const [q, setQ] = useState('');
   const [pending, setPending] = useState(false);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    // Scroll al final al abrir y cuando llega un nuevo mensaje.
+    const el = bodyRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [open, history.length, pending]);
   if (!open) return null;
 
   const send = async (text: string) => {
@@ -178,7 +186,7 @@ export function ChatDrawer({
           <button className="clear" onClick={() => setHistory([])}>Limpiar</button>
           <button className="x" onClick={onClose}>×</button>
         </div>
-        <div className="chat-body">
+        <div className="chat-body" ref={bodyRef}>
           {history.length === 0 && (
             <div className="bub ai">
               Hola. Puedo ayudarte a entender tus gastos, predecir tu saldo y resumir tu mes. Probá una pregunta abajo 👇
@@ -211,6 +219,25 @@ export function ChatDrawer({
   );
 }
 
+function ScopeOption({ active, emoji, title, desc, onClick }: {
+  active: boolean; emoji: string; title: string; desc: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={'scope-opt' + (active ? ' on' : '')}
+      type="button"
+    >
+      <span className="scope-opt-emoji">{emoji}</span>
+      <div className="scope-opt-text">
+        <div className="scope-opt-title">{title}</div>
+        <div className="scope-opt-desc">{desc}</div>
+      </div>
+      <span className={'scope-opt-radio' + (active ? ' on' : '')}>{active ? '●' : ''}</span>
+    </button>
+  );
+}
+
 export function CategoryEditSheet({
   current, categorias, nombreComercio, onClose, onSave,
 }: {
@@ -218,10 +245,16 @@ export function CategoryEditSheet({
   categorias: Categoria[];
   nombreComercio: string;
   onClose: () => void;
-  onSave: (newCategoriaId: string, aprender: boolean) => Promise<void>;
+  onSave: (newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void>;
 }) {
   const [pickedId, setPickedId] = useState<string | null>(current);
-  const [aprender, setAprender] = useState(true);
+  const [scope, setScope] = useState<'solo' | 'exacto' | 'prefijo'>('exacto');
+  const [step, setStep] = useState<'cat' | 'scope'>('cat');
+  const firstWord = useMemo(() => {
+    const w = nombreComercio.trim().split(/\s+/)[0] ?? '';
+    return w.toUpperCase();
+  }, [nombreComercio]);
+  const hasPrefijo = firstWord.length >= 3;
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
   const filtered = useMemo(() => {
@@ -234,97 +267,105 @@ export function CategoryEditSheet({
     if (!pickedId || pickedId === current) { onClose(); return; }
     setSaving(true);
     try {
-      await onSave(pickedId, aprender);
+      await onSave(pickedId, scope);
       onClose();
     } finally {
       setSaving(false);
     }
   };
 
+  const pickedCat = pickedId ? categorias.find((c) => c.id === pickedId) : null;
+
   return (
     <div className="sheet-bg" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '85%' }}>
         <div className="grab" />
-        <h3>Cambiar categoría</h3>
-        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
-          Para <b style={{ color: 'var(--ink)' }}>{nombreComercio}</b>
-        </div>
-        <input
-          placeholder="Buscar categoría..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 12, fontSize: 14, outline: 0, marginBottom: 12 }}
-        />
-        <div style={{ maxHeight: 280, overflowY: 'auto', marginBottom: 12 }}>
-          {filtered.map((c) => {
-            const st = catStyle(c.slug);
-            const picked = pickedId === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setPickedId(c.id)}
-                style={{
-                  width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 12px', marginBottom: 6, borderRadius: 12,
-                  background: picked ? st.color + '22' : '#fff',
-                  border: picked ? `2px solid ${st.color}` : '1px solid var(--line)',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                <span style={{ fontSize: 22, width: 32, textAlign: 'center' }}>{st.emoji}</span>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{c.nombre}</span>
-                {picked && <span style={{ color: st.color, fontSize: 18 }}>✓</span>}
-              </button>
-            );
-          })}
-          {filtered.length === 0 && (
-            <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 13, padding: 14 }}>Sin resultados</p>
-          )}
-        </div>
-
-        <div
-          onClick={() => setAprender(!aprender)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-            background: aprender ? '#eaf3ff' : '#f6f8fb',
-            border: aprender ? '1px solid var(--blue3)' : '1px solid var(--line)',
-            borderRadius: 14, cursor: 'pointer', marginBottom: 12,
-          }}
-        >
-          <span style={{ fontSize: 22 }}>{aprender ? '🧠' : '☝️'}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
-              {aprender ? 'Aplicar a futuros movimientos' : 'Solo este movimiento'}
+        {step === 'cat' ? (
+          <>
+            <h3>Categorizar</h3>
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+              <b style={{ color: 'var(--ink)' }}>{nombreComercio}</b>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-              {aprender
-                ? 'Próximas veces con un nombre similar, usaré esta categoría.'
-                : 'Excepción puntual — no afecta futuros.'}
+            <input
+              placeholder="Buscar categoría..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 12, fontSize: 14, outline: 0, marginBottom: 12 }}
+            />
+            <div style={{ maxHeight: 460, overflowY: 'auto' }}>
+              {filtered.map((c) => {
+                const st = catStyle(c.slug);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => { setPickedId(c.id); setStep('scope'); }}
+                    style={{
+                      width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '12px 12px', marginBottom: 6, borderRadius: 12,
+                      background: '#fff',
+                      border: '1px solid var(--line)',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{ fontSize: 22, width: 32, textAlign: 'center' }}>{st.emoji}</span>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{c.nombre}</span>
+                    <span style={{ color: '#cfd6e0', fontSize: 18 }}>›</span>
+                  </button>
+                );
+              })}
+              {filtered.length === 0 && (
+                <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: 13, padding: 14 }}>Sin resultados</p>
+              )}
             </div>
-          </div>
-          <span style={{
-            width: 38, height: 22, borderRadius: 22, background: aprender ? 'var(--blue3)' : '#cfd6e0',
-            position: 'relative', flex: '0 0 38px', transition: 'background .15s',
-          }}>
-            <span style={{
-              position: 'absolute', top: 2, left: aprender ? 18 : 2,
-              width: 18, height: 18, borderRadius: '50%', background: '#fff',
-              boxShadow: '0 2px 4px rgba(0,0,0,.2)', transition: 'left .15s',
-            }} />
-          </span>
-        </div>
-
-        <button
-          disabled={saving || !pickedId || pickedId === current}
-          onClick={submit}
-          style={{
-            width: '100%', background: 'var(--blue3)', color: '#fff', border: 0,
-            borderRadius: 22, padding: 13, fontWeight: 700, fontSize: 15, cursor: 'pointer',
-            opacity: saving || !pickedId || pickedId === current ? 0.5 : 1,
-          }}
-        >
-          {saving ? 'Guardando…' : 'Confirmar'}
-        </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setStep('cat')}
+              style={{ background: 'none', border: 0, color: 'var(--blue3)', fontWeight: 700, fontSize: 14, padding: '4px 0', cursor: 'pointer', marginBottom: 4 }}
+            >‹ Volver</button>
+            <h3 style={{ marginBottom: 4 }}>¿Cómo aplico la regla?</h3>
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
+              <b style={{ color: 'var(--ink)' }}>{nombreComercio}</b> → {pickedCat ? <><span>{catStyle(pickedCat.slug).emoji}</span> <b style={{ color: 'var(--ink)' }}>{pickedCat.nombre}</b></> : '—'}
+            </div>
+            <div className="scope-picker">
+              <ScopeOption
+                active={scope === 'solo'}
+                emoji="☝️"
+                title="Solo este movimiento"
+                desc="Excepción puntual. No afecta futuros."
+                onClick={() => setScope('solo')}
+              />
+              <ScopeOption
+                active={scope === 'exacto'}
+                emoji="🧠"
+                title={`Cualquier "${nombreComercio}"`}
+                desc="Mismo nombre exacto en próximos movs."
+                onClick={() => setScope('exacto')}
+              />
+              {hasPrefijo && (
+                <ScopeOption
+                  active={scope === 'prefijo'}
+                  emoji="✨"
+                  title={`Empieza por "${firstWord}"`}
+                  desc="Atrapa todos los que empiezan así (existentes y futuros)."
+                  onClick={() => setScope('prefijo')}
+                />
+              )}
+            </div>
+            <button
+              disabled={saving || !pickedId}
+              onClick={submit}
+              style={{
+                width: '100%', background: 'var(--blue3)', color: '#fff', border: 0,
+                borderRadius: 22, padding: 13, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                opacity: saving || !pickedId ? 0.5 : 1, marginTop: 12,
+              }}
+            >
+              {saving ? 'Guardando…' : 'Confirmar'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -337,7 +378,7 @@ export function DetailSheet({
   movs: UiMov[];
   categorias: Categoria[];
   client: TaggerClient | null;
-  onChangeCat: (movId: string | number, newCategoriaId: string, aprender: boolean) => Promise<void> | void;
+  onChangeCat: (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void> | void;
   onClose: () => void;
   onDismissPhantom: (key: string) => void;
   onAskChat: (q: string) => void;
@@ -505,8 +546,8 @@ export function DetailSheet({
           categorias={categorias}
           nombreComercio={m.t}
           onClose={() => setEditOpen(false)}
-          onSave={async (newId, aprender) => {
-            await onChangeCat(m.id, newId, aprender);
+          onSave={async (newId, scope) => {
+            await onChangeCat(m.id, newId, scope);
           }}
         />
       )}

@@ -60,9 +60,8 @@ export interface UiMov {
   confidence?: 'alta' | 'media' | 'baja';
 }
 
-function iconFor(name: string): UiMov['ic'] {
+function iconFor(name: string, _descripcion: string | null): UiMov['ic'] {
   if (/shell|petrobras|copetrol|puma/i.test(name)) return 'shell';
-  if (/bianca|juan|mar.a|pedro|ana|carlos|transferencia/i.test(name)) return 'bn';
   return 'qr';
 }
 
@@ -74,7 +73,7 @@ export function mapMov(m: MovimientoListado): UiMov {
     s: 'Movimiento',
     amt: m.monto != null ? Number.parseFloat(m.monto) : 0,
     date: m.created_at.slice(0, 10),
-    ic: iconFor(name),
+    ic: iconFor(name, m.descripcion ?? null),
     cat: m.categoria?.slug ?? 'sin-categoria',
     catId: m.categoria?.id ?? null,
     recurring: false,

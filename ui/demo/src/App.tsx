@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TaggerClient, type Categoria } from '@mango/tagger-sdk';
 import { DEMO_ORIGEN, DEMO_USER, fetchAll, fetchDemoConfig, makeClient, type UiMov } from './api';
 import { catStyle } from './cat-style';
@@ -10,16 +10,25 @@ import {
 import { Alias, Bank, Efectiviza, Envia, Headset, MiCred, MovIcon, QR, Recarga, StatusBar } from './icons';
 import { CashflowView, CategoriesView, FutureView, TopView } from './views';
 import { RulesView } from './rules-view';
+import { BudgetView } from './budget-view';
 import { ChatDrawer, DetailSheet, NewMovementSheet, PersonalitySheet, WelcomeSheet, type ChatTurn } from './sheets';
+import { Manguito, type ManguitoPosition } from './manguito';
+import { pickNudge, type Nudge } from './nudge-engine';
+import type { Regla } from '@mango/tagger-sdk';
 
 const LS_FB = 'mango.demo.insightFb';
 const LS_DISMISS = 'mango.demo.phantomDismiss';
 const LS_CHAT = 'mango.demo.chatHistory';
 const LS_WELCOME = 'mango.demo.welcomeMov.v1';
+const LS_MANGUITO_DISMISS = 'mango.demo.manguitoDismiss';
+const LS_MANGUITO_INSIGHTS_SEEN = 'mango.demo.manguitoInsightsSeen';
+const LS_MANGUITO_SILENCE = 'mango.demo.manguitoSilencedUntil';
+const LS_MANGUITO_POS = 'mango.demo.manguitoPos';
 
 const VIEWS = [
   { id: 'list', em: '📋', label: 'Movimientos' },
   { id: 'cats', em: '🍩', label: 'Categorías' },
+  { id: 'budget', em: '🎯', label: 'Presupuestos' },
   { id: 'reglas', em: '⚙️', label: 'Reglas' },
   { id: 'top', em: '🏆', label: 'Top' },
   { id: 'cf', em: '📊', label: 'Cash flow' },
@@ -28,7 +37,25 @@ const VIEWS = [
 
 type ViewId = (typeof VIEWS)[number]['id'];
 
+// Hook: convierte scroll vertical en horizontal sobre un contenedor (para barras de chips).
+function useHorizontalWheel<T extends HTMLElement = HTMLDivElement>(): React.RefObject<T> {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+  return ref;
+}
+
 const CAT_FILTERS = [
+  { id: 'sin-categoria', label: 'Sin categoría' },
   { id: 'out', label: 'Gastos' },
   { id: 'in', label: 'Ingresos' },
   { id: 'supermercado', label: 'Supermercado' },
@@ -86,6 +113,7 @@ function IAChatBar({ onOpen }: { onOpen: () => void }) {
   return (
     <div
       onClick={onOpen}
+      data-demo-pulse="chat"
       style={{
         position: 'absolute', left: 0, right: 0, bottom: 0,
         background: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -94,7 +122,6 @@ function IAChatBar({ onOpen }: { onOpen: () => void }) {
         cursor: 'pointer',
       }}
     >
-      <span style={{ fontSize: 22 }}>✨</span>
       <div
         style={{
           flex: 1, background: '#f1f4f9', border: 0, borderRadius: 22,
@@ -220,6 +247,8 @@ function Movimientos({
   allMovs, forecast, profile, categorias, client, onChangeCat,
   feedback, onFeedback, onDismissPhantom, chatHistory, setChatHistory,
   chatOpen, setChatOpen, seedChat, onOpenNewMov, onBack, onRefresh,
+  nudge, mood, onNudgeCTA, onNudgeDismiss, onSilence, onUnsilence, silencedUntil,
+  position, onPositionChange, userRules, budgetEstado, insightsSeen, onMarkInsightsSeen,
 }: {
   onBack: () => void;
   allMovs: UiMov[];
@@ -228,7 +257,7 @@ function Movimientos({
   categorias: Categoria[];
   client: TaggerClient | null;
   onRefresh: () => void;
-  onChangeCat: (movId: string | number, newCategoriaId: string, aprender: boolean) => Promise<void>;
+  onChangeCat: (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => Promise<void>;
   feedback: Record<string, string>;
   onFeedback: (id: string, v: 'up' | 'down') => void;
   onDismissPhantom: (key: string) => void;
@@ -238,9 +267,55 @@ function Movimientos({
   setChatOpen: (b: boolean) => void;
   seedChat: (q: string) => void;
   onOpenNewMov: () => void;
+  nudge: Nudge | null;
+  mood: import('./nudge-engine').MangoMood;
+  onNudgeCTA: (n: Nudge) => void | Promise<void>;
+  onNudgeDismiss: (n: Nudge) => void;
+  onSilence: (hours: number) => void;
+  onUnsilence: () => void;
+  silencedUntil?: number;
+  position: ManguitoPosition;
+  onPositionChange: (p: ManguitoPosition) => void;
+  userRules: Regla[];
+  budgetEstado: import('@mango/tagger-sdk').PresupuestoEstado | null;
+  insightsSeen: Record<string, number>;
+  onMarkInsightsSeen: (ids: string[]) => void;
 }) {
   const [view, setView] = useState<ViewId>('list');
   const [cat, setCat] = useState<string | null>(null);
+  const [focusBudgetCat, setFocusBudgetCat] = useState<string | null>(null);
+  const vchipsRef = useHorizontalWheel();
+  const chipsRef = useHorizontalWheel();
+
+  useEffect(() => {
+    const VIEW_TARGETS: Record<string, ViewId> = {
+      'view:list': 'list', 'view:cats': 'cats', 'view:budget': 'budget',
+      'view:reglas': 'reglas', 'view:top': 'top', 'view:cf': 'cf', 'view:fut': 'fut',
+    };
+    const onFocus = (e: Event) => {
+      const target = (e as CustomEvent<{ target?: string }>).detail?.target;
+      if (!target) return;
+      // "tabs" → vista por defecto (Movimientos) para que la barra sea visible
+      const nextView = VIEW_TARGETS[target] ?? (target === 'tabs' ? 'list' : null);
+      if (nextView) setView(nextView);
+      window.setTimeout(() => {
+        // Centrar tab activo en la barra horizontal
+        if (nextView) {
+          const tabBtn = vchipsRef.current?.querySelector<HTMLElement>('.vchip.on');
+          tabBtn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+        const el = document.querySelector<HTMLElement>(`[data-demo-pulse="${target}"]`);
+        if (!el) return;
+        el.classList.remove('demo-pulse-on');
+        void el.offsetWidth;
+        el.classList.add('demo-pulse-on');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => el.classList.remove('demo-pulse-on'), 3200);
+      }, 90);
+    };
+    window.addEventListener('demo-focus', onFocus);
+    return () => window.removeEventListener('demo-focus', onFocus);
+  }, []);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<string | number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -254,6 +329,7 @@ function Movimientos({
         if (!cat) return true;
         if (cat === 'out') return m.amt < 0;
         if (cat === 'in') return m.amt > 0;
+        if (cat === 'sin-categoria') return m.catId == null;
         return m.cat === cat;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -298,6 +374,7 @@ function Movimientos({
           <button
             onClick={onOpenNewMov}
             title="Nuevo movimiento"
+            data-demo-pulse="newmov"
             style={{
               background: 'linear-gradient(135deg,#16c6a4,#0fa987)',
               color: '#fff', border: 0, borderRadius: '50%',
@@ -309,7 +386,7 @@ function Movimientos({
           >+</button>
         </div>
         {/* Summary + AvatarPulse ocultos por ahora */}
-        <div className="vchips">
+        <div className="vchips" ref={vchipsRef} data-demo-pulse="tabs">
           {VIEWS.map((v) => (
             <button key={v.id} className={'vchip ' + (view === v.id ? 'on' : '')} onClick={() => setView(v.id)}>
               <span className="em">{v.em}</span>{v.label}
@@ -319,35 +396,103 @@ function Movimientos({
         {view === 'list' && (
           <>
             <div className="vscope"><span className="dot" />Historial · {listFiltered.length} movimientos</div>
-            <div className="search">
+            <div className="search" data-demo-pulse="search">
               <span style={{ color: '#9aa6b7' }}>🔍</span>
               <input placeholder="Buscar comercio, categoría..." value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
-            <div className="chips">
+            <div className="chips" ref={chipsRef} data-demo-pulse="filters">
               <button className={'chip ' + (cat === null ? 'on' : '')} onClick={() => setCat(null)}>Todas</button>
               {CAT_FILTERS.map((ch) => (
                 <button key={ch.id} className={'chip ' + (cat === ch.id ? 'on' : '')} onClick={() => setCat(ch.id)}>{ch.label}</button>
               ))}
             </div>
-            {groupedList.length === 0 ? (
-              <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: 30 }}>Sin resultados</p>
-            ) : (
-              groupedList.map(([day, items]) => (
-                <div className="daygroup" key={day}>
-                  <div className="dayhdr">{dayLabel(day)}</div>
-                  {items.map(renderMov)}
-                </div>
-              ))
-            )}
+            <div data-demo-pulse="mov-detail">
+              {groupedList.length === 0 ? (
+                <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: 30 }}>Sin resultados</p>
+              ) : (
+                groupedList.map(([day, items]) => (
+                  <div className="daygroup" key={day}>
+                    <div className="dayhdr">{dayLabel(day)}</div>
+                    {items.map(renderMov)}
+                  </div>
+                ))
+              )}
+            </div>
           </>
         )}
-        {view === 'reglas' && <RulesView client={client} usuario={DEMO_USER} onAfterMutate={onRefresh} />}
-        {view === 'cats' && <CategoriesView movs={realMovs} onPickCat={(c) => { setCat(c); setView('list'); }} />}
-        {view === 'top' && <TopView movs={realMovs} onSel={setSel} />}
-        {view === 'cf' && <CashflowView movs={realMovs} />}
-        {view === 'fut' && <FutureView forecast={forecast} onSel={setSel} />}
+        {view === 'reglas' && (
+          <div data-demo-pulse="view:reglas">
+            <RulesView client={client} usuario={DEMO_USER} onAfterMutate={onRefresh} />
+          </div>
+        )}
+        {view === 'budget' && (
+          <div data-demo-pulse="view:budget">
+            <BudgetView
+              client={client}
+              usuario={DEMO_USER}
+              categorias={categorias}
+              focusCategoriaId={focusBudgetCat}
+              onClearFocus={() => setFocusBudgetCat(null)}
+              onSinAsignar={() => { setView('list'); setCat('sin-categoria'); }}
+              onViewMovs={(slug) => { setView('list'); setCat(slug); }}
+            />
+          </div>
+        )}
+        {view === 'cats' && (
+          <div data-demo-pulse="view:cats">
+            <CategoriesView movs={realMovs} onPickCat={(c) => { setCat(c); setView('list'); }} />
+          </div>
+        )}
+        {view === 'top' && (
+          <div data-demo-pulse="view:top">
+            <TopView movs={realMovs} onSel={setSel} />
+          </div>
+        )}
+        {view === 'cf' && (
+          <div data-demo-pulse="view:cf">
+            <CashflowView movs={realMovs} />
+          </div>
+        )}
+        {view === 'fut' && (
+          <div data-demo-pulse="view:fut">
+            <FutureView forecast={forecast} onSel={setSel} />
+          </div>
+        )}
       </div>
       <IAChatBar onOpen={() => setChatOpen(true)} />
+      <Manguito
+        mood={mood}
+        nudge={nudge}
+        onCTA={(n) => {
+          if (n.kind === 'sin-categoria') {
+            setView('list');
+            setCat('sin-categoria');
+            setQ('');
+          }
+          if (n.kind === 'spike-categoria' && n.payload?.categoriaSlug) {
+            setView('list');
+            setCat(n.payload.categoriaSlug);
+          }
+          void onNudgeCTA(n);
+        }}
+        onDismiss={onNudgeDismiss}
+        onSilence={(hours) => onSilence(hours)}
+        onUnsilence={onUnsilence}
+        silencedUntil={silencedUntil}
+        onOpenChat={() => setChatOpen(true)}
+        onAskChat={(q) => { setChatOpen(true); void seedChat(q); }}
+        onFilterPending={() => { setView('list'); setCat('sin-categoria'); }}
+        onOpenRules={() => { setView('reglas'); setCat(null); }}
+        onOpenBudget={(catId) => { setView('budget'); setCat(null); setFocusBudgetCat(catId ?? null); }}
+        userRules={userRules}
+        budgetEstado={budgetEstado}
+        seenInsights={insightsSeen}
+        onMarkSeen={onMarkInsightsSeen}
+        position={position}
+        onPositionChange={onPositionChange}
+        movs={allMovs}
+        forecast={forecast}
+      />
       {selected && (
         <DetailSheet
           m={selected}
@@ -472,6 +617,11 @@ export default function App() {
       const data = await fetchAll(client);
       setMovs(data.movs);
       setCategorias(data.categorias);
+      // Budget estado depende de movs — refrescar en paralelo (best-effort).
+      try {
+        const e = await client.presupuestos.estado({ usuario: DEMO_USER });
+        setBudgetEstado(e);
+      } catch { /* ignore */ }
     } catch (e) {
       setError((e as Error).message || 'Error al cargar datos');
     } finally {
@@ -494,21 +644,144 @@ export default function App() {
     return () => clearTimeout(t);
   }, [hasBooted]);
 
+  const [userRules, setUserRules] = useState<Regla[]>([]);
+  const [manguitoDismissed, setManguitoDismissed] = useState<Record<string, number>>(() => loadLS(LS_MANGUITO_DISMISS, {}));
+  const [insightsSeen, setInsightsSeen] = useState<Record<string, number>>(() => loadLS(LS_MANGUITO_INSIGHTS_SEEN, {}));
+  const markInsightsSeen = useCallback((ids: string[]) => {
+    setInsightsSeen((prev) => {
+      const ts = Date.now();
+      const next = { ...prev };
+      for (const id of ids) next[id] = ts;
+      // GC: dropea entradas con >7d.
+      const cutoff = ts - 7 * 86_400_000;
+      for (const k of Object.keys(next)) {
+        if ((next[k] ?? 0) < cutoff) delete next[k];
+      }
+      saveLS(LS_MANGUITO_INSIGHTS_SEEN, next);
+      return next;
+    });
+  }, []);
+  const [silencedUntil, setSilencedUntil] = useState<number | undefined>(() => {
+    const raw = loadLS<number | null>(LS_MANGUITO_SILENCE, null);
+    return raw && raw > Date.now() ? raw : undefined;
+  });
+
+  useEffect(() => {
+    if (!client) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const rs = await client.reglas.listar({ scope: `usuario:${DEMO_USER}` });
+        if (!cancel) setUserRules(rs);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancel = true; };
+  }, [client, movs]);
+
+  const [budgetEstado, setBudgetEstado] = useState<import('@mango/tagger-sdk').PresupuestoEstado | null>(null);
+  useEffect(() => {
+    if (!client) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const e = await client.presupuestos.estado({ usuario: DEMO_USER });
+        if (!cancel) setBudgetEstado(e);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancel = true; };
+  }, [client, movs]);
+
   const realMovs = movs;
   const forecast = useMemo(() => forecastEngine(realMovs, dismissed), [realMovs, dismissed]);
   const allMovs = useMemo(() => [...realMovs, ...forecast.phantoms], [realMovs, forecast]);
   const profile = useMemo(() => personalityEngine(realMovs), [realMovs]);
 
-  const onChangeCat = useCallback(async (movId: string | number, newCategoriaId: string, aprender: boolean) => {
+  const nudgeResult = useMemo(
+    () => pickNudge({
+      movs: allMovs,
+      userRules,
+      dismissedIds: manguitoDismissed,
+      silencedUntil,
+    }),
+    [allMovs, userRules, manguitoDismissed, silencedUntil],
+  );
+
+  const dismissNudge = useCallback((n: Nudge) => {
+    const next = { ...manguitoDismissed, [n.id]: Date.now() };
+    setManguitoDismissed(next);
+    saveLS(LS_MANGUITO_DISMISS, next);
+  }, [manguitoDismissed]);
+
+  const silenceManguito = useCallback((hours: number = 24) => {
+    const until = Date.now() + hours * 3_600_000;
+    setSilencedUntil(until);
+    saveLS(LS_MANGUITO_SILENCE, until);
+  }, []);
+
+  const unsilenceManguito = useCallback(() => {
+    setSilencedUntil(undefined);
+    try { localStorage.removeItem(LS_MANGUITO_SILENCE); } catch { /* ignore */ }
+  }, []);
+
+  const [manguitoPos, setManguitoPos] = useState<ManguitoPosition>(() => loadLS(LS_MANGUITO_POS, { corner: 'bl' }));
+  const updateManguitoPos = useCallback((p: ManguitoPosition) => {
+    setManguitoPos(p);
+    saveLS(LS_MANGUITO_POS, p);
+  }, []);
+
+  const onChangeCat = useCallback(async (movId: string | number, newCategoriaId: string, scope: 'solo' | 'exacto' | 'prefijo') => {
     if (!client) return;
-    await client.movimientos.corregir({
-      movimientoId: String(movId),
-      categoriaIdNueva: newCategoriaId,
-      usuario: DEMO_USER,
-      aprender,
-    });
-    void refresh();
-  }, [client, refresh]);
+    // 'solo': solo este. 'exacto': aprende literal. 'prefijo': crea regla regex + reprocesa sin-cat coincidentes.
+    if (scope === 'prefijo') {
+      // 1) Aplicar corrección al mov actual sin aprender (la regla la creamos a mano).
+      await client.movimientos.corregir({
+        movimientoId: String(movId),
+        categoriaIdNueva: newCategoriaId,
+        usuario: DEMO_USER,
+        aprender: false,
+      });
+      // 2) Crear regla regex 'comienza con primera palabra'.
+      const target = movs.find((m) => String(m.id) === String(movId));
+      const firstWord = (target?.t ?? '').trim().split(/\s+/)[0]?.toUpperCase() ?? '';
+      const cat = categorias.find((c) => c.id === newCategoriaId);
+      if (firstWord && firstWord.length >= 3 && cat) {
+        try {
+          await client.reglas.crear({
+            scope: `usuario:${DEMO_USER}`,
+            tipo: 'regex',
+            valor: `^${firstWord}\\b`,
+            categoriaSlug: cat.slug,
+            descripcion: `Auto: empieza por ${firstWord}`,
+          });
+        } catch (e) { console.warn('crear regla prefijo falló', e); }
+        // 3) Aplicar corrección directa a movs sin-cat cuyo nombre empiece por la misma palabra.
+        //    (Reprocesar no pasa `usuario` al pipeline, así que la regla user-scope no se aplicaría
+        //     al re-categorizar — corregir directo es más rápido y confiable.)
+        const coinciden = movs.filter((m) =>
+          m.catId == null
+          && !m.forecast
+          && String(m.id) !== String(movId)
+          && (m.t ?? '').toUpperCase().startsWith(firstWord),
+        );
+        await Promise.allSettled(coinciden.map((m) =>
+          client.movimientos.corregir({
+            movimientoId: String(m.id),
+            categoriaIdNueva: newCategoriaId,
+            usuario: DEMO_USER,
+            aprender: false,
+          }),
+        ));
+      }
+    } else {
+      await client.movimientos.corregir({
+        movimientoId: String(movId),
+        categoriaIdNueva: newCategoriaId,
+        usuario: DEMO_USER,
+        aprender: scope === 'exacto',
+      });
+    }
+    await refresh();
+  }, [client, refresh, movs, categorias]);
 
   const onCreate = useCallback(async (input: { nombreComercio: string; monto: number; descripcion: string; categoriaId?: string }) => {
     if (!client) return null;
@@ -519,7 +792,7 @@ export default function App() {
       origen: DEMO_ORIGEN,
       ...(input.categoriaId ? { categoriaId: input.categoriaId, aprender: true } : {}),
     });
-    void refresh();
+    await refresh();
     return {
       categoria: r.categoria?.nombre ?? null,
       fuente: r.fuente,
@@ -661,7 +934,51 @@ export default function App() {
             chatOpen={chatOpen}
             setChatOpen={setChatOpen}
             seedChat={seedChat}
+            userRules={userRules}
+            budgetEstado={budgetEstado}
+            insightsSeen={insightsSeen}
+            onMarkInsightsSeen={markInsightsSeen}
             onOpenNewMov={() => setShowNewMov(true)}
+            nudge={nudgeResult.nudge}
+            mood={nudgeResult.mood}
+            onNudgeCTA={async (n) => {
+              if (n.kind === 'sin-categoria') {
+                // Filtra movs sin categoria — el componente Movimientos lo recibe via prop
+                dismissNudge(n);
+              } else if (n.kind === 'spike-categoria') {
+                dismissNudge(n);
+              } else if (n.kind === 'recurrencia' && client && n.payload?.nombreComercio) {
+                const slug = n.payload.categoriaSlug && n.payload.categoriaSlug !== 'sin-categoria'
+                  ? n.payload.categoriaSlug
+                  : null;
+                if (!slug) {
+                  setError('No puedo aprender: ningún movimiento con este nombre tiene categoría asignada todavía. Categorizá uno primero.');
+                  dismissNudge(n);
+                  return;
+                }
+                try {
+                  const r = await client.reglas.crear({
+                    scope: `usuario:${DEMO_USER}`,
+                    tipo: 'literal',
+                    valor: n.payload.nombreComercio,
+                    categoriaSlug: slug,
+                    descripcion: 'Sugerencia Manguito',
+                  });
+                  console.log('regla creada', r);
+                  void refresh();
+                } catch (e) {
+                  console.warn('crear regla falló', e);
+                  setError('No pude crear la regla: ' + ((e as Error).message ?? 'error desconocido'));
+                }
+                dismissNudge(n);
+              }
+            }}
+            onNudgeDismiss={dismissNudge}
+            onSilence={silenceManguito}
+            onUnsilence={unsilenceManguito}
+            silencedUntil={silencedUntil}
+            position={manguitoPos}
+            onPositionChange={updateManguitoPos}
           />
         )}
         {showWelcome && (

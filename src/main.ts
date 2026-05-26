@@ -30,6 +30,7 @@ import { crearIaFallback } from './pipeline/ia-fallback.js';
 import { crearReglasLoader, crearReglasWriter } from './db/repos/reglas.js';
 import { crearCapaReglas } from './layers/reglas.js';
 import { reglasRoute } from './api/routes/reglas.js';
+import { presupuestosRoute } from './api/routes/presupuestos.js';
 import { crearMccWriter } from './db/repos/mcc-writer.js';
 import { crearMccPorNombreLookup } from './db/repos/comercios.js';
 import { crearMccLookup } from './db/repos/mcc.js';
@@ -153,6 +154,7 @@ async function main() {
   await app.register(correccionRoute(correccionSvc, categoriaResolver));
   const reglasWriter = crearReglasWriter(db, (scope) => capaReglas.invalidar(scope));
   await app.register(reglasRoute(reglasWriter));
+  await app.register(presupuestosRoute(db));
   const categoriaWriter = crearCategoriaWriter(db, categoriaResolver);
   await app.register(categoriasRoute(categoriasReader, categoriaWriter));
   const categoriasSimilaresReader = crearCategoriasSimilaresReader(db);

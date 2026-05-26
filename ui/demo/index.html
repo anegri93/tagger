@@ -23,10 +23,387 @@
       .nm-result{background:linear-gradient(135deg,#eaf3ff,#f6f2ff);border-radius:12px;padding:12px 14px;font-size:13px;margin-top:10px}
       .nm-result b{display:block;font-size:14px;margin-bottom:2px}
       .demo-banner{background:#fff8eb;border:1px solid #ffd99c;border-radius:12px;padding:10px 12px;font-size:12px;color:#a76b00;margin-bottom:10px}
+
+      /* Manguito avatar + bubble */
+      .manguito-avatar{position:absolute;left:14px;bottom:96px;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#eaf3ff 65%,#cfe0f5);border:2px solid #fff;box-shadow:0 8px 22px rgba(10,40,90,.18);display:grid;place-items:center;cursor:pointer;z-index:36;padding:0}
+      .manguito-avatar:active{transform:scale(.92)}
+      .manguito-face{font-size:30px;line-height:1;display:inline-block;transform-origin:center}
+      .manguito-mood-tranquilo .manguito-face{animation:m-float 3s ease-in-out infinite}
+      .manguito-mood-curioso .manguito-face{animation:m-tilt 2.2s ease-in-out infinite}
+      .manguito-mood-alerta .manguito-face{animation:m-pulse .65s ease-in-out infinite}
+      .manguito-mood-silencio{opacity:.55}
+      .manguito-mood-silencio .manguito-face{animation:m-fade 3.5s ease-in-out infinite}
+      .manguito-mood-celebrando .manguito-face{animation:m-bounce 1.1s ease-in-out infinite}
+
+      @keyframes m-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+      @keyframes m-tilt{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+      @keyframes m-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+      @keyframes m-fade{0%,100%{opacity:.55}50%{opacity:1}}
+      @keyframes m-bounce{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(8deg)}}
+
+      .manguito-bubble{position:absolute;left:78px;bottom:108px;max-width:240px;background:#fff;border:1px solid var(--line);border-radius:14px;border-bottom-left-radius:4px;box-shadow:0 14px 32px rgba(10,40,90,.16);padding:12px 14px 10px;z-index:37;animation:m-bubble-in .28s ease}
+      .manguito-bubble-curioso{border-color:#cfe0f5}
+      .manguito-bubble-alerta{border-color:#ffd99c;background:#fffaf2}
+      .manguito-bubble::before{content:"";position:absolute;left:-7px;bottom:14px;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-right:8px solid #fff}
+      .manguito-bubble-alerta::before{border-right-color:#fffaf2}
+      .manguito-bubble-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;padding-right:14px}
+      .manguito-bubble-body{font-size:12px;color:var(--muted);line-height:1.35;margin-bottom:10px}
+      .manguito-bubble-actions{display:flex;gap:6px;flex-wrap:wrap}
+      .manguito-btn{border:0;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+      .manguito-btn.primary{background:var(--blue3);color:#fff}
+      .manguito-btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+      .manguito-bubble-close{position:absolute;top:6px;right:8px;background:none;border:0;color:#9aa6b7;font-size:18px;line-height:1;cursor:pointer;padding:2px 4px}
+
+      @keyframes m-bubble-in{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+      /* Manguito menu (panel de opciones al click) */
+      .manguito-menu{position:absolute;width:240px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px rgba(10,40,90,.22);padding:14px 14px 12px;z-index:38;animation:m-bubble-in .25s ease;touch-action:none}
+      .manguito-menu.compact{width:auto;min-width:170px;max-width:220px;padding:8px;display:flex;flex-direction:column;gap:6px}
+      .manguito-menu.compact .manguito-bubble-close{top:2px;right:4px}
+      .manguito-menu.compact .manguito-menu-item{padding:8px 10px;font-size:12px;margin-bottom:0;border-radius:10px}
+      .manguito-menu.compact .manguito-menu-silence-options{display:flex;flex-direction:column;gap:4px;margin:0}
+      .manguito-menu.compact .manguito-menu-chip{display:block;width:100%;text-align:left;padding:7px 10px;font-size:12px;border-radius:10px;background:#f6f8fb;border:0;color:var(--ink);font-weight:700;cursor:pointer;font-family:inherit}
+      .manguito-menu.compact .manguito-menu-chip:hover{background:#eaf3ff;color:var(--blue3)}
+      .manguito-menu[data-side="left"]{border-bottom-left-radius:4px}
+      .manguito-menu[data-side="right"]{border-bottom-right-radius:4px}
+      .manguito-menu-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+      .manguito-menu-emoji{font-size:28px;line-height:1}
+      .manguito-menu-title{font-size:14px;font-weight:800;color:var(--ink)}
+      .manguito-menu-mood{font-size:11px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+      .manguito-menu-desc{font-size:12px;color:var(--muted);line-height:1.35;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+      .manguito-menu-item{display:block;width:100%;text-align:left;background:#f6f8fb;border:0;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;margin-bottom:6px;font-family:inherit}
+      .manguito-menu-item:hover{background:#eaf3ff}
+      .manguito-menu-item.primary{background:var(--blue3);color:#fff}
+      .manguito-menu-item.primary:hover{filter:brightness(1.1)}
+      .manguito-menu-group{margin:4px 0 6px}
+      .manguito-menu-group-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-left:2px}
+      .manguito-menu-silence-options{display:flex;gap:6px;flex-wrap:wrap}
+      .manguito-menu-chip{background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+      .manguito-menu-chip:hover{background:#eaf3ff;border-color:var(--blue3);color:var(--blue3)}
+      .manguito-menu-tip{font-size:10px;color:#9aa6b7;text-align:center;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-style:italic}
+
+      /* Single bubble pager (insights mobile-friendly, una a la vez con tail al avatar) */
+      .manguito-pager{position:absolute;width:200px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 30px rgba(10,40,90,.18);padding:12px 14px 8px;z-index:37;cursor:pointer;animation:m-bubble-in .25s ease;font-family:inherit}
+      .manguito-pager.tone-ok{background:#e6f4ec;border-color:#bcd9c7}
+      .manguito-pager.tone-warn{background:#fff4e6;border-color:#ffd99c}
+      .manguito-pager.tone-info{background:#eaf3ff;border-color:#cfe0f5}
+      .manguito-pager-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;padding-right:14px}
+      .manguito-pager-value{font-size:15px;font-weight:800;color:var(--ink);line-height:1.2;word-break:break-word}
+      .manguito-pager-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3}
+      .manguito-pager-dots{display:flex;gap:4px;justify-content:center;margin-top:8px}
+      .manguito-pager-dot{width:5px;height:5px;border-radius:50%;background:rgba(10,40,90,.18)}
+      .manguito-pager-dot.on{background:var(--blue3);width:14px;border-radius:3px}
+      .manguito-pager-close{position:absolute;top:6px;right:8px;background:none;border:0;color:#9aa6b7;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;font-family:inherit}
+      /* Tail apuntando al avatar */
+      .manguito-pager::after{content:"";position:absolute;width:0;height:0;border:7px solid transparent}
+      .manguito-pager.side-left::after{left:-13px;border-right-color:#fff}
+      .manguito-pager.side-left.tone-ok::after{border-right-color:#e6f4ec}
+      .manguito-pager.side-left.tone-warn::after{border-right-color:#fff4e6}
+      .manguito-pager.side-left.tone-info::after{border-right-color:#eaf3ff}
+      .manguito-pager.side-right::after{right:-13px;border-left-color:#fff}
+      .manguito-pager.side-right.tone-ok::after{border-left-color:#e6f4ec}
+      .manguito-pager.side-right.tone-warn::after{border-left-color:#fff4e6}
+      .manguito-pager.side-right.tone-info::after{border-left-color:#eaf3ff}
+      .manguito-pager.side-top::after{top:18px}
+      .manguito-pager.side-bottom::after{bottom:18px}
+
+      /* Backdrop blur cuando panel manguito abierto — da jerarquía visual */
+      .manguito-backdrop{position:absolute;inset:0;background:rgba(10,40,90,.04);backdrop-filter:blur(0.6px);-webkit-backdrop-filter:blur(0.6px);z-index:35;animation:m-backdrop-in .18s ease}
+      @keyframes m-backdrop-in{from{opacity:0}to{opacity:1}}
+
+      /* Stack como popover único — un solo contenedor con header + items adentro */
+      .manguito-stack{position:absolute;width:220px;z-index:37;font-family:inherit;background:#fff;border:1px solid rgba(10,40,90,.06);border-radius:16px;box-shadow:0 12px 32px rgba(10,40,90,.16),0 2px 6px rgba(10,40,90,.06);overflow:hidden;animation:m-bubble-in .22s ease}
+      .manguito-stack-header{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:10px 14px 6px;border-bottom:1px solid rgba(10,40,90,.05)}
+      .manguito-stack-card{position:relative;background:transparent;border:0;border-radius:0;box-shadow:none;padding:10px 14px;text-align:left;cursor:pointer;width:100%;font-family:inherit;transition:background .12s ease;display:block;animation:none}
+      .manguito-stack-card + .manguito-stack-card{border-top:1px solid rgba(10,40,90,.05)}
+      .manguito-stack-card::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 2px 2px 0;background:transparent}
+      .manguito-stack-card.tone-warn::before{background:#f0a020}
+      .manguito-stack-card.tone-ok::before{background:#5bb47a}
+      .manguito-stack-card.tone-info::before{background:var(--blue3,#3a7bff)}
+      .manguito-stack-card:hover{background:#f6f8fb}
+      .manguito-stack-card:active{background:#eaf3ff}
+      .manguito-stack-label{font-size:9.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+      .manguito-stack-value{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
+      .manguito-stack-hint{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
+      /* Primary card (primer insight) */
+      .manguito-stack-card.primary{padding:12px 14px}
+      .manguito-stack-card.primary .manguito-stack-value{font-size:14.5px;font-weight:800}
+      /* Compact cards (secundarios) */
+      .manguito-stack-card.compact{padding:8px 14px}
+      .manguito-stack-compact{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+      .manguito-stack-compact-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex:0 0 auto}
+      .manguito-stack-compact-value{font-size:12px;font-weight:700;color:var(--ink);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+      /* Sugerencias de chat (sin tone bar, padding uniforme) */
+      .manguito-stack-card.sugg{padding:11px 14px}
+      .manguito-stack-card.sugg::before{display:none}
+      .manguito-stack-sugg{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+
+      /* Mini-burbuja junto a Manguito para incitar al tap.
+         Dos variantes: "dots" (info) y "count" (badge rojo con número, acción urgente). */
+      .manguito-hint{position:absolute;display:inline-flex;align-items:center;justify-content:center;gap:3px;border-radius:14px;cursor:pointer;z-index:36;font-family:inherit;animation:m-bubble-in .25s ease,m-hint-bounce 2.4s ease-in-out 1s infinite}
+      .manguito-hint::after{content:"";position:absolute;width:0;height:0;border:5px solid transparent;top:50%;transform:translateY(-50%)}
+      /* Variante dots (info) */
+      .manguito-hint-dots{background:#fff;border:1px solid rgba(10,40,90,.08);padding:5px 9px;box-shadow:0 6px 16px rgba(10,40,90,.10)}
+      .manguito-hint-dots[data-side="left"]::after{left:-9px;border-right-color:#fff}
+      .manguito-hint-dots[data-side="right"]::after{right:-9px;border-left-color:#fff}
+      .manguito-hint-dot{width:4px;height:4px;border-radius:50%;background:var(--blue3,#3a7bff);display:block;animation:m-hint-blink 1.4s ease-in-out infinite}
+      .manguito-hint-dot:nth-child(2){animation-delay:.18s}
+      .manguito-hint-dot:nth-child(3){animation-delay:.36s}
+      /* Variante count (acción) */
+      .manguito-hint-count{display:flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;background:#e8443a;color:#fff;font-size:12px;font-weight:800;border-radius:11px;box-shadow:0 6px 16px rgba(232,68,58,.35);animation:m-hint-pulse 1.6s ease-in-out infinite}
+      .manguito-hint.manguito-hint-count{background:transparent;border:0;box-shadow:none;padding:0}
+      .manguito-hint.manguito-hint-count::after{display:none}
+      @keyframes m-hint-blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+      @keyframes m-hint-pulse{0%,100%{transform:scale(1);box-shadow:0 6px 16px rgba(232,68,58,.35)}50%{transform:scale(1.08);box-shadow:0 8px 22px rgba(232,68,58,.5)}}
+      @keyframes m-hint-bounce{0%,100%{transform:translateX(0)}50%{transform:translateX(-2px)}}
+      .manguito-hint[data-side="right"]{animation:m-bubble-in .25s ease,m-hint-bounce-right 2.4s ease-in-out 1s infinite}
+      @keyframes m-hint-bounce-right{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
+
+      /* Burbujas orbitales (insights al rededor del avatar) */
+      .manguito-orbit-wrap{position:absolute;width:56px;height:56px;z-index:37;pointer-events:none}
+      .manguito-orbit-bubble{position:absolute;background:#fff;border:1px solid var(--line);border-radius:18px;padding:6px 10px 6px 8px;box-shadow:0 10px 22px rgba(10,40,90,.18);display:flex;align-items:center;gap:7px;min-width:96px;max-width:170px;font-family:inherit;animation:m-bubble-pop .35s cubic-bezier(.34,1.56,.64,1) both;pointer-events:auto;cursor:default}
+      .manguito-orbit-bubble.tone-ok{background:#e6f4ec;border-color:#bcd9c7}
+      .manguito-orbit-bubble.tone-warn{background:#fff4e6;border-color:#ffd99c}
+      .manguito-orbit-bubble.tone-info{background:#eaf3ff;border-color:#cfe0f5}
+      .manguito-orbit-icon{font-size:18px;line-height:1;flex:0 0 22px;text-align:center}
+      .manguito-orbit-body{flex:1;min-width:0;line-height:1.15}
+      .manguito-orbit-label{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .manguito-orbit-value{font-size:12px;font-weight:800;color:var(--ink);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+      /* Slots: lado izquierdo (avatar a la izquierda → burbujas a la derecha) */
+      .manguito-orbit-wrap.side-left .manguito-orbit-slot-0{left:64px;top:-44px}
+      .manguito-orbit-wrap.side-left .manguito-orbit-slot-1{left:74px;top:14px}
+      .manguito-orbit-wrap.side-left .manguito-orbit-slot-2{left:64px;top:72px}
+      /* Slots: lado derecho (avatar a la derecha → burbujas a la izquierda) */
+      .manguito-orbit-wrap.side-right .manguito-orbit-slot-0{right:64px;top:-44px;text-align:right}
+      .manguito-orbit-wrap.side-right .manguito-orbit-slot-1{right:74px;top:14px;text-align:right}
+      .manguito-orbit-wrap.side-right .manguito-orbit-slot-2{right:64px;top:72px;text-align:right}
+
+      .manguito-orbit-close{position:absolute;top:-10px;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:14px;line-height:1;border-radius:50%;width:22px;height:22px;cursor:pointer;pointer-events:auto;display:grid;place-items:center;box-shadow:0 4px 10px rgba(10,40,90,.15);padding:0}
+      .manguito-orbit-wrap.side-left .manguito-orbit-close{left:-10px}
+      .manguito-orbit-wrap.side-right .manguito-orbit-close{right:-10px}
+
+      @keyframes m-bubble-pop{from{opacity:0;transform:scale(.4) translateX(-12px)}to{opacity:1;transform:scale(1) translateX(0)}}
+      .manguito-orbit-wrap.side-right .manguito-orbit-bubble{animation-name:m-bubble-pop-right}
+      @keyframes m-bubble-pop-right{from{opacity:0;transform:scale(.4) translateX(12px)}to{opacity:1;transform:scale(1) translateX(0)}}
+
+      .manguito-insights{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+      .manguito-insight{display:flex;align-items:flex-start;gap:10px;background:#f6f8fb;border-radius:12px;padding:8px 10px}
+      .manguito-insight.tone-ok{background:#e6f4ec}
+      .manguito-insight.tone-warn{background:#fff4e6}
+      .manguito-insight.tone-info{background:#eaf3ff}
+      .manguito-insight-icon{font-size:20px;line-height:1;flex:0 0 24px;text-align:center}
+      .manguito-insight-body{flex:1;min-width:0}
+      .manguito-insight-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+      .manguito-insight-value{font-size:13px;font-weight:800;color:var(--ink);margin-top:1px;word-break:break-word}
+      .manguito-insight-hint{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.3}
+
+      .manguito-avatar{touch-action:none;user-select:none;-webkit-user-select:none}
+
+      /* Demo explainer panels (alrededor del teléfono) */
+      .demo-explainer{position:fixed;top:50%;transform:translateY(-50%);width:300px;max-height:90vh;overflow-y:auto;z-index:5;padding:8px;font-family:inherit}
+      .demo-explainer::-webkit-scrollbar{width:6px}
+      .demo-explainer::-webkit-scrollbar-thumb{background:rgba(10,40,90,.15);border-radius:3px}
+      .demo-explainer.left{left:24px}
+      .demo-explainer.right{right:24px}
+      .demo-explainer-title{font-size:22px;font-weight:800;color:var(--ink);margin:0 0 6px;letter-spacing:-.01em}
+      .demo-explainer-sub{font-size:13px;color:var(--muted);line-height:1.4;margin:0 0 18px}
+      .demo-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 6px rgba(10,40,90,.04)}
+      .demo-card.active{border-color:var(--blue3);box-shadow:0 6px 16px rgba(24,119,242,.12)}
+      .demo-card-head{display:flex;align-items:flex-start;gap:10px}
+      .demo-num{flex:0 0 26px;width:26px;height:26px;border-radius:50%;background:#eaf3ff;color:var(--blue3);font-size:12px;font-weight:800;display:grid;place-items:center}
+      .demo-card.active .demo-num{background:var(--blue3);color:#fff}
+      .demo-card-body{flex:1;min-width:0}
+      .demo-card-title{font-size:14px;font-weight:800;color:var(--ink);line-height:1.25}
+      .demo-card-desc{font-size:12px;color:var(--muted);line-height:1.4;margin-top:3px}
+      .demo-tag{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:#f1f4f9;border-radius:6px;padding:2px 6px;margin-top:6px;margin-right:4px}
+      .demo-side-rail{width:4px;border-radius:2px;background:#cfd6e0;align-self:stretch;flex:0 0 4px}
+      .demo-side-rail.blue{background:var(--blue3)}
+      .demo-side-rail.purple{background:var(--purple)}
+      .demo-side-rail.teal{background:var(--teal)}
+      .demo-side-rail.amber{background:var(--amber)}
+      .demo-side-rail.pink{background:var(--pink)}
+      .demo-card.right{display:flex;gap:12px;align-items:flex-start;padding:12px 14px 12px 12px}
+      .demo-idea{background:linear-gradient(135deg,#1877f2,#7c5cff);color:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;box-shadow:0 12px 28px rgba(24,119,242,.25)}
+      .demo-idea h4{margin:0 0 6px;font-size:13px;font-weight:700;opacity:.85;letter-spacing:.04em;text-transform:uppercase}
+      .demo-idea p{margin:0;font-size:13px;line-height:1.45}
+      .demo-idea b{font-weight:800}
+      @media (max-width:1400px){.demo-explainer{display:none}}
+
+      /* Click + pulse en demo */
+      .demo-card[data-target]{cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+      .demo-card[data-target]:hover{transform:translateY(-1px);border-color:var(--blue3);box-shadow:0 8px 18px rgba(24,119,242,.14)}
+      .demo-card[data-target]:active{transform:translateY(0)}
+      .demo-pulse-on{position:relative;animation:demo-pulse 1.4s ease-in-out 2;border-radius:14px}
+      @keyframes demo-pulse{
+        0%,100%{box-shadow:0 0 0 0 rgba(24,119,242,0),0 0 0 0 rgba(24,119,242,0)}
+        35%{box-shadow:0 0 0 4px rgba(24,119,242,.35),0 0 18px 6px rgba(24,119,242,.18)}
+      }
     </style>
   </head>
   <body>
+    <aside class="demo-explainer left" aria-label="Funcionalidades de Movimientos">
+      <h1 class="demo-explainer-title">Movimientos IA</h1>
+      <p class="demo-explainer-sub">Demo guiada de las features implementadas en la pantalla de Movimientos. Recorré la app real con estas referencias.</p>
+
+      <div class="demo-card active" data-target="tabs">
+        <div class="demo-card-head">
+          <div class="demo-num">1</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Tabs de vistas</div>
+            <div class="demo-card-desc">Movimientos · Categorías · Presupuestos · Reglas · Top · Cash flow · Futuro. Scroll horizontal con rueda del mouse.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="filters">
+        <div class="demo-card-head">
+          <div class="demo-num">2</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Filtros y búsqueda</div>
+            <div class="demo-card-desc">Chips por tipo y categoría + buscador por comercio. Lista agrupada por día con etiquetas relativas (hoy, ayer).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="mov-detail">
+        <div class="demo-card-head">
+          <div class="demo-num">3</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Detalle + cambiar categoría</div>
+            <div class="demo-card-desc">Tap en un movimiento abre sheet. Cambiá la categoría y opcionalmente <b>aprendé</b> una regla para ese comercio.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="newmov">
+        <div class="demo-card-head">
+          <div class="demo-num">4</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Nuevo movimiento (FAB +)</div>
+            <div class="demo-card-desc">Botón teal arriba a la derecha. Sheet con comercio, monto, signo y categoría — todo se persiste al instante.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="view:budget">
+        <div class="demo-card-head">
+          <div class="demo-num">5</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Presupuestos mensuales</div>
+            <div class="demo-card-desc">Definí tope por categoría. Barras con estado <b>warn</b> / <b>over</b> + pulso cuando una compra empuja el límite.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="view:reglas">
+        <div class="demo-card-head">
+          <div class="demo-num">6</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Reglas aprendidas</div>
+            <div class="demo-card-desc">Cada regla mapea comercio → categoría. Gestionables desde la vista Reglas. El sistema mejora con el uso.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="view:fut">
+        <div class="demo-card-head">
+          <div class="demo-num">7</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Futuro + forecast</div>
+            <div class="demo-card-desc">Vista Futuro con movimientos fantasma (recurrentes proyectados) y saldo estimado a fin de mes.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="manguito">
+        <div class="demo-card-head">
+          <div class="demo-num">8</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Manguito (asistente)</div>
+            <div class="demo-card-desc">Avatar arrastrable con mood (tranquilo / curioso / alerta / celebrando). Insights en stack, nudges con CTA, silenciable por horas.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-card" data-target="chat">
+        <div class="demo-card-head">
+          <div class="demo-num">9</div>
+          <div class="demo-card-body">
+            <div class="demo-card-title">Chat Mango IA</div>
+            <div class="demo-card-desc">Barra inferior abre drawer contextual: preguntas en lenguaje natural sobre tus movimientos y forecast.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-idea">
+        <h4>Idea central</h4>
+        <p>La pantalla deja de ser una <b>lista del pasado</b> y se vuelve un <b>asistente del presente y del futuro</b> de tu plata.</p>
+      </div>
+    </aside>
+
     <div id="root"></div>
+
+    <aside class="demo-explainer right" aria-label="Qué resuelve cada feature">
+      <h1 class="demo-explainer-title">¿Qué resuelve?</h1>
+      <p class="demo-explainer-sub">Por qué cada pieza existe y qué fricción del usuario elimina.</p>
+
+      <div class="demo-card right" data-target="view:cats">
+        <div class="demo-side-rail blue"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Categorización sin esfuerzo</div>
+          <div class="demo-card-desc">Reglas + detalle rápido convierten la limpieza manual en un tap. El sistema aprende del usuario.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="view:fut">
+        <div class="demo-side-rail purple"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Mirar hacia adelante</div>
+          <div class="demo-card-desc">Forecast con fantasmas + saldo proyectado. Deja de ser archivo histórico, se vuelve planificador.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="view:budget">
+        <div class="demo-side-rail teal"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Control sin fricción</div>
+          <div class="demo-card-desc">Presupuestos con warn / over avisan antes que duela. Sin obligar al usuario a abrir reportes.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="manguito">
+        <div class="demo-side-rail amber"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Asistente proactivo, no invasivo</div>
+          <div class="demo-card-desc">Manguito surge cuando hay algo útil; se silencia con un tap. Estado emocional refleja salud financiera.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="chat">
+        <div class="demo-side-rail blue"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Conversación sobre tu plata</div>
+          <div class="demo-card-desc">Chat con contexto del usuario. Preguntas comunes resueltas sin navegar menús.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="mov-detail">
+        <div class="demo-side-rail pink"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Acciones reversibles</div>
+          <div class="demo-card-desc">Cambiar categoría, cancelar fantasma, ajustar presupuesto — todo en vivo, sin estados rotos.</div>
+        </div>
+      </div>
+
+      <div class="demo-card right" data-target="tabs">
+        <div class="demo-side-rail teal"></div>
+        <div class="demo-card-body">
+          <div class="demo-card-title">Motor común</div>
+          <div class="demo-card-desc">Movimientos, presupuestos, reglas y chat comparten el mismo dataset. Cambiar uno actualiza todo.</div>
+        </div>
+      </div>
+    </aside>
     <script>
       // cache-bust durante desarrollo: cada reload baja bundle fresco
       (function () {
@@ -35,6 +412,17 @@
         s.defer = true;
         document.head.appendChild(s);
       })();
+
+      // Demo cards → focus en feature dentro de la app React
+      document.addEventListener('click', function (e) {
+        var card = e.target.closest && e.target.closest('.demo-card[data-target]');
+        if (!card) return;
+        var target = card.getAttribute('data-target');
+        document.querySelectorAll('.demo-card[data-target]').forEach(function (c) {
+          c.classList.toggle('active', c === card);
+        });
+        window.dispatchEvent(new CustomEvent('demo-focus', { detail: { target: target } }));
+      });
     </script>
   </body>
 </html>

@@ -514,3 +514,33 @@ export interface HealthStatus {
   db: 'ok' | 'down';
   ollama: 'ok' | 'down' | 'disabled';
 }
+
+export interface Presupuesto {
+  id: string;
+  usuario: string;
+  categoria_id: string;
+  categoria_slug?: string;
+  categoria_nombre?: string;
+  monto_mensual: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PresupuestoEstadoItem {
+  id: string;
+  categoria_id: string;
+  categoria_slug: string;
+  categoria_nombre: string;
+  presupuesto: number;
+  gastado: number;
+  restante: number;
+  pct: number;
+  movs: number;
+}
+
+export interface PresupuestoEstado {
+  usuario: string;
+  mes: string;
+  items: PresupuestoEstadoItem[];
+  sin_asignar: { gastado: number; movs: number };
+}
